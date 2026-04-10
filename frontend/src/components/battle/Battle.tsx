@@ -65,6 +65,8 @@ export const Battle: React.FC<BattleProps> = ({
   const [skills, setSkills] = useState(mockSkills);
   const [showDamageNumber, setShowDamageNumber] = useState<{ value: number; isCrit: boolean } | null>(null);
   const [enemyShowDamage, setEnemyShowDamage] = useState<{ value: number; isCrit: boolean } | null>(null);
+  const [activeEffects, setActiveEffects] = useState<Array<{ id: number; type: string; x: number; y: number }>>([]);
+  const effectCounterRef = useRef(0);
 
   const battleRef = useRef<HTMLDivElement>(null);
   const lastAttackTime = useRef(0);
@@ -169,6 +171,17 @@ export const Battle: React.FC<BattleProps> = ({
       duration: 5,
     };
     setPlayerElements(prev => [...prev.slice(-3), newElement]);
+
+    // 触发战斗特效（根据技能索引映射特效类型）
+    const effectTypes = ['flame', 'blade', 'sword-energy'];
+    const effectType = effectTypes[index % effectTypes.length];
+    const effectId = ++effectCounterRef.current;
+    const enemyPosX = 300 + Math.random() * 60 - 30;
+    const enemyPosY = 100 + Math.random() * 40 - 20;
+    setActiveEffects(prev => [...prev, { id: effectId, type: effectType, x: enemyPosX, y: enemyPosY }]);
+    setTimeout(() => {
+      setActiveEffects(prev => prev.filter(e => e.id !== effectId));
+    }, 700);
 
     setTimeout(() => setEnemyShowDamage(null), 800);
 
@@ -397,6 +410,17 @@ export const Battle: React.FC<BattleProps> = ({
             {showDamageNumber.value === 0 ? '闪避!' : `-${showDamageNumber.value}`}
           </div>
         )}
+
+        {/* 战斗特效层 */}
+        <div className="battle-effect-layer">
+          {activeEffects.map(effect => (
+            <div
+              key={effect.id}
+              className={`effect-${effect.type}`}
+              style={{ left: effect.x - 60, top: effect.y - 60 }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* 资源条区 */}

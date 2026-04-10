@@ -136,7 +136,7 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
         ref={joystickRef}
         className="virtual-joystick"
         onTouchStart={handleJoystickStart}
-        onMouseDown={handleJoystickStart}
+        onMouseDown={handleJoystickStart as unknown as React.MouseEventHandler<HTMLDivElement>}
       >
         <div ref={baseRef} className="joystick-base">
           <div

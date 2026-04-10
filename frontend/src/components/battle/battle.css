@@ -630,3 +630,75 @@
   color: var(--color-accent);
   text-shadow: 0 0 20px var(--color-accent), 0 0 40px var(--color-accent);
 }
+
+/* ============================================
+   战斗特效动画 (4种×3帧循环)
+   ============================================ */
+
+/* 刀光特效 */
+.effect-blade {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  animation: effectBladeAnim 0.6s steps(1) forwards;
+}
+@keyframes effectBladeAnim {
+  0%   { background-image: var(--asset-effect-blade-1); opacity: 1; transform: scale(1) rotate(0deg); }
+  33%  { background-image: var(--asset-effect-blade-2); opacity: 0.8; transform: scale(1.2) rotate(15deg); }
+  66%  { background-image: var(--asset-effect-blade-3); opacity: 0.6; transform: scale(1.4) rotate(30deg); }
+  100% { opacity: 0; transform: scale(1.6) rotate(45deg); }
+}
+
+/* 火焰特效 */
+.effect-flame {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  animation: effectFlameAnim 0.6s steps(1) forwards;
+}
+@keyframes effectFlameAnim {
+  0%   { background-image: var(--asset-effect-flame-1); opacity: 1; transform: scale(0.8); }
+  33%  { background-image: var(--asset-effect-flame-2); opacity: 0.9; transform: scale(1.1); }
+  66%  { background-image: var(--asset-effect-flame-3); opacity: 0.7; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* 冰霜特效 */
+.effect-ice {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  pointer-events: none;
+  animation: effectIceAnim 0.6s steps(1) forwards;
+}
+@keyframes effectIceAnim {
+  0%   { background-image: var(--asset-effect-ice-1); opacity: 1; transform: scale(1) rotate(0deg); }
+  33%  { background-image: var(--asset-effect-ice-2); opacity: 0.8; transform: scale(1.15) rotate(-10deg); }
+  66%  { background-image: var(--asset-effect-ice-3); opacity: 0.6; transform: scale(1.25) rotate(-20deg); }
+  100% { opacity: 0; transform: scale(1.4) rotate(-30deg); }
+}
+
+/* 剑气特效 */
+.effect-sword-energy {
+  position: absolute;
+  width: 160px;
+  height: 100px;
+  pointer-events: none;
+  animation: effectSwordEnergyAnim 0.6s steps(1) forwards;
+}
+@keyframes effectSwordEnergyAnim {
+  0%   { background-image: var(--asset-effect-sword-energy-1); opacity: 1; transform: translateX(0) scaleX(1); }
+  33%  { background-image: var(--asset-effect-sword-energy-2); opacity: 0.9; transform: translateX(20px) scaleX(1.2); }
+  66%  { background-image: var(--asset-effect-sword-energy-3); opacity: 0.7; transform: translateX(40px) scaleX(1.4); }
+  100% { opacity: 0; transform: translateX(60px) scaleX(1.6); }
+}
+
+/* 特效挂载点 */
+.battle-effect-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}

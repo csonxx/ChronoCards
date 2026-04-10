@@ -1,5 +1,5 @@
 // 新手引导 - 首次进入弹窗
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import './tutorial.css';
 
 interface TutorialStep {

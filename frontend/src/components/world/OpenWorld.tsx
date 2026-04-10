@@ -1,11 +1,34 @@
 // S2: 开放世界界面 - 主场景
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { TopBar, CardProgress, ScrollPanel } from '../ui';
 import { MobileControls, isMobile } from '../mobile/MobileControls';
 import { PlayerContextMenu } from '../tutorial/PlayerContextMenu';
 import type { Dealer, Card, Region } from '../../types';
 import './world.css';
+
+// 区域 → 场景立绘映射（5场景×3变体轮播）
+const REGION_SCENE_MAP: Record<Region, string[]> = {
+  zhongyuan: ['--asset-scene-01-1', '--asset-scene-01-2', '--asset-scene-01-3'],
+  jiangnan:  ['--asset-scene-02-1', '--asset-scene-02-2', '--asset-scene-02-3'],
+  xibei:    ['--asset-scene-03-1', '--asset-scene-03-2', '--asset-scene-03-3'],
+  xinan:    ['--asset-scene-04-1', '--asset-scene-04-2', '--asset-scene-04-3'],
+  donghai:  ['--asset-scene-05-1', '--asset-scene-05-2', '--asset-scene-05-3'],
+};
+
+// 门派 → 角色立绘映射（10门派×3姿态）
+export const SECT_CHAR_MAP: Record<string, string[]> = {
+  shaolin:    ['--asset-char-shaolin-1',    '--asset-char-shaolin-2',    '--asset-char-shaolin-3'],
+  emei:       ['--asset-char-emei-1',       '--asset-char-emei-2',       '--asset-char-emei-3'],
+  wudang:     ['--asset-char-wudang-1',     '--asset-char-wudang-2',     '--asset-char-wudang-3'],
+  tang:       ['--asset-char-tang-1',       '--asset-char-tang-2',       '--asset-char-tang-3'],
+  gaibang:    ['--asset-char-gaibang-1',    '--asset-char-gaibang-2',    '--asset-char-gaibang-3'],
+  mingjiao:   ['--asset-char-mingjiao-1',   '--asset-char-mingjiao-2',   '--asset-char-mingjiao-3'],
+  huashan:    ['--asset-char-huashan-1',    '--asset-char-huashan-2',    '--asset-char-huashan-3'],
+  luoyang:    ['--asset-char-luoyang-1',    '--asset-char-luoyang-2',    '--asset-char-luoyang-3'],
+  shadowfang: ['--asset-char-shadowfang-1', '--asset-char-shadowfang-2', '--asset-char-shadowfang-3'],
+  peacock:    ['--asset-char-peacock-1',    '--asset-char-peacock-2',    '--asset-char-peacock-3'],
+};
 
 // 模拟发牌员数据
 const mockDealers: Dealer[] = [
@@ -47,6 +70,11 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
   const [nearbyDealer, setNearbyDealer] = useState<Dealer | null>(null);
   const [currentRegion] = useState<Region>('zhongyuan');
   const [cardProgress] = useState({ current: 3, total: 10 });
+
+  // 当前场景立绘（3变体轮播）
+  const sceneAssets = REGION_SCENE_MAP[currentRegion] || REGION_SCENE_MAP.zhongyuan;
+  const [sceneVariant] = useState(0); // 后续可扩展为自动轮播
+  const sceneBgVar = sceneAssets[sceneVariant % sceneAssets.length];
 
   // 玩家操作菜单
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -246,8 +274,8 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
         {/* 主显示区 - 江湖场景 */}
         <main className="open-world__main">
           <div className="world-scene world-scene--with-bg" onClick={handleMapClick} ref={worldSceneRef}>
-            {/* 水墨山水背景 */}
-            <div className="world-scene__background" style={{ backgroundImage: 'var(--asset-map-background)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            {/* 水墨山水背景 - 使用新场景立绘 */}
+            <div className="world-scene__background" style={{ backgroundImage: `var(${sceneBgVar})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="ink-mountain ink-mountain--1" />
               <div className="ink-mountain ink-mountain--2" />
               <div className="ink-mountain ink-mountain--3" />
