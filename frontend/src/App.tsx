@@ -1,10 +1,13 @@
 // ChronoCards 主应用
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import './styles/global.css';
 import { OpenWorld } from './components/world/OpenWorld';
 import { CardDraw } from './components/card/CardDraw';
 import { Battle } from './components/battle/Battle';
+import { TutorialOverlay, shouldShowTutorial } from './components/tutorial/TutorialOverlay';
+import { CardDrawGuide } from './components/tutorial/CardDrawGuide';
+import { LandscapeWarning } from './components/mobile/LandscapeWarning';
 import type { Card, CardOption, GameScene } from './types';
 import './App.css';
 
@@ -12,17 +15,30 @@ function App() {
   const [currentScene, setCurrentScene] = useState<GameScene>('world');
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [showCardDraw, setShowCardDraw] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(shouldShowTutorial);
+  const [cardDrawGuideType, setCardDrawGuideType] = useState<string | null>(null);
+  const cardDrawGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 打开卡牌抽牌界面
   const handleCardDraw = useCallback((card: Card) => {
     setCurrentCard(card);
     setShowCardDraw(true);
+    // 显示卡牌抽取说明
+    if (cardDrawGuideTimerRef.current) clearTimeout(cardDrawGuideTimerRef.current);
+    cardDrawGuideTimerRef.current = setTimeout(() => {
+      setCardDrawGuideType(card.type);
+    }, 1200);
   }, []);
 
   // 关闭卡牌界面
   const handleCardClose = useCallback(() => {
     setShowCardDraw(false);
     setCurrentCard(null);
+    setCardDrawGuideType(null);
+    if (cardDrawGuideTimerRef.current) {
+      clearTimeout(cardDrawGuideTimerRef.current);
+      cardDrawGuideTimerRef.current = null;
+    }
   }, []);
 
   // 选择卡牌选项
@@ -30,6 +46,7 @@ function App() {
     console.log('Selected option:', option);
     setShowCardDraw(false);
     setCurrentCard(null);
+    setCardDrawGuideType(null);
   }, []);
 
   // 开始战斗
@@ -49,11 +66,6 @@ function App() {
     setCurrentScene('world');
   }, []);
 
-  // 撤退 (暂未使用)
-  // const handleEscape = useCallback(() => {
-  //   setCurrentScene('world');
-  // }, []);
-
   // 打开设置
   const handleSettings = useCallback(() => {
     setCurrentScene('settings');
@@ -64,8 +76,21 @@ function App() {
     setCurrentScene('world');
   }, []);
 
+  // 教程完成回调
+  const handleTutorialComplete = useCallback(() => {
+    setShowTutorial(false);
+  }, []);
+
   return (
     <div className="app paper-texture">
+      {/* 横屏锁定提示 */}
+      <LandscapeWarning enabled={true} />
+
+      {/* 新手引导 */}
+      {showTutorial && (
+        <TutorialOverlay onComplete={handleTutorialComplete} />
+      )}
+
       {/* S2: 开放世界 */}
       {currentScene === 'world' && !showCardDraw && (
         <OpenWorld
@@ -77,11 +102,21 @@ function App() {
 
       {/* S3: 抽牌界面 */}
       {showCardDraw && currentCard && (
-        <CardDraw
-          card={currentCard}
-          onSelect={handleCardSelect}
-          onClose={handleCardClose}
-        />
+        <>
+          {/* 卡牌抽取说明 */}
+          {cardDrawGuideType && (
+            <CardDrawGuide
+              cardType={cardDrawGuideType}
+              onClose={() => setCardDrawGuideType(null)}
+              autoHideMs={5000}
+            />
+          )}
+          <CardDraw
+            card={currentCard}
+            onSelect={handleCardSelect}
+            onClose={handleCardClose}
+          />
+        </>
       )}
 
       {/* S5: 战斗界面 */}
@@ -115,7 +150,7 @@ function App() {
                 <input type="checkbox" defaultChecked />
               </div>
             </div>
-            <button 
+            <button
               className="settings-back-btn scroll-button scroll-button--md"
               onClick={handleBackToWorld}
             >

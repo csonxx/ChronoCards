@@ -257,6 +257,29 @@
   white-space: nowrap;
 }
 
+/* 发牌员 - 附近状态 */
+.dealer--nearby {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 15;
+}
+
+.dealer--nearby .dealer__sprite {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px rgba(201, 162, 39, 0.5);
+  animation: dealerGlow 1.5s ease-in-out infinite;
+}
+
+.dealer--nearby .dealer__name {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+@keyframes dealerGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 162, 39, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(201, 162, 39, 0.7); }
+}
+
 /* ========== 玩家 ========== */
 
 .player {

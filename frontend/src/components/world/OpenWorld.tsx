@@ -1,7 +1,9 @@
 // S2: 开放世界界面 - 主场景
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { TopBar, CardProgress, ScrollPanel } from '../ui';
+import { MobileControls, isMobile } from '../mobile/MobileControls';
+import { PlayerContextMenu } from '../tutorial/PlayerContextMenu';
 import type { Dealer, Card, Region } from '../../types';
 import './world.css';
 
@@ -15,6 +17,16 @@ const mockDealers: Dealer[] = [
 ];
 
 const mockRecentCards = ['支线', '成长', '主线'];
+
+// 发牌员交互提示文案
+const DEALER_HINTS: Record<string, { near: string; label: string }> = {
+  teahouse: { near: '点击这里和说书人对话', label: '📜 听江湖传闻' },
+  billboard: { near: '点击这里查看悬赏', label: '📋 接取任务' },
+  inn: { near: '点击这里和掌柜交谈', label: '🏨 入住客栈' },
+  merchant: { near: '点击这里购买物品', label: '💰 神秘商贩' },
+  enemy: { near: '点击这里进入战斗', label: '⚔️ 遭遇敌人' },
+  encounter: { near: '点击这里查看', label: '❓ 未知遭遇' },
+};
 
 interface OpenWorldProps {
   onCardDraw: (card: Card) => void;
@@ -36,9 +48,15 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
   const [currentRegion] = useState<Region>('zhongyuan');
   const [cardProgress] = useState({ current: 3, total: 10 });
 
+  // 玩家操作菜单
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const worldSceneRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
+  const [isMobileDevice] = useState(isMobile());
+
   // 检测附近发牌员
   const checkNearbyDealers = useCallback((pos: { x: number; y: number }) => {
-    const interactRange = 60;
+    const interactRange = 70;
     const found = mockDealers.find(dealer => {
       const dx = dealer.position.x - pos.x;
       const dy = dealer.position.y - pos.y;
@@ -49,6 +67,8 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
 
   // 移动玩家
   const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // 忽略玩家头像点击
+    if ((e.target as HTMLElement).closest('.player')) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const newPos = {
       x: e.clientX - rect.left,
@@ -64,11 +84,10 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
       if (nearbyDealer.type === 'enemy') {
         onBattle();
       } else {
-        // 生成模拟卡牌
         const mockCard: Card = {
           id: `card-${Date.now()}`,
-          type: nearbyDealer.type === 'teahouse' ? 'side' : 'growth',
-          title: nearbyDealer.type === 'teahouse' ? '江湖传闻' : '奇遇发现',
+          type: nearbyDealer.type === 'teahouse' ? 'side' : nearbyDealer.type === 'billboard' ? 'main' : 'growth',
+          title: nearbyDealer.type === 'teahouse' ? '江湖传闻' : nearbyDealer.type === 'billboard' ? '悬赏任务' : '奇遇发现',
           description: `你在${nearbyDealer.name}处听闻了一桩江湖轶事...`,
           triggered: false,
           options: [
@@ -86,7 +105,7 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const step = 20;
     let dx = 0, dy = 0;
-    
+
     switch (e.key) {
       case 'ArrowUp':
       case 'w':
@@ -115,7 +134,7 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
       default:
         return;
     }
-    
+
     e.preventDefault();
     const newPos = {
       x: Math.max(20, Math.min(580, playerPos.x + dx)),
@@ -124,6 +143,61 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
     setPlayerPos(newPos);
     checkNearbyDealers(newPos);
   }, [playerPos, nearbyDealer, handleInteract, checkNearbyDealers]);
+
+  // 移动端摇杆移动
+  const handleMobileMove = useCallback((dx: number, dy: number) => {
+    const newPos = {
+      x: Math.max(20, Math.min(580, playerPos.x + dx)),
+      y: Math.max(20, Math.min(380, playerPos.y + dy)),
+    };
+    setPlayerPos(newPos);
+    checkNearbyDealers(newPos);
+  }, [playerPos, checkNearbyDealers]);
+
+  // 点击玩家头像打开操作菜单
+  const handlePlayerClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }, []);
+
+  const contextMenuItems = [
+    {
+      id: 'profile',
+      label: '查看角色',
+      icon: '👤',
+      onClick: () => console.log('Open profile'),
+    },
+    {
+      id: 'stats',
+      label: '角色属性',
+      icon: '📊',
+      onClick: () => console.log('Open stats'),
+    },
+    {
+      id: 'deck',
+      label: '我的卡组',
+      icon: '🃏',
+      onClick: () => console.log('Open deck'),
+    },
+    {
+      id: 'settings',
+      label: '游戏设置',
+      icon: '⚙️',
+      onClick: () => onSettings(),
+    },
+  ];
+
+  // 更新发牌员的附近状态
+  const getDealerClass = useCallback((dealer: Dealer) => {
+    const classes = [`dealer dealer--${dealer.type}`];
+    if (nearbyDealer?.id === dealer.id) {
+      classes.push('dealer--nearby');
+    }
+    return classes.join(' ');
+  }, [nearbyDealer]);
 
   const regionNames: Record<Region, string> = {
     zhongyuan: '中原武林',
@@ -171,7 +245,7 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
 
         {/* 主显示区 - 江湖场景 */}
         <main className="open-world__main">
-          <div className="world-scene world-scene--with-bg" onClick={handleMapClick}>
+          <div className="world-scene world-scene--with-bg" onClick={handleMapClick} ref={worldSceneRef}>
             {/* 水墨山水背景 */}
             <div className="world-scene__background" style={{ backgroundImage: 'var(--asset-map-background)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="ink-mountain ink-mountain--1" />
@@ -186,23 +260,40 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
             </div>
 
             {/* 发牌员 */}
-            {mockDealers.map(dealer => (
-              <div
-                key={dealer.id}
-                className={`dealer dealer--${dealer.type}`}
-                style={{ left: dealer.position.x, top: dealer.position.y }}
-              >
-                <div className="dealer__sprite">
-                  {dealer.type === 'enemy' ? '⚔️' : dealer.type === 'teahouse' ? '🍵' : dealer.type === 'billboard' ? '📜' : dealer.type === 'inn' ? '🏨' : '💰'}
+            {mockDealers.map(dealer => {
+              const hint = DEALER_HINTS[dealer.type] || DEALER_HINTS['encounter'];
+              return (
+                <div
+                  key={dealer.id}
+                  className={getDealerClass(dealer)}
+                  style={{ left: dealer.position.x, top: dealer.position.y }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (nearbyDealer?.id === dealer.id) {
+                      handleInteract();
+                    }
+                  }}
+                >
+                  {/* 交互提示标签 */}
+                  <div className="dealer-hint-label">
+                    {nearbyDealer?.id === dealer.id ? hint.near : hint.label}
+                  </div>
+
+                  <div className="dealer__sprite">
+                    {dealer.type === 'enemy' ? '⚔️' : dealer.type === 'teahouse' ? '🍵' : dealer.type === 'billboard' ? '📜' : dealer.type === 'inn' ? '🏨' : '💰'}
+                  </div>
+                  <span className="dealer__name">{dealer.name}</span>
                 </div>
-                <span className="dealer__name">{dealer.name}</span>
-              </div>
-            ))}
+              );
+            })}
 
             {/* 玩家 */}
             <div
               className="player"
               style={{ left: playerPos.x, top: playerPos.y }}
+              onClick={handlePlayerClick}
+              ref={playerRef}
+              title="点击查看角色信息"
             >
               <div className="player__sprite" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}>🧑</div>
               <div className="player__shadow" />
@@ -234,9 +325,28 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
           />
         </div>
         <div className="footer__controls">
-          <span className="footer__hint">WASD/方向键移动 · E交互</span>
+          <span className="footer__hint">WASD/方向键移动 · E交互 · 点击头像查看菜单</span>
         </div>
       </footer>
+
+      {/* 玩家操作菜单 */}
+      {contextMenu && (
+        <PlayerContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* 移动端虚拟控件 */}
+      {isMobileDevice && (
+        <MobileControls
+          onMove={handleMobileMove}
+          onInteract={handleInteract}
+          showInteract={!!nearbyDealer}
+        />
+      )}
     </div>
   );
 };
