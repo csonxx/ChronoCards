@@ -28,6 +28,9 @@ dependencies:
   # Audio (for game sounds)
   audioplayers: ^6.0.0
   
+  # HTTP (for API calls)
+  http: ^1.2.0
+  
   # Local Storage
   shared_preferences: ^2.3.2
 
