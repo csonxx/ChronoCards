@@ -54,9 +54,9 @@
   --color-element-poison: #A855F7;
   
   /* === 材质纹理 === */
-  --texture-paper: url('/textures/paper.png');
-  --texture-scroll: url('/textures/scroll.png');
-  --texture-wood: url('/textures/wood.png');
+  --texture-paper: url('/assets/textures/sangpi.jpeg');
+  --texture-scroll: url('/assets/decorations/scroll_roller.jpeg');
+  --texture-wood: url('/assets/decorations/xuanzhi_card_border.jpeg');
   
   /* === 字体系统 === */
   --font-title: 'STKaiti', '华文楷体', 'KaiTi', serif;
