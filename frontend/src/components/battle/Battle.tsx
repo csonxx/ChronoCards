@@ -29,14 +29,12 @@ interface BattleProps {
   enemy?: BattleEnemy;
   onVictory: () => void;
   onDefeat: () => void;
-  onEscape: () => void;
 }
 
 export const Battle: React.FC<BattleProps> = ({
   enemy = mockEnemy,
   onVictory,
   onDefeat,
-  onEscape: _onEscape,
 }) => {
   // 玩家战斗状态
   const [playerStats, setPlayerStats] = useState<BattleStats>({
@@ -70,79 +68,6 @@ export const Battle: React.FC<BattleProps> = ({
 
   const battleRef = useRef<HTMLDivElement>(null);
   const lastAttackTime = useRef(0);
-
-  // 冷却更新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSkills(prev => prev.map(skill => ({
-        ...skill,
-        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
-      })));
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 体力自动恢复
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlayerStats(prev => ({
-        ...prev,
-        stamina: Math.min(prev.maxStamina, prev.stamina + 2),
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 内力自动恢复
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlayerStats(prev => ({
-        ...prev,
-        qi: Math.min(prev.maxQi, prev.qi + 3),
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 键盘输入处理
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key.toLowerCase()) {
-        case 'j':
-        case ' ':
-          handleAttack();
-          break;
-        case 'k':
-          handleBlock(true);
-          break;
-        case 'l':
-          handleDodge();
-          break;
-        case 'u':
-          handleSkill(0);
-          break;
-        case 'i':
-          handleSkill(1);
-          break;
-        case 'o':
-          handleSkill(2);
-          break;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k') {
-        handleBlock(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [comboStage, playerStats.stamina, skills]);
 
   // 普通攻击
   const handleAttack = useCallback(() => {
@@ -251,6 +176,79 @@ export const Battle: React.FC<BattleProps> = ({
       setTimeout(onVictory, 500);
     }
   }, [skills, playerStats, enemyHp, onVictory]);
+
+  // 冷却更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSkills(prev => prev.map(skill => ({
+        ...skill,
+        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
+      })));
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 体力自动恢复
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerStats(prev => ({
+        ...prev,
+        stamina: Math.min(prev.maxStamina, prev.stamina + 2),
+      }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 内力自动恢复
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerStats(prev => ({
+        ...prev,
+        qi: Math.min(prev.maxQi, prev.qi + 3),
+      }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 键盘输入处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key.toLowerCase()) {
+        case 'j':
+        case ' ':
+          handleAttack();
+          break;
+        case 'k':
+          handleBlock(true);
+          break;
+        case 'l':
+          handleDodge();
+          break;
+        case 'u':
+          handleSkill(0);
+          break;
+        case 'i':
+          handleSkill(1);
+          break;
+        case 'o':
+          handleSkill(2);
+          break;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'k') {
+        handleBlock(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [comboStage, playerStats.stamina, playerStats.hp, skills, handleAttack, handleBlock, handleDodge, handleSkill]);
 
   // 模拟敌人攻击
   useEffect(() => {
