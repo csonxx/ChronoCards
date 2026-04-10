@@ -1,7 +1,7 @@
 package element
 
 import (
-	"github.com/csonxx/ChronoCards/backend/internal/model"
+	"github.com/csonxx/ChronoCards/internal/model"
 )
 
 // ReactionType 元素反应类型

@@ -1,4 +1,4 @@
-module github.com/csonxx/ChronoCards/backend
+module github.com/csonxx/ChronoCards
 
 go 1.24.11
 

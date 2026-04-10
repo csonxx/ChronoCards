@@ -1,10 +1,14 @@
 package model
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// randSource 全局随机源（程序启动时初始化）
+var randSource = rand.NewSource(time.Now().UnixNano())
 
 // Card 事件卡牌
 type Card struct {
@@ -87,10 +91,10 @@ func (d *Deck) Reshuffle() {
 	// 弃牌堆重新进入卡组（打乱顺序）
 	d.Cards = append(d.Cards, d.DiscardPile...)
 	d.DiscardPile = []*Card{}
-	// 简单洗牌 Fisher-Yates
+	// Fisher-Yates 洗牌（使用全局随机源）
+	r := rand.New(randSource)
 	for i := len(d.Cards) - 1; i > 0; i-- {
-		j := int(time.Now().UnixNano()) % (i + 1)
-		time.Now() // 避免编译器抱怨
+		j := r.Intn(i + 1)
 		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/csonxx/ChronoCards/backend/internal/api"
-	"github.com/csonxx/ChronoCards/backend/internal/store"
+	"github.com/csonxx/ChronoCards/internal/api"
+	"github.com/csonxx/ChronoCards/internal/store"
 )
 
 func main() {

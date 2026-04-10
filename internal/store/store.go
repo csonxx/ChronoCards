@@ -2,7 +2,7 @@ package store
 
 import (
 	"sync"
-	"github.com/csonxx/ChronoCards/backend/internal/model"
+	"github.com/csonxx/ChronoCards/internal/model"
 )
 
 // Store 内存数据存储

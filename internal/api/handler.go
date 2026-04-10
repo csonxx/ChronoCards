@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/csonxx/ChronoCards/backend/internal/game/battle"
-	"github.com/csonxx/ChronoCards/backend/internal/game/deck"
-	"github.com/csonxx/ChronoCards/backend/internal/game/element"
-	"github.com/csonxx/ChronoCards/backend/internal/game/narrative"
-	"github.com/csonxx/ChronoCards/backend/internal/model"
-	"github.com/csonxx/ChronoCards/backend/internal/store"
+	"github.com/csonxx/ChronoCards/internal/game/battle"
+	"github.com/csonxx/ChronoCards/internal/game/deck"
+	"github.com/csonxx/ChronoCards/internal/game/element"
+	"github.com/csonxx/ChronoCards/internal/game/narrative"
+	"github.com/csonxx/ChronoCards/internal/model"
+	"github.com/csonxx/ChronoCards/internal/store"
 )
 
 // Handler HTTP处理器

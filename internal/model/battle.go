@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // BattlePlayerState 战斗状态快照
@@ -83,7 +85,7 @@ const (
 // NewDealer 创建发牌员
 func NewDealer(dealerType DealerType, name, location, description string) *Dealer {
 	return &Dealer{
-		ID:                 name + "-" + location,
+		ID:                 uuid.New().String(),
 		Type:               dealerType,
 		Name:               name,
 		Location:           location,

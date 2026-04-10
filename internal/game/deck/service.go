@@ -1,7 +1,7 @@
 package deck
 
 import (
-	"github.com/csonxx/ChronoCards/backend/internal/model"
+	"github.com/csonxx/ChronoCards/internal/model"
 )
 
 // Service 发牌员逻辑服务
@@ -64,7 +64,7 @@ func (s *Service) TriggerWithWeight(dealer *model.Dealer, deck *model.Deck) *Dea
 		DeckExhausted: false,
 	}
 
-	count := 1
+	count := multiplier
 	cards, exhausted := deck.Draw(count)
 	if exhausted || len(cards) == 0 {
 		resp.DeckExhausted = true
