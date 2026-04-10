@@ -1,0 +1,158 @@
+package model
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// ElementType 六元素
+type ElementType string
+
+const (
+	ElementWind    ElementType = "wind"
+	ElementFire    ElementType = "fire"
+	ElementWater   ElementType = "water"
+	ElementThunder ElementType = "thunder"
+	ElementIce     ElementType = "ice"
+	ElementPoison  ElementType = "poison"
+)
+
+// CardType 卡牌类型
+type CardType string
+
+const (
+	CardMainStory  CardType = "main_story"
+	CardSideStory  CardType = "side_story"
+	CardSkillUnlock CardType = "skill_unlock"
+	CardStatUp     CardType = "stat_up"
+	CardEmotion    CardType = "emotion"
+	CardEconomy    CardType = "economy"
+	CardBlank      CardType = "blank"
+)
+
+// SkillType 技能类型
+type SkillType string
+
+const (
+	SkillE        SkillType = "E"
+	SkillQ        SkillType = "Q"
+	SkillPassive  SkillType = "passive"
+	SkillUltimate SkillType = "ultimate"
+)
+
+// StatusEffectType 状态效果类型
+type StatusEffectType string
+
+const (
+	StatusBurn     StatusEffectType = "burn"
+	StatusFreeze   StatusEffectType = "freeze"
+	StatusPoison   StatusEffectType = "poison"
+	StatusParalyze StatusEffectType = "paralyze"
+	StatusSlow     StatusEffectType = "slow"
+)
+
+// Reputation 阵营声望
+type Reputation struct {
+	Mingjiao  int `json:"mingjiao"`  // 明教
+	Zhengpai  int `json:"zhengpai"`  // 正派
+	Jinyiwei  int `json:"jinyiwei"`  // 锦衣卫
+}
+
+// ElementMastery 元素精通
+type ElementMastery struct {
+	Wind    int `json:"wind"`
+	Fire    int `json:"fire"`
+	Water   int `json:"water"`
+	Thunder int `json:"thunder"`
+	Ice     int `json:"ice"`
+	Poison  int `json:"poison"`
+}
+
+// Player 玩家
+type Player struct {
+	ID               string           `json:"id"`
+	Name             string           `json:"name"`
+	Level            int              `json:"level"`
+	Exp              int              `json:"exp"`
+	HP               int              `json:"hp"`
+	MaxHP            int              `json:"max_hp"`
+	MP               int              `json:"mp"`
+	MaxMP            int              `json:"max_mp"`
+	SwordIntent      int              `json:"sword_intent"` // 0-100
+	Stamina          int              `json:"stamina"`
+	MaxStamina       int              `json:"max_stamina"`
+	ElementMastery   ElementMastery   `json:"element_mastery"`
+	Faction          string           `json:"faction"`
+	Reputation       Reputation       `json:"reputation"`
+	Skills           []string         `json:"skills"` // 技能ID列表
+	Decks            []string         `json:"decks"`  // 卡组ID列表
+	CreatedAt        time.Time        `json:"created_at"`
+	UpdatedAt        time.Time        `json:"updated_at"`
+}
+
+// NewPlayer 创建新玩家
+func NewPlayer(name, faction string) *Player {
+	now := time.Now()
+	return &Player{
+		ID:         uuid.New().String(),
+		Name:       name,
+		Level:      1,
+		Exp:        0,
+		HP:         100,
+		MaxHP:      100,
+		MP:         100,
+		MaxMP:      100,
+		SwordIntent: 0,
+		Stamina:    100,
+		MaxStamina: 100,
+		ElementMastery: ElementMastery{
+			Wind: 0, Fire: 0, Water: 0, Thunder: 0, Ice: 0, Poison: 0,
+		},
+		Faction: faction,
+		Reputation: Reputation{
+			Mingjiao: 0, Zhengpai: 0, Jinyiwei: 0,
+		},
+		Skills:    []string{},
+		Decks:     []string{},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+// Heal 回复生命
+func (p *Player) Heal(amount int) {
+	p.HP = min(p.HP+amount, p.MaxHP)
+}
+
+// ConsumeMP 消耗内力
+func (p *Player) ConsumeMP(amount int) bool {
+	if p.MP < amount {
+		return false
+	}
+	p.MP -= amount
+	return true
+}
+
+// AddSwordIntent 增加剑意值
+func (p *Player) AddSwordIntent(amount int) {
+	p.SwordIntent = min(p.SwordIntent+amount, 100)
+}
+
+// ConsumeSwordIntent 消耗剑意值
+func (p *Player) ConsumeSwordIntent(amount int) bool {
+	if p.SwordIntent < amount {
+		return false
+	}
+	p.SwordIntent -= amount
+	return true
+}
+
+// ConsumeStamina 消耗体力
+func (p *Player) ConsumeStamina(amount int) bool {
+	if p.Stamina < amount {
+		return false
+	}
+	p.Stamina -= amount
+	return true
+}

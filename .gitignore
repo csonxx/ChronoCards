@@ -1,0 +1,5 @@
+*.exe
+chrono-cards
+.DS_Store
+api_schema.json
+go.sum

@@ -1,0 +1,677 @@
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/csonxx/ChronoCards/backend/internal/game/battle"
+	"github.com/csonxx/ChronoCards/backend/internal/game/deck"
+	"github.com/csonxx/ChronoCards/backend/internal/game/element"
+	"github.com/csonxx/ChronoCards/backend/internal/game/narrative"
+	"github.com/csonxx/ChronoCards/backend/internal/model"
+	"github.com/csonxx/ChronoCards/backend/internal/store"
+)
+
+// Handler HTTP处理器
+type Handler struct {
+	store        *store.Store
+	deckSvc     *deck.Service
+	narrativeSvc *narrative.Service
+	elementCalc *element.Calculator
+	battleCalc  *battle.BattleCalculator
+}
+
+// NewHandler 创建处理器
+func NewHandler(s *store.Store) *Handler {
+	return &Handler{
+		store:        s,
+		deckSvc:     deck.NewService(),
+		narrativeSvc: narrative.NewService(),
+		elementCalc: element.NewCalculator(),
+		battleCalc:  battle.NewBattleCalculator(),
+	}
+}
+
+// ---- 辅助方法 ----
+
+func (h *Handler) json(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+func (h *Handler) error(w http.ResponseWriter, status int, msg string) {
+	h.json(w, status, map[string]string{"error": msg})
+}
+
+func (h *Handler) notFound(w http.ResponseWriter) {
+	h.error(w, http.StatusNotFound, "not found")
+}
+
+func (h *Handler) badRequest(w http.ResponseWriter, msg string) {
+	h.error(w, http.StatusBadRequest, msg)
+}
+
+// ---- Health ----
+
+func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	h.json(w, http.StatusOK, map[string]string{
+		"status":  "ok",
+		"version": "1.0.0",
+	})
+}
+
+// ---- Player APIs ----
+
+func (h *Handler) CreatePlayer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		Name    string `json:"name"`
+		Faction string `json:"faction"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		h.badRequest(w, "name is required")
+		return
+	}
+	if req.Faction == "" {
+		req.Faction = "none"
+	}
+
+	player := model.NewPlayer(req.Name, req.Faction)
+	h.store.CreatePlayer(player)
+
+	// 同时创建一副默认卡组
+	deckObj := model.NewDeck(player.ID, "默认卡组", nil)
+	h.store.CreateDeck(deckObj)
+	player.Decks = append(player.Decks, deckObj.ID)
+	h.store.UpdatePlayer(player)
+
+	h.json(w, http.StatusOK, player)
+}
+
+func (h *Handler) GetPlayer(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+	h.json(w, http.StatusOK, player)
+}
+
+func (h *Handler) UpdatePlayer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	id := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	var req model.UpdatePlayerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	// 应用变化
+	if req.HPDelta != 0 {
+		player.HP += req.HPDelta
+		if player.HP > player.MaxHP {
+			player.HP = player.MaxHP
+		}
+		if player.HP < 0 {
+			player.HP = 0
+		}
+	}
+	if req.MPDelta != 0 {
+		player.MP += req.MPDelta
+		if player.MP > player.MaxMP {
+			player.MP = player.MaxMP
+		}
+		if player.MP < 0 {
+			player.MP = 0
+		}
+	}
+	if req.SwordIntentDelta != 0 {
+		player.SwordIntent += req.SwordIntentDelta
+		if player.SwordIntent > 100 {
+			player.SwordIntent = 100
+		}
+		if player.SwordIntent < 0 {
+			player.SwordIntent = 0
+		}
+	}
+	if req.StaminaDelta != 0 {
+		player.Stamina += req.StaminaDelta
+		if player.Stamina > player.MaxStamina {
+			player.Stamina = player.MaxStamina
+		}
+		if player.Stamina < 0 {
+			player.Stamina = 0
+		}
+	}
+	if req.ExpDelta != 0 {
+		player.Exp += req.ExpDelta
+	}
+	if req.LevelUp {
+		player.Level++
+	}
+	if req.SkillAdd != nil {
+		player.Skills = append(player.Skills, req.SkillAdd...)
+	}
+	if req.ReputationDelta != nil {
+		player.Reputation.Mingjiao += req.ReputationDelta.Mingjiao
+		player.Reputation.Zhengpai += req.ReputationDelta.Zhengpai
+		player.Reputation.Jinyiwei += req.ReputationDelta.Jinyiwei
+	}
+	player.UpdatedAt = time.Now()
+
+	h.store.UpdatePlayer(player)
+	h.json(w, http.StatusOK, player)
+}
+
+func (h *Handler) GetBattleState(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	state := &model.BattlePlayerState{
+		PlayerID:    player.ID,
+		HP:         player.HP,
+		MaxHP:      player.MaxHP,
+		MP:         player.MP,
+		MaxMP:      player.MaxMP,
+		Stamina:    player.Stamina,
+		MaxStamina: player.MaxStamina,
+		SwordIntent: player.SwordIntent,
+	}
+
+	h.json(w, http.StatusOK, state)
+}
+
+// ---- Deck APIs ----
+
+func (h *Handler) CreateDeck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID     string         `json:"player_id"`
+		Name         string         `json:"name"`
+		InitialCards []*model.Card  `json:"initial_cards"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" {
+		h.badRequest(w, "player_id is required")
+		return
+	}
+	if req.Name == "" {
+		req.Name = "默认卡组"
+	}
+
+	// 检查玩家存在
+	if _, ok := h.store.GetPlayer(req.PlayerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	deckObj := model.NewDeck(req.PlayerID, req.Name, req.InitialCards)
+	h.store.CreateDeck(deckObj)
+
+	// 更新玩家的卡组列表
+	player, _ := h.store.GetPlayer(req.PlayerID)
+	player.Decks = append(player.Decks, deckObj.ID)
+	h.store.UpdatePlayer(player)
+
+	h.json(w, http.StatusOK, deckObj)
+}
+
+func (h *Handler) GetDeck(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("deck_id")
+	d, ok := h.store.GetDeck(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+	h.json(w, http.StatusOK, d)
+}
+
+func (h *Handler) DrawCard(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	id := r.PathValue("deck_id")
+	d, ok := h.store.GetDeck(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	var req struct {
+		Count          int            `json:"count"`
+		ForceCardType  model.CardType `json:"force_card_type"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	if req.Count < 1 {
+		req.Count = 1
+	}
+	if req.Count > 3 {
+		req.Count = 3
+	}
+
+	// 如果强制指定了卡牌类型，先调整卡组
+	if req.ForceCardType != "" {
+		d.AdjustDeck(req.ForceCardType)
+	}
+
+	cards, exhausted := d.Draw(req.Count)
+
+	// 获取下一张提示
+	var nextHint model.CardType
+	if !exhausted && d.CurrentIndex < len(d.Cards) {
+		nextHint = d.Cards[d.CurrentIndex].Type
+	}
+
+	h.store.UpdateDeck(d)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"drawn_cards":         cards,
+		"next_card_type_hint": nextHint,
+		"deck_exhausted":      exhausted,
+	})
+}
+
+func (h *Handler) GetHand(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("deck_id")
+	d, ok := h.store.GetDeck(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	remaining := len(d.Cards) - d.CurrentIndex
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"hand":                 d.DrawnHand,
+		"total_cards_remaining": remaining,
+	})
+}
+
+func (h *Handler) ReshuffleDeck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	id := r.PathValue("deck_id")
+	d, ok := h.store.GetDeck(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	d.Reshuffle()
+	h.store.UpdateDeck(d)
+	h.json(w, http.StatusOK, d)
+}
+
+func (h *Handler) AdjustDeck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	id := r.PathValue("deck_id")
+	d, ok := h.store.GetDeck(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	var req struct {
+		CardTypeToPromote model.CardType `json:"card_type_to_promote"`
+		Reason            string         `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	if req.CardTypeToPromote != "" {
+		d.AdjustDeck(req.CardTypeToPromote)
+	} else {
+		h.deckSvc.AdjustDeckForPlayerState(d, req.Reason)
+	}
+
+	h.store.UpdateDeck(d)
+	h.json(w, http.StatusOK, d)
+}
+
+// ---- Element APIs ----
+
+func (h *Handler) CalculateReaction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		AttackerElement model.ElementType `json:"attacker_element"`
+		DefenderElement model.ElementType `json:"defender_element"`
+		BaseDamage      float64           `json:"base_damage"`
+		AttackerMastery int               `json:"attacker_mastery"`
+		DefenderLevel   int               `json:"defender_level"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	result := h.elementCalc.CalculateReaction(req.AttackerElement, req.DefenderElement, req.BaseDamage, req.AttackerMastery, req.DefenderLevel)
+	h.json(w, http.StatusOK, result)
+}
+
+func (h *Handler) AttachElement(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		TargetID   string            `json:"target_id"`
+		TargetType string            `json:"target_type"`
+		Element    model.ElementType  `json:"element"`
+		AttackerID string            `json:"attacker_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	// 简化：直接在响应中标记是否触发反应
+	// 实际状态存储在 BattlePlayerState 中
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"target_id":           req.TargetID,
+		"current_attachments": []model.ElementAttachment{
+			{Element: req.Element, Stacks: 1, ExpiresAt: time.Now().Add(10 * time.Second)},
+		},
+		"reaction_triggered": false,
+	})
+}
+
+// ---- Battle APIs ----
+
+func (h *Handler) CalculateDamage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		AttackerID     string            `json:"attacker_id"`
+		DefenderID     string            `json:"defender_id"`
+		SkillID        string            `json:"skill_id"`
+		SkillType      string            `json:"skill_type"`
+		Element        model.ElementType `json:"element"`
+		BaseDamage     float64           `json:"base_damage"`
+		AttackCount    int               `json:"attack_count"`
+		IsCritical     bool              `json:"is_critical"`
+		ElementMastery int               `json:"element_mastery"`
+		DefenderLevel  int               `json:"defender_level"`
+		DefenderElement model.ElementType `json:"defender_element"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	if req.AttackCount < 1 {
+		req.AttackCount = 1
+	}
+
+	// 计算元素精通加成
+	masteryBonus := h.battleCalc.CalculateElementalMasteryBonus(req.ElementMastery, req.DefenderLevel)
+
+	// 计算元素反应
+	var reactionResult *model.ElementReactionResponse
+	if req.DefenderElement != "" && req.Element != "" {
+		reactionResult = h.elementCalc.CalculateReaction(req.Element, req.DefenderElement, req.BaseDamage, req.ElementMastery, req.DefenderLevel)
+	}
+
+	reactionMult := 1.0
+	if reactionResult != nil {
+		reactionMult = reactionResult.SuppressionMultiplier
+	}
+
+	finalDamage := h.battleCalc.CalculateDamage(req.BaseDamage, 1.0, reactionMult, req.IsCritical, masteryBonus) * float64(req.AttackCount)
+
+	// 剑意值获得
+	siGained := 0
+	if req.IsCritical {
+		siGained = 10
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"final_damage":           finalDamage,
+		"elemental_reaction":    reactionResult,
+		"sword_intent_gained":   siGained,
+		"mp_consumed":           0,
+		"new_defender_attachments": nil,
+		"description":           "造成 " + strconv.FormatFloat(finalDamage, 'f', 1, 64) + " 点伤害",
+	})
+}
+
+func (h *Handler) Dodge(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID       string `json:"player_id"`
+		AttackTimingMs int    `json:"attack_timing_ms"`
+		DodgeTimingMs  int    `json:"dodge_timing_ms"`
+		StaminaAvail   int    `json:"stamina_available"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	result := h.battleCalc.Dodge(req.AttackTimingMs, req.DodgeTimingMs, req.StaminaAvail)
+	h.json(w, http.StatusOK, result)
+}
+
+func (h *Handler) Block(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID       string `json:"player_id"`
+		AttackTimingMs int    `json:"attack_timing_ms"`
+		BlockTimingMs  int    `json:"block_timing_ms"`
+		StaminaAvail   int    `json:"stamina_available"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	// 判断是否在完美格挡窗口
+	timeDiff := req.BlockTimingMs - req.AttackTimingMs
+	if timeDiff < 0 {
+		timeDiff = -timeDiff
+	}
+	isPerfect := timeDiff <= 150 // 0.15秒 = 150毫秒
+
+	result := h.battleCalc.Block(req.AttackTimingMs, req.BlockTimingMs, req.StaminaAvail, isPerfect)
+	h.json(w, http.StatusOK, result)
+}
+
+// ---- Narrative APIs ----
+
+func (h *Handler) TriggerNarrative(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req narrative.TriggerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	content, err := h.narrativeSvc.Generate(&req)
+	if err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, content)
+}
+
+func (h *Handler) DeckEventNarrative(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		Card        *model.Card `json:"card"`
+		PlayerID    string      `json:"player_id"`
+		DealerID    string      `json:"dealer_id"`
+		Location    string      `json:"location"`
+		DeckPosition int       `json:"deck_position"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Card == nil {
+		h.badRequest(w, "card is required")
+		return
+	}
+
+	narrativeReq := &narrative.TriggerRequest{
+		TriggerType: narrative.TriggerCardDrawn,
+		PlayerID:    req.PlayerID,
+		DealerID:    req.DealerID,
+		CardID:      req.Card.ID,
+		CardType:    string(req.Card.Type),
+		CardTitle:   req.Card.Title,
+		Location:    req.Location,
+		Context: narrative.NarrativeContext{
+			WorldState:    "明教崛起，天下将乱",
+			Tone:          "mysterious",
+			RecentEvents:  []string{},
+		},
+		Constraints: narrative.NarrativeConstraints{
+			MaxLength:        500,
+			DialogueRequired: true,
+		},
+	}
+
+	content, err := h.narrativeSvc.Generate(narrativeReq)
+	if err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, content)
+}
+
+// ---- Dealer APIs ----
+
+func (h *Handler) ListDealers(w http.ResponseWriter, r *http.Request) {
+	dealers := h.store.ListDealers()
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"dealers": dealers,
+	})
+}
+
+func (h *Handler) CreateDealer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		Type               string `json:"type"`
+		Name               string `json:"name"`
+		Location           string `json:"location"`
+		Description        string `json:"description"`
+		InteractionPrompt  string `json:"interaction_prompt"`
+		Weight             int    `json:"weight"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Type == "" || req.Name == "" {
+		h.badRequest(w, "type and name are required")
+		return
+	}
+
+	dealer := model.NewDealer(model.DealerType(req.Type), req.Name, req.Location, req.Description)
+	if req.InteractionPrompt != "" {
+		dealer.InteractionPrompt = req.InteractionPrompt
+	}
+	if req.Weight > 0 {
+		dealer.Weight = req.Weight
+	}
+
+	h.store.CreateDealer(dealer)
+	h.json(w, http.StatusOK, dealer)
+}
+
+func (h *Handler) TriggerDealer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	dealerID := r.PathValue("dealer_id")
+	dealer, ok := h.store.GetDealer(dealerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		DeckID  string `json:"deck_id"`
+		Location string `json:"location"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" || req.DeckID == "" {
+		h.badRequest(w, "player_id and deck_id are required")
+		return
+	}
+
+	deckObj, ok := h.store.GetDeck(req.DeckID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	result := h.deckSvc.TriggerWithWeight(dealer, deckObj)
+	h.store.UpdateDeck(deckObj)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"dealer_id":      result.DealerID,
+		"dealer_name":    result.DealerName,
+		"drawn_card":     result.DrawnCard,
+		"deck_exhausted": result.DeckExhausted,
+		"hint":           result.Hint,
+	})
+}
