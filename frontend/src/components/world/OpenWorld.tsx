@@ -171,9 +171,9 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
 
         {/* 主显示区 - 江湖场景 */}
         <main className="open-world__main">
-          <div className="world-scene" onClick={handleMapClick}>
+          <div className="world-scene world-scene--with-bg" onClick={handleMapClick}>
             {/* 水墨山水背景 */}
-            <div className="world-scene__background">
+            <div className="world-scene__background" style={{ backgroundImage: 'var(--asset-map-background)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="ink-mountain ink-mountain--1" />
               <div className="ink-mountain ink-mountain--2" />
               <div className="ink-mountain ink-mountain--3" />
@@ -204,7 +204,7 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
               className="player"
               style={{ left: playerPos.x, top: playerPos.y }}
             >
-              <div className="player__sprite">🧑</div>
+              <div className="player__sprite" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}>🧑</div>
               <div className="player__shadow" />
             </div>
 

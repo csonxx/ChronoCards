@@ -318,7 +318,7 @@ export const Battle: React.FC<BattleProps> = ({
 
       {/* 玩家状态区（左上） */}
       <div className="battle-player-status">
-        <div className="player-avatar">🧑</div>
+        <div className="player-avatar" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="player-info">
           <div className="player-info__name">江湖游侠</div>
           <div className="player-info__level">Lv.{playerStats.level}</div>
@@ -347,7 +347,10 @@ export const Battle: React.FC<BattleProps> = ({
           <div className="enemy-scroll">
             <div className="enemy-rod enemy-rod--top" />
             <div className="enemy-content">
-              <div className="enemy-avatar">
+              <div 
+                className="enemy-avatar"
+                style={{ backgroundImage: 'var(--asset-enemy-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
                 {enemy.faction === 'mingjiao' ? '🔥' : '⚔️'}
               </div>
               <div className="enemy-info">
@@ -383,7 +386,7 @@ export const Battle: React.FC<BattleProps> = ({
       {/* 战斗场景区 */}
       <div className="battle-scene">
         <div className={`player-character ${isAttacking ? 'player-character--attack' : ''} ${isInvincible ? 'player-character--invincible' : ''}`}>
-          <div className="character-sprite">🧑</div>
+          <div className="character-sprite" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}>🧑</div>
           <div className="character-shadow" />
           {isInvincible && <div className="invincible-flash" />}
         </div>

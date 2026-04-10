@@ -49,10 +49,10 @@ function App() {
     setCurrentScene('world');
   }, []);
 
-  // 撤退
-  const handleEscape = useCallback(() => {
-    setCurrentScene('world');
-  }, []);
+  // 撤退 (暂未使用)
+  // const handleEscape = useCallback(() => {
+  //   setCurrentScene('world');
+  // }, []);
 
   // 打开设置
   const handleSettings = useCallback(() => {
@@ -89,7 +89,6 @@ function App() {
         <Battle
           onVictory={handleVictory}
           onDefeat={handleDefeat}
-          onEscape={handleEscape}
         />
       )}
 

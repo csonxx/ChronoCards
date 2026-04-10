@@ -88,6 +88,13 @@
   background: var(--color-bg);
   border: 2px solid var(--color-accent);
   border-radius: var(--radius-md);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.player-avatar:not([style*="background-image"]) {
+  background: var(--color-bg);
 }
 
 .player-info {
@@ -197,6 +204,13 @@
   background: rgba(155, 35, 53, 0.2);
   border: 2px solid var(--color-danger);
   border-radius: var(--radius-md);
+  background-image: var(--asset-enemy-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.enemy-avatar:not([style*="background-image"]) {
+  background: rgba(155, 35, 53, 0.2);
 }
 
 .enemy-info {
@@ -300,6 +314,13 @@
   border: 3px solid var(--color-accent);
   border-radius: 50%;
   box-shadow: 0 0 20px rgba(201, 162, 39, 0.5), var(--shadow-lg);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.character-sprite:not([style*="background-image"]) {
+  background: var(--color-bg);
 }
 
 .character-shadow {

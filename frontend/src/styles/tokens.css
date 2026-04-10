@@ -58,6 +58,21 @@
   --texture-scroll: url('/assets/decorations/scroll_roller.jpeg');
   --texture-wood: url('/assets/decorations/xuanzhi_card_border.jpeg');
   
+  /* === 卡牌素材 === */
+  --asset-card-back: url('/assets/card_back.png');
+  --asset-card-frame: url('/assets/card_frame.png');
+  
+  /* === 角色立绘 === */
+  --asset-player-avatar: url('/assets/player_avatar.png');
+  --asset-enemy-avatar: url('/assets/enemy_avatar.png');
+  
+  /* === 地图背景 === */
+  --asset-map-background: url('/assets/map_background.png');
+  
+  /* === 门派印章 === */
+  --asset-huashan-seal: url('/assets/huashan_seal.png');
+  --asset-kongtong-seal: url('/assets/kongtong_seal.png');
+  
   /* === 字体系统 === */
   --font-title: 'STKaiti', '华文楷体', 'KaiTi', serif;
   --font-cursive: 'STXingkai', '华文行楷', 'Xingkai', cursive;
