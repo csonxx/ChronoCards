@@ -122,3 +122,55 @@ func (s *Service) AdjustDeckForPlayerState(deck *model.Deck, reason string) {
 		// 默认不做调整
 	}
 }
+
+// AdjustDeckByDealer 根据发牌员类型动态调整卡组
+// 7种发牌员类型有不同的卡组倾向
+func (s *Service) AdjustDeckByDealer(deck *model.Deck, dealer *model.Dealer) {
+	switch dealer.Type {
+	case model.DealerTeahouse:
+		// 茶馆说书人 - 偏好支线故事和情感类卡牌
+		deck.AdjustDeck(model.CardSideStory)
+	case model.DealerBountyBoard:
+		// 悬赏公告栏 - 偏好主线任务和战斗相关
+		deck.AdjustDeck(model.CardMainStory)
+	case model.DealerEnemy:
+		// 可审问的敌人 - 偏向技能解锁和数值提升（审讯获得）
+		deck.AdjustDeck(model.CardSkillUnlock)
+	case model.DealerInn:
+		// 客栈 - 情感类和空白类卡牌（休息恢复氛围）
+		deck.AdjustDeck(model.CardEmotion)
+	case model.DealerMerchant:
+		// 商贩 - 经济系统相关
+		deck.AdjustDeck(model.CardEconomy)
+	case model.DealerDynamicEncounter:
+		// 动态遭遇 - 混合随机
+		// 不调整，保持随机
+	case model.DealerEnvironment:
+		// 环境线索 - 空白和情感类
+		deck.AdjustDeck(model.CardBlank)
+	default:
+		// 不调整
+	}
+}
+
+// GetHintForDealer 根据发牌员类型生成提示
+func (s *Service) GetHintForDealer(dealer *model.Dealer, card *model.Card) string {
+	switch dealer.Type {
+	case model.DealerTeahouse:
+		return "说书人压低声音：'" + card.Title + "'——客官，这事儿可不简单..."
+	case model.DealerBountyBoard:
+		return "悬赏板上赫然写着：'" + card.Title + "'，酬金从优"
+	case model.DealerEnemy:
+		return "敌人哆嗦道：'" + card.Title + "'，我说！我全说！"
+	case model.DealerInn:
+		return "客栈掌柜道：'" + card.Title + "'，客官可有兴趣？"
+	case model.DealerMerchant:
+		return "商贩眼中闪过精光：'" + card.Title + "'，这个嘛..."
+	case model.DealerDynamicEncounter:
+		return "前方传来消息：'" + card.Title + "'"
+	case model.DealerEnvironment:
+		return "环境似乎在暗示：'" + card.Title + "'"
+	default:
+		return card.Title
+	}
+}

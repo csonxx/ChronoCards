@@ -24,6 +24,7 @@ func main() {
 	mux.HandleFunc("GET /api/v1/players/{player_id}", h.GetPlayer)
 	mux.HandleFunc("PATCH /api/v1/players/{player_id}", h.UpdatePlayer)
 	mux.HandleFunc("GET /api/v1/players/{player_id}/battle-state", h.GetBattleState)
+	mux.HandleFunc("GET /api/v1/player/status/{player_id}", h.GetPlayerStatus) // 简化版状态查询
 
 	// Deck APIs
 	mux.HandleFunc("POST /api/v1/decks", h.CreateDeck)
@@ -41,9 +42,11 @@ func main() {
 	mux.HandleFunc("POST /api/v1/battle/calculate", h.CalculateDamage)
 	mux.HandleFunc("POST /api/v1/battle/dodge", h.Dodge)
 	mux.HandleFunc("POST /api/v1/battle/block", h.Block)
+	mux.HandleFunc("POST /api/v1/battle/action", h.BattleAction) // 统一战斗动作接口
 
 	// Narrative APIs
 	mux.HandleFunc("POST /api/v1/narrative/trigger", h.TriggerNarrative)
+	mux.HandleFunc("POST /api/v1/narrative/generate", h.GenerateNarrative) // AI生成叙事
 	mux.HandleFunc("POST /api/v1/narrative/deck-event", h.DeckEventNarrative)
 
 	// Dealer APIs

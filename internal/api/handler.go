@@ -675,3 +675,315 @@ func (h *Handler) TriggerDealer(w http.ResponseWriter, r *http.Request) {
 		"hint":           result.Hint,
 	})
 }
+
+// ---- Battle Action (Unified) ----
+
+// BattleActionRequest 统一战斗动作请求
+type BattleActionRequest struct {
+	PlayerID       string `json:"player_id"`
+	Action         string `json:"action"` // dodge, block, counter, attack
+	AttackTimingMs int    `json:"attack_timing_ms,omitempty"`
+	ActionTimingMs int    `json:"action_timing_ms,omitempty"` // 玩家闪避/格挡输入时机
+	StaminaAvail   int    `json:"stamina_available,omitempty"`
+	MPAvail        int    `json:"mp_available,omitempty"`
+	// Attack params
+	BaseDamage      float64           `json:"base_damage,omitempty"`
+	Element         model.ElementType `json:"element,omitempty"`
+	DefenderElement model.ElementType `json:"defender_element,omitempty"`
+	ElementMastery  int               `json:"element_mastery,omitempty"`
+	DefenderLevel   int               `json:"defender_level,omitempty"`
+	IsCritical      bool              `json:"is_critical,omitempty"`
+	// Counter params
+	CounterBaseDamage float64 `json:"counter_base_damage,omitempty"`
+}
+
+// BattleActionResponse 统一战斗动作响应
+type BattleActionResponse struct {
+	Action         string  `json:"action"`
+	Success        bool    `json:"success"`
+	DodgeResult    *battle.DodgeResult   `json:"dodge_result,omitempty"`
+	BlockResult    *battle.BlockResult   `json:"block_result,omitempty"`
+	CounterDamage  float64 `json:"counter_damage,omitempty"`
+	AttackDamage   *model.BattleDamageResponse `json:"attack_damage,omitempty"`
+	SwordIntentGained int `json:"sword_intent_gained"`
+	Description    string  `json:"description"`
+}
+
+// BattleAction 统一战斗动作处理
+func (h *Handler) BattleAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req BattleActionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	resp := &BattleActionResponse{
+		Action:  req.Action,
+		Success: false,
+	}
+
+	player, ok := h.store.GetPlayer(req.PlayerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	switch req.Action {
+	case "dodge":
+		// 闪避判定
+		if req.StaminaAvail < 20 {
+			resp.Description = "体力不足，无法闪避"
+			h.json(w, http.StatusOK, resp)
+			return
+		}
+		result := h.battleCalc.Dodge(req.AttackTimingMs, req.ActionTimingMs, req.StaminaAvail)
+		resp.Success = result.Dodged
+		resp.DodgeResult = result
+		resp.SwordIntentGained = result.SwordIntentGained
+		resp.Description = result.Description
+
+		// 更新玩家剑意值
+		if result.SwordIntentGained > 0 {
+			player.AddSwordIntent(result.SwordIntentGained)
+			h.store.UpdatePlayer(player)
+		}
+
+	case "block":
+		// 格挡判定
+		timeDiff := req.ActionTimingMs - req.AttackTimingMs
+		if timeDiff < 0 {
+			timeDiff = -timeDiff
+		}
+		isPerfect := timeDiff <= 150
+		result := h.battleCalc.Block(req.AttackTimingMs, req.ActionTimingMs, req.StaminaAvail, isPerfect)
+		resp.Success = result.Blocked
+		resp.BlockResult = result
+		resp.SwordIntentGained = result.SwordIntentGained
+		resp.Description = result.Description
+
+		// 更新玩家剑意值
+		if result.SwordIntentGained > 0 {
+			player.AddSwordIntent(result.SwordIntentGained)
+			h.store.UpdatePlayer(player)
+		}
+
+	case "counter":
+		// 反击（需要在完美格挡后触发）
+		if req.CounterBaseDamage <= 0 {
+			req.CounterBaseDamage = 50 // 默认反击伤害
+		}
+		counterDamage := h.battleCalc.CounterDamage(req.CounterBaseDamage)
+		resp.Success = true
+		resp.CounterDamage = counterDamage
+		resp.SwordIntentGained = 5
+		resp.Description = "反击成功，造成 " + strconv.FormatFloat(counterDamage, 'f', 1, 64) + " 点伤害"
+
+		player.AddSwordIntent(5)
+		h.store.UpdatePlayer(player)
+
+	case "attack":
+		// 攻击计算（包含元素反应）
+		if req.BaseDamage <= 0 {
+			req.BaseDamage = 30
+		}
+		if req.AttackTimingMs <= 0 {
+			req.AttackTimingMs = 500
+		}
+
+		// 计算元素精通加成
+		masteryBonus := h.battleCalc.CalculateElementalMasteryBonus(req.ElementMastery, req.DefenderLevel)
+
+		// 计算元素反应
+		var reactionResult *model.ElementReactionResponse
+		if req.DefenderElement != "" && req.Element != "" {
+			reactionResult = h.elementCalc.CalculateReaction(req.Element, req.DefenderElement, req.BaseDamage, req.ElementMastery, req.DefenderLevel)
+		}
+
+		reactionMult := 1.0
+		if reactionResult != nil {
+			reactionMult = reactionResult.SuppressionMultiplier
+		}
+
+		finalDamage := h.battleCalc.CalculateDamage(req.BaseDamage, 1.0, reactionMult, req.IsCritical, masteryBonus)
+
+		// 剑意值获得
+		siGained := 0
+		if req.IsCritical {
+			siGained = 10
+		}
+
+		damageResp := &model.BattleDamageResponse{
+			FinalDamage:       finalDamage,
+			ElementalReaction: reactionResult,
+			SwordIntentGained: siGained,
+			MPConsumed:        0,
+			Description:       "造成 " + strconv.FormatFloat(finalDamage, 'f', 1, 64) + " 点伤害",
+		}
+
+		resp.Success = true
+		resp.AttackDamage = damageResp
+		resp.SwordIntentGained = siGained
+		resp.Description = damageResp.Description
+
+		if siGained > 0 {
+			player.AddSwordIntent(siGained)
+			h.store.UpdatePlayer(player)
+		}
+
+	default:
+		h.badRequest(w, "invalid action: must be dodge, block, counter, or attack")
+		return
+	}
+
+	h.json(w, http.StatusOK, resp)
+}
+
+// ---- Player Status (Simplified) ----
+
+// GetPlayerStatus 获取玩家状态（简化版）
+func (h *Handler) GetPlayerStatus(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 返回完整的玩家状态
+	status := map[string]interface{}{
+		"player_id":     player.ID,
+		"name":          player.Name,
+		"level":         player.Level,
+		"exp":           player.Exp,
+		// 战斗相关核心数值
+		"hp":            player.HP,
+		"max_hp":        player.MaxHP,
+		"mp":            player.MP,
+		"max_mp":        player.MaxMP,
+		"sword_intent":  player.SwordIntent,
+		"stamina":       player.Stamina,
+		"max_stamina":   player.MaxStamina,
+		// 元素精通
+		"element_mastery": player.ElementMastery,
+		// 阵营声望
+		"reputation":    player.Reputation,
+		// 技能列表
+		"skills":        player.Skills,
+		// 阵营
+		"faction":       player.Faction,
+		// 拥有的卡组
+		"decks":         player.Decks,
+	}
+
+	h.json(w, http.StatusOK, status)
+}
+
+// ---- Draw Card (Standalone) ----
+
+// DrawCardStandalone 独立抽牌接口
+func (h *Handler) DrawCardStandalone(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		DeckID         string            `json:"deck_id"`
+		Count          int               `json:"count"`
+		ForceCardType  model.CardType    `json:"force_card_type"`
+		DealerID       string            `json:"dealer_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.DeckID == "" {
+		h.badRequest(w, "deck_id is required")
+		return
+	}
+
+	d, ok := h.store.GetDeck(req.DeckID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	if req.Count < 1 {
+		req.Count = 1
+	}
+	if req.Count > 3 {
+		req.Count = 3
+	}
+
+	// 如果指定了发牌员，先触发发牌员效果
+	var dealer *model.Dealer
+	if req.DealerID != "" {
+		dealer, _ = h.store.GetDealer(req.DealerID)
+	}
+
+	// 如果强制指定了卡牌类型，先调整卡组
+	if req.ForceCardType != "" {
+		d.AdjustDeck(req.ForceCardType)
+	} else if dealer != nil {
+		// 根据发牌员类型调整卡组
+		h.deckSvc.AdjustDeckByDealer(d, dealer)
+	}
+
+	cards, exhausted := d.Draw(req.Count)
+
+	// 获取下一张提示
+	var nextHint model.CardType
+	if !exhausted && d.CurrentIndex < len(d.Cards) {
+		nextHint = d.Cards[d.CurrentIndex].Type
+	}
+
+	h.store.UpdateDeck(d)
+
+	// 如果有发牌员，获取发牌员提示
+	var hint string
+	if dealer != nil {
+		if len(cards) > 0 {
+			hint = h.deckSvc.GetHintForDealer(dealer, cards[0])
+		}
+	} else if len(cards) > 0 {
+		hint = "你抽到了「" + cards[0].Title + "」"
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"drawn_cards":          cards,
+		"next_card_type_hint": nextHint,
+		"deck_exhausted":      exhausted,
+		"dealer_hint":         hint,
+		"cards_remaining":     len(d.Cards) - d.CurrentIndex,
+	})
+}
+
+// ---- Narrative Generate ----
+
+// GenerateNarrative AI生成叙事内容
+func (h *Handler) GenerateNarrative(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req narrative.TriggerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	content, err := h.narrativeSvc.Generate(&req)
+	if err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, content)
+}

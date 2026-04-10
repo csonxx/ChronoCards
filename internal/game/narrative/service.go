@@ -99,15 +99,36 @@ type Service struct {
 
 // NewService 创建AI叙事服务
 func NewService() *Service {
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	// 优先级：Kimi > DeepSeek > OpenAI
+	apiKey := os.Getenv("KIMI_API_KEY")
+	apiURL := os.Getenv("KIMI_API_URL")
+	model := os.Getenv("KIMI_MODEL")
+
 	if apiKey == "" {
 		apiKey = os.Getenv("DEEPSEEK_API_KEY")
+		apiURL = os.Getenv("DEEPSEEK_API_URL")
+		model = os.Getenv("DEEPSEEK_MODEL")
 	}
-	apiURL := os.Getenv("AI_API_URL")
+
+	if apiKey == "" {
+		apiKey = os.Getenv("OPENAI_API_KEY")
+		apiURL = os.Getenv("OPENAI_API_URL")
+		model = os.Getenv("OPENAI_MODEL")
+	}
+
+	// 设置默认值
 	if apiURL == "" {
-		apiURL = "https://api.deepseek.com/chat/completions"
+		if apiKey == os.Getenv("KIMI_API_KEY") {
+			apiURL = "https://api.moonshot.cn/v1/chat/completions"
+			model = "moonshot-v1-8k"
+		} else if apiKey == os.Getenv("DEEPSEEK_API_KEY") {
+			apiURL = "https://api.deepseek.com/chat/completions"
+			model = "deepseek-chat"
+		} else {
+			apiURL = "https://api.openai.com/v1/chat/completions"
+			model = "gpt-3.5-turbo"
+		}
 	}
-	model := os.Getenv("AI_MODEL")
 	if model == "" {
 		model = "deepseek-chat"
 	}
