@@ -33,12 +33,12 @@ class MiniMaxTtsService {
           'voice_setting': {
             'voice_id': voiceId,
             'speed': speed,
-            'vol': 1.0,
+            'volume': 1.0,
             'pitch': 0,
             'emotion': 'neutral',
           },
           'audio_setting': {
-            'audio_type': 'mp3',
+            'format': 'mp3',
             'sample_rate': 32000,
             'bitrate': 128000,
           },
@@ -47,9 +47,26 @@ class MiniMaxTtsService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['data'] != null && data['data']['audio_file'] != null) {
-          // 返回的是音频文件URL或base64
-          return null; // 需要根据实际API响应格式调整
+        final audioFile = data['data']?['audio_file'];
+        if (audioFile == null) return null;
+
+        // audio_file 可能是 base64 字符串或 URL
+        if (audioFile is String) {
+          // 判断是 URL 还是 base64
+          if (audioFile.startsWith('http://') || audioFile.startsWith('https://')) {
+            // 下载音频文件
+            final audioResponse = await http.get(Uri.parse(audioFile));
+            if (audioResponse.statusCode == 200) {
+              return audioResponse.bodyBytes;
+            }
+          } else {
+            // base64 解码
+            try {
+              return base64Decode(audioFile);
+            } catch (_) {
+              return null;
+            }
+          }
         }
       }
       return null;
@@ -63,6 +80,5 @@ class MiniMaxTtsService {
     {'id': 'male-qn-qingse', 'name': '清涩少年', 'lang': '中文'},
     {'id': 'male-tianmei', 'name': '甜美女友', 'lang': '中文'},
     {'id': 'female-yujie', 'name': '御姐', 'lang': '中文'},
-    {'id': 'male-qn-qingse', 'name': '清涩少年', 'lang': '中文'},
   ];
 }
