@@ -78,7 +78,7 @@ class MiniMaxTtsService {
   /// 获取可用音色列表
   static List<Map<String, String>> get availableVoices => [
     {'id': 'male-qn-qingse', 'name': '清涩少年', 'lang': '中文'},
-    {'id': 'male-tianmei', 'name': '甜美女友', 'lang': '中文'},
+    {'id': 'female-tianmei', 'name': '甜美女友', 'lang': '中文'},
     {'id': 'female-yujie', 'name': '御姐', 'lang': '中文'},
   ];
 }
