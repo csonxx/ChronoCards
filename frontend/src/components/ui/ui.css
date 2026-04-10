@@ -1,0 +1,588 @@
+/* 古卷风 UI 组件样式 */
+
+/* ========== 古卷按钮 ========== */
+
+.scroll-button {
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-fast) var(--ease-out);
+  /* 木刻印章效果 */
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border-radius: var(--radius-md);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 4px 0 var(--color-primary-dark),
+    0 6px 8px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+.scroll-button:hover {
+  transform: translateY(2px);
+  box-shadow: 
+    0 2px 0 var(--color-primary-dark),
+    0 4px 6px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button:active {
+  transform: translateY(4px);
+  box-shadow: 
+    0 0 0 var(--color-primary-dark),
+    0 2px 4px rgba(42, 42, 42, 0.2);
+}
+
+/* 按钮尺寸 */
+.scroll-button--sm {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.scroll-button--md {
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-5);
+}
+
+.scroll-button--lg {
+  font-size: var(--text-lg);
+  padding: var(--space-4) var(--space-6);
+}
+
+/* 按钮变体 */
+.scroll-button--secondary {
+  background: var(--color-secondary);
+  box-shadow: 
+    0 4px 0 var(--color-secondary-dark),
+    0 6px 8px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button--secondary:hover {
+  box-shadow: 
+    0 2px 0 var(--color-secondary-dark),
+    0 4px 6px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button--secondary:active {
+  box-shadow: 
+    0 0 0 var(--color-secondary-dark),
+    0 2px 4px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button--danger {
+  background: var(--color-danger);
+  box-shadow: 
+    0 4px 0 var(--color-danger-dark),
+    0 6px 8px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button--danger:hover {
+  box-shadow: 
+    0 2px 0 var(--color-danger-dark),
+    0 4px 6px rgba(42, 42, 42, 0.2);
+}
+
+.scroll-button:disabled {
+  background: var(--color-text-muted);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ========== 卷轴书签 ========== */
+
+.bookmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+}
+
+.bookmark:hover {
+  transform: translateY(3px);
+  border-color: var(--color-accent);
+  background: var(--color-bg-light);
+}
+
+.bookmark:active,
+.bookmark--selected {
+  transform: translateY(6px);
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.bookmark--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.bookmark__text {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== 墨水进度条 ========== */
+
+.ink-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.ink-bar__track {
+  flex: 1;
+  height: 100%;
+  background: rgba(42, 42, 42, 0.2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.ink-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width var(--duration-normal) var(--ease-out);
+  position: relative;
+}
+
+.ink-bar__fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 100%
+  );
+}
+
+.ink-bar__fill--hp {
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
+}
+
+.ink-bar__fill--stamina {
+  background: linear-gradient(90deg, var(--color-stamina) 0%, #FBBf24 100%);
+}
+
+.ink-bar__fill--qi {
+  background: linear-gradient(90deg, var(--color-qi) 0%, #A78BFA 100%);
+}
+
+.ink-bar__fill--sword-intent {
+  background: linear-gradient(90deg, var(--color-sword-intent) 0%, #FFFFFF 100%);
+}
+
+.ink-bar__fill--progress {
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+.ink-bar__fill--low {
+  background: linear-gradient(90deg, var(--color-danger) 0%, var(--color-danger-light) 100%);
+  animation: pulse 1s infinite;
+}
+
+.ink-bar__label {
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* 尺寸变体 */
+.ink-bar--sm .ink-bar__track {
+  height: 6px;
+}
+
+.ink-bar--md .ink-bar__track {
+  height: 12px;
+}
+
+.ink-bar--lg .ink-bar__track {
+  height: 20px;
+}
+
+/* ========== 古卷面板 ========== */
+
+.scroll-panel {
+  background: var(--color-bg);
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-panel::before,
+.scroll-panel::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-accent);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.scroll-panel::before {
+  left: -12px;
+}
+
+.scroll-panel::after {
+  right: -12px;
+}
+
+.scroll-panel--paper {
+  background: var(--color-bg);
+}
+
+.scroll-panel--scroll {
+  background: linear-gradient(
+    180deg,
+    var(--color-bg-dark) 0%,
+    var(--color-bg) 10%,
+    var(--color-bg) 90%,
+    var(--color-bg-dark) 100%
+  );
+}
+
+.scroll-panel--wood {
+  background: var(--color-primary);
+  border-color: var(--color-primary-dark);
+}
+
+.scroll-panel__title {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+  padding: var(--space-4);
+  border-bottom: 2px solid var(--color-primary);
+  background: rgba(139, 105, 20, 0.05);
+}
+
+.scroll-panel--wood .scroll-panel__title {
+  color: var(--color-bg);
+  border-bottom-color: var(--color-primary-dark);
+}
+
+.scroll-panel__content {
+  padding: var(--space-4);
+}
+
+/* ========== 宣纸卡片 ========== */
+
+.card-paper {
+  position: relative;
+  background: var(--color-bg);
+  background-image: 
+    radial-gradient(ellipse at 30% 20%, rgba(245, 235, 215, 0.8) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(245, 235, 215, 0.6) 0%, transparent 50%);
+  border: 2px solid rgba(42, 42, 42, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  box-shadow: 
+    0 4px 12px rgba(42, 42, 42, 0.1),
+    inset 0 0 40px rgba(139, 105, 20, 0.03);
+}
+
+.card-paper__corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+}
+
+.card-paper__corner::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 40px;
+  height: 40px;
+  border: 2px solid;
+  transform: rotate(45deg);
+}
+
+/* 卡牌类型角标 */
+.card-paper--main .card-paper__corner::before {
+  border-color: var(--color-accent);
+}
+
+.card-paper--side .card-paper__corner::before {
+  border-color: var(--color-secondary);
+}
+
+.card-paper--growth .card-paper__corner::before {
+  border-color: var(--color-success);
+}
+
+.card-paper--emotion .card-paper__corner::before {
+  border-color: var(--color-danger);
+}
+
+.card-paper--economy .card-paper__corner::before {
+  border-color: var(--color-secondary);
+}
+
+.card-paper--blank .card-paper__corner::before {
+  border-color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+/* ========== 元素图标 ========== */
+
+.element-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-seal), 'Noto Serif SC', serif;
+  font-weight: bold;
+  border: 2px solid currentColor;
+}
+
+.element-icon--sm {
+  width: 24px;
+  height: 24px;
+  font-size: var(--text-xs);
+}
+
+.element-icon--md {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-sm);
+}
+
+.element-icon--lg {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-base);
+}
+
+.element-icon--fire {
+  color: var(--color-element-fire);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.element-icon--water {
+  color: var(--color-element-water);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.element-icon--thunder {
+  color: var(--color-element-thunder);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.element-icon--ice {
+  color: var(--color-element-ice);
+  background: rgba(165, 243, 252, 0.1);
+}
+
+.element-icon--wind {
+  color: var(--color-element-wind);
+  background: rgba(163, 230, 53, 0.1);
+}
+
+.element-icon--poison {
+  color: var(--color-element-poison);
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.element-icon__label {
+  margin-left: var(--space-1);
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+}
+
+/* ========== 印章图标 ========== */
+
+.seal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-seal), 'Noto Serif SC', serif;
+  font-weight: bold;
+  text-align: center;
+  border: 3px solid;
+  background: currentColor;
+}
+
+.seal-icon--sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-xs);
+}
+
+.seal-icon--md {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-sm);
+}
+
+.seal-icon--lg {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-lg);
+}
+
+.seal-icon--primary {
+  color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+.seal-icon--danger {
+  color: var(--color-danger);
+  background: var(--color-bg);
+}
+
+.seal-icon--success {
+  color: var(--color-success);
+  background: var(--color-bg);
+}
+
+/* ========== 抽牌进度条 ========== */
+
+.card-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.card-progress__track {
+  flex: 1;
+  height: 8px;
+  background: rgba(42, 42, 42, 0.2);
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+
+.card-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  border-radius: var(--radius-sm);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.card-progress__marker {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(201, 162, 39, 0.5);
+}
+
+.card-progress__cards {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.card-progress__card-mini {
+  width: 32px;
+  height: 44px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ========== 古卷顶栏 ========== */
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  background: linear-gradient(
+    180deg,
+    var(--color-primary) 0%,
+    var(--color-primary-dark) 100%
+  );
+  border-bottom: 3px solid var(--color-accent);
+  box-shadow: 0 4px 8px rgba(42, 42, 42, 0.2);
+}
+
+.top-bar__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.top-bar__h1 {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-2xl);
+  color: var(--color-accent);
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.top-bar__subtitle {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-sm);
+  color: var(--color-bg);
+  opacity: 0.8;
+}
+
+.top-bar__settings {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-size: var(--text-xl);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.top-bar__settings:hover {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}

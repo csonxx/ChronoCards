@@ -1,0 +1,104 @@
+/* ChronoCards App 样式 */
+
+.app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========== 设置界面 ========== */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(42, 42, 42, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+  animation: fadeIn var(--duration-normal) var(--ease-out);
+}
+
+.settings-panel {
+  width: 90%;
+  max-width: 500px;
+  padding: var(--space-8);
+  background: var(--color-bg);
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.settings-title {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-3xl);
+  color: var(--color-primary);
+  text-align: center;
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+}
+
+.settings-item span {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+}
+
+.settings-item input[type="range"] {
+  width: 200px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.settings-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.settings-item select {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.settings-item input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.settings-back-btn {
+  width: 100%;
+}

@@ -1,0 +1,336 @@
+/* S3 抽牌界面样式 */
+
+/* ========== 遮罩层 ========== */
+
+.card-draw-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  opacity: 1;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.card-draw-overlay--closing {
+  opacity: 0;
+}
+
+.card-draw-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 42, 42, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+/* ========== 卷轴容器 ========== */
+
+.card-draw-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 600px;
+  width: 90%;
+  transform: scaleX(0);
+  opacity: 0;
+  transition: transform var(--duration-scroll) var(--ease-out), opacity var(--duration-scroll) var(--ease-out);
+}
+
+.card-draw-container--expanding {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+.card-draw-container--collapsing {
+  transform: scaleX(0);
+  opacity: 0;
+  transition: transform 600ms var(--ease-in), opacity 600ms var(--ease-in);
+}
+
+/* ========== 卷轴装饰 ========== */
+
+.scroll-ornament {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.scroll-ornament--top {
+  margin-bottom: -12px;
+  z-index: 1;
+}
+
+.scroll-ornament--bottom {
+  margin-top: -12px;
+  z-index: 1;
+}
+
+.scroll-rod {
+  width: 90%;
+  height: 24px;
+  background: linear-gradient(
+    180deg,
+    var(--color-primary-light) 0%,
+    var(--color-primary) 30%,
+    var(--color-primary-dark) 70%,
+    var(--color-primary) 100%
+  );
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 8px rgba(42, 42, 42, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.scroll-rod::before,
+.scroll-rod::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-light) 0%,
+    var(--color-accent) 50%,
+    var(--color-accent-dark) 100%
+  );
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(42, 42, 42, 0.3);
+}
+
+.scroll-rod::before {
+  left: -14px;
+}
+
+.scroll-rod::after {
+  right: -14px;
+}
+
+/* ========== 卡牌 ========== */
+
+.card-draw__card {
+  width: 100%;
+  min-height: 400px;
+  padding: var(--space-8);
+  position: relative;
+  animation: none;
+}
+
+.card-draw-container--expanding .card-draw__card {
+  animation: cardFadeIn var(--duration-slow) var(--ease-out) 400ms backwards;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 卡牌类型角标 */
+.card-type-badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  border: 2px solid;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-sm);
+  opacity: 0.9;
+}
+
+/* 卡牌标题 */
+.card-title {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-3xl);
+  color: var(--color-accent);
+  text-align: center;
+  margin-bottom: var(--space-4);
+  text-shadow: 0 2px 4px rgba(201, 162, 39, 0.2);
+}
+
+/* 分隔线 */
+.card-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+.card-divider__line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-primary) 50%,
+    transparent 100%
+  );
+}
+
+.card-divider__icon {
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+}
+
+/* 卡牌描述 */
+.card-description {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  line-height: 1.8;
+  text-align: center;
+  margin-bottom: var(--space-6);
+  min-height: 80px;
+}
+
+/* ========== 选项 ========== */
+
+.card-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.option-wrapper {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--duration-normal) var(--ease-out), transform var(--duration-normal) var(--ease-out);
+}
+
+.option-wrapper--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.option-wrapper--selected .bookmark {
+  background: var(--color-primary) !important;
+  color: var(--color-bg) !important;
+  border-color: var(--color-primary) !important;
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--color-primary-dark);
+}
+
+.option-wrapper--selected .bookmark::before {
+  display: none;
+}
+
+/* 选项书签样式 */
+.card-options .bookmark {
+  min-width: 120px;
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-lg);
+}
+
+.card-options .bookmark:hover {
+  background: var(--color-bg-light);
+  border-color: var(--color-accent);
+}
+
+.card-options .bookmark--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg);
+}
+
+/* ========== 空白卡 ========== */
+
+.card-no-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.no-options-text {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-2xl);
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.continue-btn {
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  box-shadow: 
+    0 4px 0 var(--color-primary-dark),
+    0 6px 8px rgba(42, 42, 42, 0.2);
+}
+
+.continue-btn:hover {
+  transform: translateY(2px);
+  box-shadow: 
+    0 2px 0 var(--color-primary-dark),
+    0 4px 6px rgba(42, 42, 42, 0.2);
+}
+
+.continue-btn:active {
+  transform: translateY(4px);
+  box-shadow: 
+    0 0 0 var(--color-primary-dark),
+    0 2px 4px rgba(42, 42, 42, 0.2);
+}
+
+/* ========== 跳过提示 ========== */
+
+.skip-hint {
+  position: absolute;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-bg);
+  border-radius: var(--radius-md);
+  color: var(--color-bg);
+  font-size: var(--text-sm);
+  opacity: 0.6;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.skip-hint:hover {
+  opacity: 1;
+  background: rgba(245, 235, 215, 0.1);
+}
+
+.skip-hint:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ========== 动画器 ========== */
+
+.card-animator {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.card-animator--active {
+  pointer-events: auto;
+  opacity: 1;
+}
