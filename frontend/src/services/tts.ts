@@ -14,7 +14,7 @@ export interface VoiceOption {
 }
 
 export const VOICE_OPTIONS: VoiceOption[] = [
-  { id: 'male-qingyun', name: '清云', description: '青年剑客，清朗有力' },
+  { id: 'male-qn-qingse', name: '清云', description: '青年剑客，清朗有力' },
   { id: 'male-young', name: '少侠', description: '少年侠士，活力充沛' },
   { id: 'female-ningwoo', name: '凝眸', description: '江湖女侠，柔中带刚' },
   { id: 'female-xian', name: '仙子', description: '超凡脱俗，空灵飘逸' },
@@ -71,7 +71,7 @@ export async function callMiniMaxTTS(request: TTSRequest): Promise<TTSResponse> 
         text: request.text,
         stream: false,
         voice_setting: {
-          voice_id: request.voiceId || 'male-qingyun',
+          voice_id: request.voiceId || 'male-qn-qingse',
           speed: request.speed ?? 1.0,
           volume: request.volume ?? 50,
           pitch: request.pitch ?? 0,
