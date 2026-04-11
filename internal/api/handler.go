@@ -10,28 +10,36 @@ import (
 	gameplayer "github.com/csonxx/ChronoCards/internal/game/player"
 	"github.com/csonxx/ChronoCards/internal/game/deck"
 	"github.com/csonxx/ChronoCards/internal/game/element"
+	"github.com/csonxx/ChronoCards/internal/game/item"
 	"github.com/csonxx/ChronoCards/internal/game/narrative"
+	"github.com/csonxx/ChronoCards/internal/game/skill"
 	"github.com/csonxx/ChronoCards/internal/model"
 	"github.com/csonxx/ChronoCards/internal/store"
 )
 
 // Handler HTTP处理器
 type Handler struct {
-	store        store.StoreInterface
-	deckSvc     *deck.Service
+	store         store.StoreInterface
+	deckSvc      *deck.Service
 	narrativeSvc *narrative.Service
-	elementCalc *element.Calculator
-	battleCalc  *battle.BattleCalculator
+	elementCalc  *element.Calculator
+	battleCalc   *battle.BattleCalculator
+	skillSvc     *skill.Service
+	inventorySvc *item.InventoryService
+	shopSvc      *item.ShopService
 }
 
 // NewHandler 创建处理器
 func NewHandler(s store.StoreInterface) *Handler {
 	return &Handler{
-		store:        s,
-		deckSvc:     deck.NewService(),
+		store:         s,
+		deckSvc:      deck.NewService(),
 		narrativeSvc: narrative.NewService(),
-		elementCalc: element.NewCalculator(),
-		battleCalc:  battle.NewBattleCalculator(),
+		elementCalc:  element.NewCalculator(),
+		battleCalc:   battle.NewBattleCalculator(),
+		skillSvc:     skill.NewService(s),
+		inventorySvc: item.NewInventoryService(s),
+		shopSvc:      item.NewShopService(),
 	}
 }
 
@@ -1031,4 +1039,378 @@ func (h *Handler) GenerateNarrative(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.json(w, http.StatusOK, content)
+}
+
+// ---- Skill APIs ----
+
+// LearnSkill 玩家学习新技能
+func (h *Handler) LearnSkill(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		SkillID string `json:"skill_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.SkillID == "" {
+		h.badRequest(w, "skill_id is required")
+		return
+	}
+
+	err := h.skillSvc.LearnSkill(playerID, req.SkillID)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	player, _ := h.store.GetPlayer(playerID)
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "技能学习成功",
+		"skills":  player.Skills,
+	})
+}
+
+// ListSkills 列出玩家已学会的技能（带冷却状态）
+func (h *Handler) ListSkills(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	skills := h.skillSvc.GetPlayerSkills(player)
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"skills":    skills,
+	})
+}
+
+// UseSkill 使用技能
+func (h *Handler) UseSkill(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		SkillID  string      `json:"skill_id"`
+		TargetID interface{} `json:"target_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.SkillID == "" {
+		h.badRequest(w, "skill_id is required")
+		return
+	}
+
+	// 获取玩家
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 检查玩家是否学会该技能
+	hasSkill := false
+	for _, sid := range player.Skills {
+		if sid == req.SkillID {
+			hasSkill = true
+			break
+		}
+	}
+	if !hasSkill {
+		h.badRequest(w, "skill not learned")
+		return
+	}
+
+	// 获取技能定义
+	skillDef := skill.GetPresetSkillByID(req.SkillID)
+	if skillDef == nil {
+		h.badRequest(w, "skill not found")
+		return
+	}
+
+	// 使用技能
+	result, err := h.skillSvc.UseSkill(player, skillDef, req.TargetID)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	// 刷新玩家数据
+	player, _ = h.store.GetPlayer(playerID)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"result":         result,
+		"player_hp":      player.HP,
+		"player_mp":      player.MP,
+		"player_si":      player.SwordIntent,
+	})
+}
+
+// GetSkillCooldown 获取技能冷却状态
+func (h *Handler) GetSkillCooldown(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+	skillID := r.PathValue("skill_id")
+
+	cooldown := h.skillSvc.GetSkillCooldown(playerID, skillID)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id":  playerID,
+		"skill_id":   skillID,
+		"remaining":  cooldown.String(),
+		"remaining_ms": cooldown.Milliseconds(),
+	})
+}
+
+// ListPresetSkills 列出所有预设技能
+func (h *Handler) ListPresetSkills(w http.ResponseWriter, r *http.Request) {
+	skills := skill.AllPresetSkills()
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"skills": skills,
+	})
+}
+
+// ---- Inventory APIs ----
+
+// GetInventory 获取玩家背包
+func (h *Handler) GetInventory(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	// 检查玩家存在
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	inv := h.inventorySvc.GetInventory(playerID)
+	eq := h.inventorySvc.GetEquipment(playerID)
+	stats := h.inventorySvc.CalculateStats(nil, eq)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"inventory": inv,
+		"equipment": eq,
+		"stats":     stats,
+	})
+}
+
+// EquipItem 装备物品
+func (h *Handler) EquipItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		SlotIndex int `json:"slot_index"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	// 检查玩家存在
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	eq, err := h.inventorySvc.EquipItem(playerID, req.SlotIndex)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"equipment": eq,
+		"message":   "装备成功",
+	})
+}
+
+// UnequipItem 卸下装备
+func (h *Handler) UnequipItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		SlotType string `json:"slot_type"` // "weapon"|"armor"|"accessory"
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	// 检查玩家存在
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	var slotType model.ItemType
+	switch req.SlotType {
+	case "weapon":
+		slotType = model.ItemTypeWeapon
+	case "armor":
+		slotType = model.ItemTypeArmor
+	case "accessory":
+		slotType = model.ItemTypeAccessory
+	default:
+		h.badRequest(w, "invalid slot_type: must be weapon, armor, or accessory")
+		return
+	}
+
+	slot, err := h.inventorySvc.UnequipItem(playerID, slotType)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"slot":   slot,
+		"message": "卸下成功",
+	})
+}
+
+// UseItem 使用物品
+func (h *Handler) UseItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		ItemID string `json:"item_id"`
+		Count  int    `json:"count"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.Count <= 0 {
+		req.Count = 1
+	}
+
+	// 检查玩家存在
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 使用物品
+	if err := h.inventorySvc.UseItem(playerID, req.ItemID, req.Count); err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	// 应用消耗品效果到玩家
+	presetItem := item.GetItemByID(req.ItemID)
+	effects := make(map[string]interface{})
+	if presetItem != nil && presetItem.Type == model.ItemTypeConsumable {
+		for _, effect := range presetItem.Effects {
+			switch effect.Type {
+			case "hp":
+				player.HP = min(player.HP+effect.Value, player.MaxHP)
+				effects["hp_restored"] = effect.Value
+			case "mp":
+				player.MP = min(player.MP+effect.Value, player.MaxMP)
+				effects["mp_restored"] = effect.Value
+			case "teleport":
+				effects["teleport"] = true
+			case "buff":
+				effects["buff_active"] = true
+			}
+		}
+		h.store.UpdatePlayer(player)
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message":  "使用成功",
+		"effects": effects,
+		"player":  player,
+	})
+}
+
+// GetShopInventory 获取商店库存
+func (h *Handler) GetShopInventory(w http.ResponseWriter, r *http.Request) {
+	shopType := r.PathValue("shop_type")
+
+	items := h.shopSvc.GetShopInventory(shopType)
+	if len(items) == 0 {
+		h.notFound(w)
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"shop_type": shopType,
+		"items":     items,
+	})
+}
+
+// AddItemToInventory 添加物品到背包（GM/测试用）
+func (h *Handler) AddItemToInventory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		ItemID string `json:"item_id"`
+		Count  int    `json:"count"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.Count <= 0 {
+		req.Count = 1
+	}
+
+	// 检查玩家存在
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	presetItem := item.GetItemByID(req.ItemID)
+	if presetItem == nil {
+		h.badRequest(w, "item not found")
+		return
+	}
+
+	if err := h.inventorySvc.AddItem(playerID, presetItem, req.Count); err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "添加成功",
+		"item":    presetItem,
+		"count":   req.Count,
+	})
+}
+
+// ListPresetItems 列出所有预设物品
+func (h *Handler) ListPresetItems(w http.ResponseWriter, r *http.Request) {
+	items := item.MVPItems
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"items": items,
+	})
 }

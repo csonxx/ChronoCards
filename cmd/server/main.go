@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/csonxx/ChronoCards/internal/api"
+	"github.com/csonxx/ChronoCards/internal/game/world"
 	"github.com/csonxx/ChronoCards/internal/store"
 )
 
@@ -37,6 +38,10 @@ func main() {
 	}
 
 	h := api.NewHandler(s)
+
+	// 创建世界地图服务
+	worldSvc := world.NewService(s)
+	worldHandler := api.NewWorldHandler(worldSvc)
 
 	mux := http.NewServeMux()
 
@@ -78,6 +83,34 @@ func main() {
 	mux.HandleFunc("GET /api/v1/dealers", h.ListDealers)
 	mux.HandleFunc("POST /api/v1/dealers", h.CreateDealer)
 	mux.HandleFunc("POST /api/v1/dealers/{dealer_id}/trigger", h.TriggerDealer)
+
+	// World Map APIs
+	// 注意：路由顺序很重要！/world/locations/ 要在 /world/locations/{id} 之前注册
+	mux.HandleFunc("GET /api/v1/world", worldHandler.GetWorldOverview)
+	mux.HandleFunc("GET /api/v1/world/locations", worldHandler.ListLocations)
+	mux.HandleFunc("GET /api/v1/world/locations/", worldHandler.HandleLocationOrConnections)
+	mux.HandleFunc("GET /api/v1/players/", worldHandler.HandlePlayerWorldRequest)
+	mux.HandleFunc("POST /api/v1/players/", worldHandler.HandlePlayerWorldRequest)
+
+	// Shop APIs
+	mux.HandleFunc("GET /api/v1/shops/{shop_type}", h.GetShopInventory)
+
+	// Inventory APIs
+	mux.HandleFunc("GET /api/v1/players/{player_id}/inventory", h.GetInventory)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/inventory/equip", h.EquipItem)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/inventory/unequip", h.UnequipItem)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/inventory/use", h.UseItem)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/inventory/add", h.AddItemToInventory) // GM/测试用
+
+	// Item APIs
+	mux.HandleFunc("GET /api/v1/items/presets", h.ListPresetItems)
+
+	// Skill APIs
+	mux.HandleFunc("GET /api/v1/skills/presets", h.ListPresetSkills)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/skills", h.LearnSkill)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/skills", h.ListSkills)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/skills/use", h.UseSkill)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/skills/{skill_id}/cooldown", h.GetSkillCooldown)
 
 	addr := ":8080"
 	log.Printf("ChronoCards Backend 已启动，监听 %s", addr)

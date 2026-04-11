@@ -1,10 +1,15 @@
 package store
 
 import (
+	"errors"
 	"sync"
+	"time"
 
 	"github.com/csonxx/ChronoCards/internal/model"
 )
+
+// ErrPlayerLocationNotFound 玩家位置未找到
+var ErrPlayerLocationNotFound = errors.New("player location not found")
 
 // StoreInterface 存储层接口（支持内存或PostgreSQL）
 type StoreInterface interface {
@@ -19,22 +24,40 @@ type StoreInterface interface {
 	GetDealer(id string) (*model.Dealer, bool)
 	ListDealers() []*model.Dealer
 	CreateDealer(dealer *model.Dealer)
+	// Inventory 操作
+	GetInventory(playerID string) (*model.PlayerInventory, bool)
+	CreateInventory(inv *model.PlayerInventory)
+	UpdateInventory(inv *model.PlayerInventory)
+	// Equipment 操作
+	GetEquipment(playerID string) (*model.Equipment, bool)
+	CreateEquipment(eq *model.Equipment)
+	UpdateEquipment(eq *model.Equipment)
+	// Player Location 操作
+	SetPlayerLocation(playerID, locationID string) error
+	GetPlayerLocation(playerID string) (*model.PlayerLocation, error)
+	AddVisited(playerID, locationID string)
 }
 
 // Store 内存数据存储
 type Store struct {
-	mu      sync.RWMutex
-	players map[string]*model.Player
-	decks   map[string]*model.Deck
-	dealers map[string]*model.Dealer
+	mu               sync.RWMutex
+	players          map[string]*model.Player
+	decks            map[string]*model.Deck
+	dealers          map[string]*model.Dealer
+	inventories      map[string]*model.PlayerInventory
+	equipments       map[string]*model.Equipment
+	playerLocations  map[string]*model.PlayerLocation
 }
 
 // NewStore 创建存储
 func NewStore() *Store {
 	s := &Store{
-		players: make(map[string]*model.Player),
-		decks:   make(map[string]*model.Deck),
-		dealers: make(map[string]*model.Dealer),
+		players:          make(map[string]*model.Player),
+		decks:            make(map[string]*model.Deck),
+		dealers:          make(map[string]*model.Dealer),
+		inventories:      make(map[string]*model.PlayerInventory),
+		equipments:       make(map[string]*model.Equipment),
+		playerLocations:  make(map[string]*model.PlayerLocation),
 	}
 	// 初始化默认发牌员
 	s.initDefaultDealers()
@@ -203,4 +226,107 @@ func (s *Store) ListDealers() []*model.Dealer {
 		result = append(result, d)
 	}
 	return result
+}
+
+// ---- Inventory 操作 ----
+
+// GetInventory 获取玩家背包
+func (s *Store) GetInventory(playerID string) (*model.PlayerInventory, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	inv, ok := s.inventories[playerID]
+	return inv, ok
+}
+
+// CreateInventory 创建玩家背包
+func (s *Store) CreateInventory(inv *model.PlayerInventory) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.inventories[inv.PlayerID] = inv
+}
+
+// UpdateInventory 更新玩家背包
+func (s *Store) UpdateInventory(inv *model.PlayerInventory) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.inventories[inv.PlayerID] = inv
+}
+
+// ---- Equipment 操作 ----
+
+// GetEquipment 获取玩家装备
+func (s *Store) GetEquipment(playerID string) (*model.Equipment, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	eq, ok := s.equipments[playerID]
+	return eq, ok
+}
+
+// CreateEquipment 创建玩家装备
+func (s *Store) CreateEquipment(eq *model.Equipment) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.equipments[eq.PlayerID] = eq
+}
+
+// UpdateEquipment 更新玩家装备
+func (s *Store) UpdateEquipment(eq *model.Equipment) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.equipments[eq.PlayerID] = eq
+}
+
+// ---- PlayerLocation 操作 ----
+
+// SetPlayerLocation 设置玩家位置
+func (s *Store) SetPlayerLocation(playerID, locationID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// 简单的位置设置：使用"region-central-plains"作为region
+	// 实际应该根据location查表
+	regionID := "region-central-plains"
+
+	existing, ok := s.playerLocations[playerID]
+	if ok {
+		existing.CurrentLocation = locationID
+		existing.CurrentRegion = regionID
+		existing.UpdatedAt = time.Now()
+	} else {
+		s.playerLocations[playerID] = model.NewPlayerLocation(playerID, locationID, regionID)
+	}
+
+	return nil
+}
+
+// GetPlayerLocation 获取玩家位置
+func (s *Store) GetPlayerLocation(playerID string) (*model.PlayerLocation, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	loc, ok := s.playerLocations[playerID]
+	if !ok {
+		return nil, ErrPlayerLocationNotFound
+	}
+
+	return loc, nil
+}
+
+// AddVisited 添加已访问记录
+func (s *Store) AddVisited(playerID, locationID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	regionID := "region-central-plains" // 简化处理
+
+	existing, ok := s.playerLocations[playerID]
+	if ok {
+		existing.AddVisited(locationID, regionID)
+		existing.TotalTravelCount++
+		existing.UpdatedAt = time.Now()
+	} else {
+		newLoc := model.NewPlayerLocation(playerID, locationID, regionID)
+		newLoc.TotalTravelCount = 1
+		s.playerLocations[playerID] = newLoc
+	}
 }
