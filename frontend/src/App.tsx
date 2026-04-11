@@ -1,6 +1,6 @@
 // ChronoCards 主应用
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import './styles/global.css';
 import { OpenWorld } from './components/world/OpenWorld';
 import { CardDraw } from './components/card/CardDraw';
@@ -9,6 +9,8 @@ import { TutorialOverlay, shouldShowTutorial } from './components/tutorial/Tutor
 import { CardDrawGuide } from './components/tutorial/CardDrawGuide';
 import { LandscapeWarning } from './components/mobile/LandscapeWarning';
 import type { Card, CardOption, GameScene } from './types';
+import { saveManager } from './services/save-system';
+import { applyCardOptionEffect } from './services/card-effects';
 import './App.css';
 
 function App() {
@@ -17,12 +19,29 @@ function App() {
   const [showCardDraw, setShowCardDraw] = useState(false);
   const [showTutorial, setShowTutorial] = useState(shouldShowTutorial);
   const [cardDrawGuideType, setCardDrawGuideType] = useState<string | null>(null);
+  const [cardEffectResult, setCardEffectResult] = useState<ReturnType<typeof applyCardOptionEffect> | null>(null);
   const cardDrawGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 初始化存档
+  useEffect(() => {
+    // 尝试加载存档槽1，没有则创建新游戏
+    const loaded = saveManager.loadGame(1) || saveManager.newGame(1, '江湖游侠');
+    console.log('[App] Save loaded:', loaded.player.name, 'Lv.', loaded.player.level);
+    // 启动自动保存（每60秒）
+    saveManager.startAutoSave(60000);
+    // 页面关闭前保存
+    window.addEventListener('beforeunload', () => saveManager.save());
+    return () => {
+      saveManager.stopAutoSave();
+      saveManager.save();
+    };
+  }, []);
 
   // 打开卡牌抽牌界面
   const handleCardDraw = useCallback((card: Card) => {
     setCurrentCard(card);
     setShowCardDraw(true);
+    setCardEffectResult(null);
     // 显示卡牌抽取说明
     if (cardDrawGuideTimerRef.current) clearTimeout(cardDrawGuideTimerRef.current);
     cardDrawGuideTimerRef.current = setTimeout(() => {
@@ -35,18 +54,43 @@ function App() {
     setShowCardDraw(false);
     setCurrentCard(null);
     setCardDrawGuideType(null);
+    setCardEffectResult(null);
     if (cardDrawGuideTimerRef.current) {
       clearTimeout(cardDrawGuideTimerRef.current);
       cardDrawGuideTimerRef.current = null;
     }
   }, []);
 
-  // 选择卡牌选项
-  const handleCardSelect = useCallback((option: CardOption) => {
-    console.log('Selected option:', option);
+  // 选择卡牌选项 → 应用效果
+  const handleCardSelect = useCallback((option: CardOption, card: Card) => {
+    const result = applyCardOptionEffect(option.text, card.rewards);
+    setCardEffectResult(result);
     setShowCardDraw(false);
     setCurrentCard(null);
     setCardDrawGuideType(null);
+    saveManager.onCardDrawn();
+    if (card.id) saveManager.onCardTriggered(card.id);
+    saveManager.save();
+
+    // 根据效果决定后续场景
+    if (result.sceneChange === 'battle' && result.battleConfig) {
+      // 触发战斗
+      setTimeout(() => setCurrentScene('battle'), 300);
+    }
+  }, []);
+
+  // 战斗胜利 → 写存档 + 返回世界
+  const handleVictory = useCallback(() => {
+    saveManager.onBattleWon();
+    saveManager.save();
+    setCurrentScene('world');
+  }, []);
+
+  // 战斗失败 → 扣血 + 返回世界
+  const handleDefeat = useCallback(() => {
+    saveManager.updatePlayer(p => { p.hp = Math.floor(p.hp * 0.5); });
+    saveManager.save();
+    setCurrentScene('world');
   }, []);
 
   // 开始战斗
