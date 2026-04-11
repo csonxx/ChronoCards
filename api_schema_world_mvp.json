@@ -1,0 +1,691 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ChronoCards World Map API",
+    "description": "ChronoCards 世界地图API契约 | MVP版本 | 6个核心场景 | 日期：2026-04-11",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.chronocards.game/api/v1",
+      "description": "生产环境"
+    },
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "本地开发"
+    }
+  ],
+  "paths": {
+    "/world": {
+      "get": {
+        "summary": "获取世界概览",
+        "description": "返回所有大区和当前世界状态（激活事件等）",
+        "tags": [
+          "World"
+        ],
+        "responses": {
+          "200": {
+            "description": "世界概览",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/regions": {
+      "get": {
+        "summary": "获取所有大区",
+        "tags": [
+          "World"
+        ],
+        "parameters": [
+          {
+            "name": "danger_level",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "大区列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "regions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Region"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/locations": {
+      "get": {
+        "summary": "获取所有场景（支持筛选）",
+        "tags": [
+          "World"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "city",
+                "mountain",
+                "dungeon",
+                "wilderness",
+                "inn",
+                "special"
+              ]
+            }
+          },
+          {
+            "name": "unlocked_only",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "场景列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/locations/{location_id}": {
+      "get": {
+        "summary": "获取场景详情",
+        "tags": [
+          "World"
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "场景详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "场景不存在"
+          }
+        }
+      }
+    },
+    "/world/locations/{location_id}/connections": {
+      "get": {
+        "summary": "获取场景连通性（可前往的地点）",
+        "tags": [
+          "World"
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "连通性信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LocationConnection"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/location": {
+      "get": {
+        "summary": "获取玩家当前位置",
+        "tags": [
+          "Player"
+        ],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当前位置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerLocation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/location/navigate": {
+      "post": {
+        "summary": "导航到新场景",
+        "tags": [
+          "Player"
+        ],
+        "description": "玩家发起场景切换，包含路径验证、危险判断、遭遇处理",
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "target_location_id"
+                ],
+                "properties": {
+                  "target_location_id": {
+                    "type": "string"
+                  },
+                  "skip_encounter": {
+                    "type": "boolean",
+                    "description": "跳过随机遭遇（需消耗道具）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导航结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavigateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "无法到达（路径不存在/未解锁）"
+          },
+          "403": {
+            "description": "场景未解锁"
+          },
+          "404": {
+            "description": "场景不存在"
+          }
+        }
+      }
+    },
+    "/players/{player_id}/location/set": {
+      "post": {
+        "summary": "设置玩家位置（GM/测试用）",
+        "tags": [
+          "Player"
+        ],
+        "description": "直接传送到指定场景（绕过路径验证）",
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "location_id"
+                ],
+                "properties": {
+                  "location_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "设置成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerLocation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/visited": {
+      "get": {
+        "summary": "获取玩家访问历史",
+        "tags": [
+          "Player"
+        ],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "访问历史",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "visited_locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "total_count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WorldOverview": {
+        "type": "object",
+        "properties": {
+          "world_arc": {
+            "type": "string",
+            "example": "mingjiao_rising"
+          },
+          "active_events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Region"
+            }
+          },
+          "total_locations": {
+            "type": "integer"
+          },
+          "available_locations": {
+            "type": "integer"
+          }
+        }
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "climate": {
+            "type": "string"
+          },
+          "terrain": {
+            "type": "string"
+          },
+          "danger_level": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "story_intro": {
+            "type": "string"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "region_id": {
+            "type": "string"
+          },
+          "location_type": {
+            "type": "string",
+            "enum": [
+              "city",
+              "town",
+              "village",
+              "wilderness",
+              "dungeon",
+              "inn",
+              "special"
+            ]
+          },
+          "location_type_ext": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "atmosphere": {
+            "type": "string"
+          },
+          "danger_level": {
+            "type": "integer"
+          },
+          "npc_count": {
+            "type": "integer"
+          },
+          "available_dealers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "story_chapters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unlocked": {
+            "type": "boolean"
+          },
+          "unlock_condition": {
+            "type": "string"
+          },
+          "scene_bg": {
+            "type": "string"
+          },
+          "music_track": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Location"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "region": {
+                "$ref": "#/components/schemas/Region"
+              },
+              "connections_count": {
+                "type": "integer"
+              },
+              "visited_count": {
+                "type": "integer",
+                "description": "全服玩家访问次数"
+              }
+            }
+          }
+        ]
+      },
+      "LocationConnection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "to_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "road",
+              "trekking",
+              "teleport",
+              "story_locked"
+            ]
+          },
+          "travel_time_min": {
+            "type": "integer"
+          },
+          "danger_level": {
+            "type": "integer"
+          },
+          "encounter_rate": {
+            "type": "number",
+            "description": "0.000-1.000 遭遇概率"
+          },
+          "description": {
+            "type": "string"
+          },
+          "required_items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unlocked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlayerLocation": {
+        "type": "object",
+        "properties": {
+          "player_id": {
+            "type": "string"
+          },
+          "current_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "current_region": {
+            "$ref": "#/components/schemas/Region"
+          },
+          "in_battle": {
+            "type": "boolean"
+          },
+          "visited_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "visited_count": {
+            "type": "integer"
+          },
+          "unlocked_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "total_travel_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "NavigateResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "from_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "to_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "encounter_triggered": {
+            "type": "boolean"
+          },
+          "encounter_type": {
+            "type": "string",
+            "enum": [
+              "enemy",
+              "treasure",
+              "npc",
+              "event",
+              "none"
+            ]
+          },
+          "encounter_data": {
+            "type": "object",
+            "description": "遭遇详情，由encounter_type决定"
+          },
+          "travel_time_min": {
+            "type": "integer"
+          },
+          "danger_encountered": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "new_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "unlock_reward": {
+            "type": "object",
+            "description": "解锁新场景时返回"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
