@@ -35,12 +35,12 @@ func (s *InventoryService) GetInventory(playerID string) *model.PlayerInventory 
 		// 创建默认背包
 		inv = &model.PlayerInventory{
 			PlayerID: playerID,
-			Slots:    make([]model.InventorySlot, 0, model.DefaultInventoryCapacity),
-			Capacity: model.DefaultInventoryCapacity,
+			Slots:    make([]model.InventorySlot, 0, 30),
+			Capacity: 30,
 			Coins:    0,
 		}
 		// 初始化30个空格子
-		for i := 0; i < model.DefaultInventoryCapacity; i++ {
+		for i := 0; i < 30; i++ {
 			inv.Slots = append(inv.Slots, model.InventorySlot{})
 		}
 		s.store.CreateInventory(inv)

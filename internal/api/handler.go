@@ -26,7 +26,7 @@ type Handler struct {
 	battleCalc   *battle.BattleCalculator
 	skillSvc     *skill.Service
 	inventorySvc *item.InventoryService
-	shopSvc      *item.ShopService
+	shopSvc      *item.Service
 }
 
 // NewHandler 创建处理器
@@ -39,7 +39,7 @@ func NewHandler(s store.StoreInterface) *Handler {
 		battleCalc:   battle.NewBattleCalculator(),
 		skillSvc:     skill.NewService(s),
 		inventorySvc: item.NewInventoryService(s),
-		shopSvc:      item.NewShopService(),
+		shopSvc:      item.NewService(s),
 	}
 }
 
@@ -1051,6 +1051,11 @@ func (h *Handler) LearnSkill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerID := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
 
 	var req struct {
 		SkillID string `json:"skill_id"`
@@ -1060,13 +1065,11 @@ func (h *Handler) LearnSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.skillSvc.LearnSkill(playerID, req.SkillID)
+	err := h.skillSvc.LearnSkill(player, req.SkillID)
 	if err != nil {
 		h.badRequest(w, err.Error())
 		return
 	}
-
-	player, _ := h.store.GetPlayer(playerID)
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"message": "技能学习成功",
 		"skills":  player.Skills,
@@ -1083,7 +1086,7 @@ func (h *Handler) ListSkills(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	skills := h.skillSvc.GetPlayerSkills(player)
+	skills := h.skillSvc.GetAvailableSkills(player, skill.AllPresetSkills())
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"player_id": playerID,
 		"skills":    skills,
@@ -1129,14 +1132,21 @@ func (h *Handler) UseSkill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取技能定义
-	skillDef := skill.GetPresetSkillByID(req.SkillID)
+	skillDef := skill.GetSkillByID(req.SkillID)
 	if skillDef == nil {
 		h.badRequest(w, "skill not found")
 		return
 	}
 
 	// 使用技能
-	result, err := h.skillSvc.UseSkill(player, skillDef, req.TargetID)
+	var targetHP *int
+	if req.TargetID != nil {
+		if v, ok := req.TargetID.(float64); ok {
+			hpi := int(v)
+			targetHP = &hpi
+		}
+	}
+	result, err := h.skillSvc.UseSkill(player, skillDef, targetHP)
 	if err != nil {
 		h.badRequest(w, err.Error())
 		return
@@ -1158,13 +1168,12 @@ func (h *Handler) GetSkillCooldown(w http.ResponseWriter, r *http.Request) {
 	playerID := r.PathValue("player_id")
 	skillID := r.PathValue("skill_id")
 
-	cooldown := h.skillSvc.GetSkillCooldown(playerID, skillID)
+	cooldown := h.skillSvc.GetSkillCooldownRemaining(playerID, skillID)
 
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"player_id":  playerID,
 		"skill_id":   skillID,
-		"remaining":  cooldown.String(),
-		"remaining_ms": cooldown.Milliseconds(),
+		"cooldown_seconds": cooldown,
 	})
 }
 

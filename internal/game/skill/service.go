@@ -2,6 +2,7 @@ package skill
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -9,30 +10,11 @@ import (
 	"github.com/csonxx/ChronoCards/internal/store"
 )
 
-// SkillResult 技能使用结果
-type SkillResult struct {
-	Skill         *model.Skill    `json:"skill"`
-	Damage        int             `json:"damage"`
-	MPUsed        int             `json:"mp_used"`
-	SIUsed        int             `json:"si_used"`
-	CooldownSec   int             `json:"cooldown_seconds"`
-	StatusEffects []StatusEffect  `json:"status_effects"`
-	Narrative     string          `json:"narrative"`
-	Message       string          `json:"message"`
-}
-
-// SkillAvailable 技能可用状态
-type SkillAvailable struct {
-	Skill     *model.Skill `json:"skill"`
-	Available bool         `json:"available"`
-	Reason    string       `json:"reason"` // "cooldown"|"no_mp"|"no_si"|""
-}
-
 // Service 技能服务
 type Service struct {
 	store      store.StoreInterface
-	cooldowns  map[string]map[string]time.Time // playerID -> skillID -> lastUsed
-	mu         sync.RWMutex
+	cooldowns  map[string]map[string]time.Time
+	cooldownMu sync.RWMutex
 }
 
 // NewService 创建技能服务
@@ -43,220 +25,154 @@ func NewService(s store.StoreInterface) *Service {
 	}
 }
 
-// CanUseSkill 检查技能是否可用（冷却/资源够不够）
-// 返回 (是否可用, 不可用原因)
-func (s *Service) CanUseSkill(playerID, skillID string) (bool, string) {
-	// 获取技能定义
-	skill := GetPresetSkillByID(skillID)
-	if skill == nil {
-		return false, "skill_not_found"
-	}
+// SkillResult 技能使用结果
+type SkillResult struct {
+	Skill       *model.Skill `json:"skill"`
+	Damage      int          `json:"damage"`
+	MPUsed      int          `json:"mp_used"`
+	SIUsed      int          `json:"si_used"`
+	CooldownSec int          `json:"cooldown_seconds"`
+	NewHP       int          `json:"target_hp,omitempty"`
+	StatusMsg   string       `json:"message"`
+}
 
-	// 检查冷却
-	if s.isInCooldown(playerID, skillID, skill.CooldownSeconds) {
-		return false, "cooldown"
-	}
+// SkillAvailable 技能可用状态
+type SkillAvailable struct {
+	Skill    *model.Skill `json:"skill"`
+	Available bool        `json:"available"`
+	Reason   string       `json:"reason,omitempty"`
+	CooldownRemain int   `json:"cooldown_remaining_sec,omitempty"`
+}
 
-	// 检查MP（cost > 0时才检查）
+// CanUseSkill 检查技能是否可用
+func (s *Service) CanUseSkill(playerID string, skill *model.Skill) (bool, string) {
+	if skill.CooldownSeconds > 0 {
+		if remaining := s.GetSkillCooldownRemaining(playerID, skill.ID); remaining > 0 {
+			return false, fmt.Sprintf("冷却中，还剩%d秒", remaining)
+		}
+	}
 	if skill.MPCost > 0 {
-		player, ok := s.store.GetPlayer(playerID)
-		if !ok {
-			return false, "player_not_found"
-		}
-		if player.MP < skill.MPCost {
-			return false, "no_mp"
+		player, _ := s.store.GetPlayer(playerID)
+		if player == nil || player.MP < skill.MPCost {
+			return false, "内力不足"
 		}
 	}
-
-	// 检查剑意值（cost > 0时才检查）
 	if skill.SwordIntentCost > 0 {
-		player, ok := s.store.GetPlayer(playerID)
-		if !ok {
-			return false, "player_not_found"
-		}
-		if player.SwordIntent < skill.SwordIntentCost {
-			return false, "no_si"
+		player, _ := s.store.GetPlayer(playerID)
+		if player == nil || player.SwordIntent < skill.SwordIntentCost {
+			return false, "剑意不足"
 		}
 	}
-
 	return true, ""
 }
 
-// isInCooldown 检查技能是否在冷却中
-func (s *Service) isInCooldown(playerID, skillID string, cooldownSeconds int) bool {
-	if cooldownSeconds <= 0 {
-		return false
+// GetSkillCooldownRemaining 获取技能剩余冷却秒数
+func (s *Service) GetSkillCooldownRemaining(playerID, skillID string) int {
+	s.cooldownMu.RLock()
+	defer s.cooldownMu.RUnlock()
+	if playerCooldowns, ok := s.cooldowns[playerID]; ok {
+		if lastUsed, ok := playerCooldowns[skillID]; ok {
+			return int(time.Since(lastUsed).Seconds())
+		}
 	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	lastUsed, ok := s.cooldowns[playerID][skillID]
-	if !ok {
-		return false
-	}
-	elapsed := time.Since(lastUsed)
-	return elapsed < time.Duration(cooldownSeconds)*time.Second
+	return 0
 }
 
 // UseSkill 使用技能
-func (s *Service) UseSkill(player *model.Player, skill *model.Skill, target interface{}) (*SkillResult, error) {
-	// 检查技能是否可用
-	canUse, reason := s.CanUseSkill(player.ID, skill.ID)
+func (s *Service) UseSkill(player *model.Player, skill *model.Skill, targetHP *int) (*SkillResult, error) {
+	canUse, reason := s.CanUseSkill(player.ID, skill)
 	if !canUse {
-		return nil, fmt.Errorf("cannot use skill: %s", reason)
+		return &SkillResult{Skill: skill, StatusMsg: reason}, fmt.Errorf(reason)
 	}
 
-	// 消耗MP
-	mpUsed := 0
-	if skill.MPCost > 0 {
-		if !player.ConsumeMP(skill.MPCost) {
-			return nil, fmt.Errorf("not enough MP")
-		}
-		mpUsed = skill.MPCost
-	}
-
-	// 消耗剑意值
-	siUsed := 0
-	if skill.SwordIntentCost > 0 {
-		if !player.ConsumeSwordIntent(skill.SwordIntentCost) {
-			return nil, fmt.Errorf("not enough SwordIntent")
-		}
-		siUsed = skill.SwordIntentCost
-	}
-
-	// 更新玩家状态
+	// 消耗资源
+	player.MP -= skill.MPCost
+	player.SwordIntent -= skill.SwordIntentCost
 	s.store.UpdatePlayer(player)
 
 	// 记录冷却
 	if skill.CooldownSeconds > 0 {
-		s.setCooldown(player.ID, skill.ID)
+		s.cooldownMu.Lock()
+		if s.cooldowns[player.ID] == nil {
+			s.cooldowns[player.ID] = make(map[string]time.Time)
+		}
+		s.cooldowns[player.ID][skill.ID] = time.Now()
+		s.cooldownMu.Unlock()
 	}
 
 	// 计算伤害
 	damage := CalculateSkillDamage(skill, player)
-
-	// 计算状态效果
-	statusEffects := CalculateStatusEffect(skill)
-
-	// 生成叙事描述
-	narrative := s.generateNarrative(skill, player, damage, statusEffects)
+	if targetHP != nil {
+		*targetHP -= damage
+		if *targetHP < 0 {
+			*targetHP = 0
+		}
+	}
 
 	result := &SkillResult{
-		Skill:         skill,
-		Damage:        damage,
-		MPUsed:        mpUsed,
-		SIUsed:        siUsed,
-		CooldownSec:   skill.CooldownSeconds,
-		StatusEffects: statusEffects,
-		Narrative:     narrative,
-		Message:       fmt.Sprintf("%s 造成 %d 点伤害", skill.Name, damage),
+		Skill:       skill,
+		Damage:      damage,
+		MPUsed:      skill.MPCost,
+		SIUsed:      skill.SwordIntentCost,
+		CooldownSec: skill.CooldownSeconds,
+		NewHP:       0,
+		StatusMsg:   fmt.Sprintf("%s 造成 %d 点伤害", skill.Name, damage),
+	}
+	if targetHP != nil {
+		result.NewHP = *targetHP
 	}
 
 	return result, nil
 }
 
-// setCooldown 设置技能冷却
-func (s *Service) setCooldown(playerID, skillID string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.cooldowns[playerID] == nil {
-		s.cooldowns[playerID] = make(map[string]time.Time)
-	}
-	s.cooldowns[playerID][skillID] = time.Now()
-}
-
-// GetSkillCooldown 获取技能剩余冷却时间
-func (s *Service) GetSkillCooldown(playerID, skillID string) time.Duration {
-	skill := GetPresetSkillByID(skillID)
-	if skill == nil {
-		return 0
-	}
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	lastUsed, ok := s.cooldowns[playerID][skillID]
-	if !ok {
-		return 0
-	}
-
-	elapsed := time.Since(lastUsed)
-	remaining := time.Duration(skill.CooldownSeconds)*time.Second - elapsed
-	if remaining < 0 {
-		return 0
-	}
-	return remaining
-}
-
-// GetAvailableSkills 获取玩家当前可用的技能列表
-func (s *Service) GetAvailableSkills(player *model.Player) []*SkillAvailable {
-	var result []*SkillAvailable
-
-	for _, skillID := range player.Skills {
-		skill := GetPresetSkillByID(skillID)
-		if skill == nil {
-			continue
+// GetAvailableSkills 获取玩家可用技能列表
+func (s *Service) GetAvailableSkills(player *model.Player, allSkills []*model.Skill) []*SkillAvailable {
+	results := make([]*SkillAvailable, 0, len(allSkills))
+	for _, skill := range allSkills {
+		available := &SkillAvailable{Skill: skill, Available: true}
+		if ok, reason := s.CanUseSkill(player.ID, skill); !ok {
+			available.Available = false
+			available.Reason = reason
+			available.CooldownRemain = s.GetSkillCooldownRemaining(player.ID, skill.ID)
 		}
-
-		available, reason := s.CanUseSkill(player.ID, skillID)
-		result = append(result, &SkillAvailable{
-			Skill:     skill,
-			Available: available,
-			Reason:    reason,
-		})
+		results = append(results, available)
 	}
-
-	return result
+	return results
 }
 
-// LearnSkill 玩家学习新技能
-func (s *Service) LearnSkill(playerID, skillID string) error {
-	// 检查技能是否存在
-	skill := GetPresetSkillByID(skillID)
-	if skill == nil {
-		return fmt.Errorf("skill not found: %s", skillID)
-	}
-
-	player, ok := s.store.GetPlayer(playerID)
-	if !ok {
-		return fmt.Errorf("player not found")
-	}
-
-	// 检查是否已学会
+// LearnSkill 玩家学习技能
+func (s *Service) LearnSkill(player *model.Player, skillID string) error {
 	for _, id := range player.Skills {
 		if id == skillID {
-			return fmt.Errorf("skill already learned")
+			return fmt.Errorf("已学会此技能")
 		}
 	}
-
-	// 添加技能
 	player.Skills = append(player.Skills, skillID)
 	s.store.UpdatePlayer(player)
-
 	return nil
 }
 
-// GetPlayerSkills 获取玩家已学会的所有技能（带冷却状态）
-func (s *Service) GetPlayerSkills(player *model.Player) []*SkillAvailable {
-	return s.GetAvailableSkills(player)
+// GetSkillByID 根据ID获取预设技能
+func GetSkillByID(skillID string) *model.Skill {
+	for _, skill := range PresetSkills {
+		if skill.ID == skillID {
+			return &skill
+		}
+	}
+	return nil
 }
 
-// generateNarrative 生成技能叙事描述
-func (s *Service) generateNarrative(skill *model.Skill, player *model.Player, damage int, effects []StatusEffect) string {
-	// 基础叙事
-	narratives := map[string]string{
-		"skill_strike":       fmt.Sprintf("%s挥剑直刺，干净利落。", player.Name),
-		"skill_fireball":     fmt.Sprintf("%s双掌运劲，火焰掌热浪滚滚，直逼对手！", player.Name),
-		"skill_windslash":    fmt.Sprintf("%s身形一闪，疾风剑如风卷残云般划过！", player.Name),
-		"skill_icethrust":    fmt.Sprintf("%s剑尖寒芒一闪，寒冰刺直刺而出！", player.Name),
-		"skill_ult_thunder":  fmt.Sprintf("%s全身剑意汇聚，天雷破引动九天雷罚！", player.Name),
-		"skill_ult_void":     fmt.Sprintf("%s剑意如虚空般无影无形，虚空剑已然降临！", player.Name),
+// AllPresetSkills 返回所有预设技能
+func AllPresetSkills() []*model.Skill {
+	result := make([]*model.Skill, len(PresetSkills))
+	for i := range PresetSkills {
+		result[i] = &PresetSkills[i]
 	}
+	return result
+}
 
-	if narrative, ok := narratives[skill.ID]; ok {
-		return narrative
-	}
-
-	return fmt.Sprintf("%s施展了%s，造成了%d点伤害。", player.Name, skill.Name, damage)
+// RandomSkill 随机返回一个可用技能（用于AI）
+func RandomSkill() *model.Skill {
+	idx := rand.Intn(len(PresetSkills))
+	return &PresetSkills[idx]
 }

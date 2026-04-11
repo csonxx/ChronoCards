@@ -85,12 +85,14 @@ func main() {
 	mux.HandleFunc("POST /api/v1/dealers/{dealer_id}/trigger", h.TriggerDealer)
 
 	// World Map APIs
-	// 注意：路由顺序很重要！/world/locations/ 要在 /world/locations/{id} 之前注册
 	mux.HandleFunc("GET /api/v1/world", worldHandler.GetWorldOverview)
 	mux.HandleFunc("GET /api/v1/world/locations", worldHandler.ListLocations)
-	mux.HandleFunc("GET /api/v1/world/locations/", worldHandler.HandleLocationOrConnections)
-	mux.HandleFunc("GET /api/v1/players/", worldHandler.HandlePlayerWorldRequest)
-	mux.HandleFunc("POST /api/v1/players/", worldHandler.HandlePlayerWorldRequest)
+	mux.HandleFunc("GET /api/v1/world/locations/{id}", worldHandler.GetLocation)
+	mux.HandleFunc("GET /api/v1/world/locations/{id}/connections", worldHandler.GetLocationConnections)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/location", worldHandler.GetPlayerLocation)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/location/navigate", worldHandler.Navigate)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/location/set", worldHandler.SetPlayerLocation)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/visited", worldHandler.GetPlayerVisited)
 
 	// Shop APIs
 	mux.HandleFunc("GET /api/v1/shops/{shop_type}", h.GetShopInventory)
