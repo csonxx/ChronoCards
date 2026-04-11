@@ -1,0 +1,168 @@
+/* Mobile Controls - 虚拟摇杆与交互按钮 */
+
+.mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.mobile-controls--active {
+  display: block;
+}
+
+/* 虚拟摇杆 */
+.virtual-joystick {
+  position: absolute;
+  bottom: 80px;
+  left: 40px;
+  width: 110px;
+  height: 110px;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.joystick-base {
+  width: 100%;
+  height: 100%;
+  background: rgba(42, 42, 42, 0.35);
+  border: 2px solid rgba(201, 162, 39, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  position: relative;
+}
+
+.joystick-base::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(201, 162, 39, 0.3);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.joystick-thumb {
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 35% 35%, var(--color-accent-light) 0%, var(--color-accent) 50%, var(--color-accent-dark) 100%);
+  border-radius: 50%;
+  border: 2px solid rgba(245, 235, 215, 0.8);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(201, 162, 39, 0.2);
+  transition: transform 50ms linear;
+  pointer-events: none;
+}
+
+/* 交互按钮 */
+.mobile-interact-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 40px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--color-accent-light) 0%, var(--color-accent) 50%, var(--color-accent-dark) 100%);
+  border: 3px solid rgba(245, 235, 215, 0.8);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(201, 162, 39, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--color-bg);
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+}
+
+.mobile-interact-btn--visible {
+  opacity: 1;
+  transform: scale(1);
+  animation: interactBtnPulse 2s ease-in-out infinite;
+}
+
+.mobile-interact-btn:active {
+  transform: scale(0.92) !important;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 16px rgba(201, 162, 39, 0.4);
+}
+
+@keyframes interactBtnPulse {
+  0%, 100% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.5),
+      0 0 0 0 rgba(201, 162, 39, 0.5),
+      0 0 24px rgba(201, 162, 39, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.5),
+      0 0 0 14px rgba(201, 162, 39, 0),
+      0 0 24px rgba(201, 162, 39, 0.35);
+  }
+}
+
+/* 横屏锁定提示 */
+.landscape-warning {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 200);
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-8);
+  display: none;
+}
+
+.landscape-warning--visible {
+  display: flex;
+}
+
+.landscape-warning__icon {
+  font-size: 64px;
+  animation: rotatePhone 1.5s ease-in-out infinite;
+}
+
+@keyframes rotatePhone {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+.landscape-warning__title {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-2xl);
+  color: var(--color-accent);
+  text-align: center;
+}
+
+.landscape-warning__text {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.8;
+}

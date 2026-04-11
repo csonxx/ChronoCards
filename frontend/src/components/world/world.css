@@ -1,0 +1,398 @@
+/* S2 开放世界样式 */
+
+/* ========== 主容器 ========== */
+
+.open-world {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  outline: none;
+}
+
+.open-world__container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ========== 左侧卷轴 ========== */
+
+.open-world__sidebar {
+  width: 200px;
+  padding: var(--space-4);
+  background: rgba(139, 105, 20, 0.05);
+  border-right: 2px solid var(--color-primary);
+}
+
+.open-world__mini-map {
+  width: 100%;
+  aspect-ratio: 3/2;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-dark) 100%);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.mini-map__region {
+  position: absolute;
+  inset: 0;
+}
+
+.region-name {
+  position: absolute;
+  top: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-seal), serif;
+  font-size: var(--text-sm);
+  color: var(--color-bg);
+  opacity: 0.8;
+}
+
+.mini-map__locations {
+  position: absolute;
+  inset: 0;
+}
+
+.location-marker {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.location-marker--teahouse { background: var(--color-secondary); }
+.location-marker--billboard { background: var(--color-accent); }
+.location-marker--inn { background: var(--color-primary); }
+.location-marker--merchant { background: var(--color-success); }
+.location-marker--enemy { background: var(--color-danger); }
+.location-marker--encounter { background: var(--color-text-muted); }
+
+.location-marker:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+.player-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px var(--color-accent);
+  z-index: 10;
+}
+
+.open-world__region-info {
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary);
+}
+
+.region-label {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.region-value {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+}
+
+/* ========== 主显示区 ========== */
+
+.open-world__main {
+  flex: 1;
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.world-scene {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: crosshair;
+  background: var(--color-secondary-dark);
+}
+
+.world-scene--with-bg {
+  background: transparent;
+}
+
+.world-scene--with-bg .world-scene__background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.world-scene--with-bg > *:not(.world-scene__background) {
+  position: relative;
+  z-index: 1;
+}
+
+/* 水墨山水背景 */
+.world-scene__background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ink-mountain {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(42, 42, 42, 0.3) 100%);
+  animation: inkFloat 8s ease-in-out infinite;
+}
+
+.ink-mountain--1 {
+  height: 60%;
+  background: radial-gradient(ellipse at 30% 100%, rgba(44, 74, 107, 0.4) 0%, transparent 60%);
+  animation-delay: 0s;
+}
+
+.ink-mountain--2 {
+  height: 50%;
+  background: radial-gradient(ellipse at 70% 100%, rgba(44, 74, 107, 0.3) 0%, transparent 50%);
+  animation-delay: -2s;
+}
+
+.ink-mountain--3 {
+  height: 40%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(44, 74, 107, 0.5) 0%, transparent 55%);
+  animation-delay: -4s;
+}
+
+.ink-water {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15%;
+  background: linear-gradient(180deg, rgba(44, 74, 107, 0.2) 0%, rgba(44, 74, 107, 0.4) 100%);
+}
+
+.ink-trees {
+  position: absolute;
+  bottom: 15%;
+  left: 0;
+  right: 0;
+  height: 20%;
+}
+
+.ink-tree {
+  position: absolute;
+  bottom: 0;
+  width: 4px;
+  height: 30px;
+  background: linear-gradient(180deg, rgba(42, 42, 42, 0.6) 0%, rgba(42, 42, 42, 0.2) 100%);
+  animation: treeSway 4s ease-in-out infinite;
+}
+
+@keyframes inkFloat {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-5px); opacity: 0.8; }
+}
+
+@keyframes treeSway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+/* ========== 发牌员 ========== */
+
+.dealer {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.dealer:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.dealer__sprite {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+}
+
+.dealer--enemy .dealer__sprite {
+  border-color: var(--color-danger);
+  background: rgba(155, 35, 53, 0.1);
+}
+
+.dealer__name {
+  margin-top: var(--space-1);
+  padding: 2px var(--space-2);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* 发牌员 - 附近状态 */
+.dealer--nearby {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 15;
+}
+
+.dealer--nearby .dealer__sprite {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px rgba(201, 162, 39, 0.5);
+  animation: dealerGlow 1.5s ease-in-out infinite;
+}
+
+.dealer--nearby .dealer__name {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+@keyframes dealerGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 162, 39, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(201, 162, 39, 0.7); }
+}
+
+/* ========== 玩家 ========== */
+
+.player {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  transition: left 0.1s linear, top 0.1s linear;
+}
+
+.player__sprite {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: var(--color-bg);
+  border: 3px solid var(--color-accent);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 16px rgba(201, 162, 39, 0.4),
+    var(--shadow-md);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.player__sprite:not([style*="background-image"]) {
+  background: var(--color-bg);
+}
+
+.player__shadow {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 8px;
+  background: rgba(42, 42, 42, 0.3);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+/* ========== 交互提示 ========== */
+
+.interaction-prompt {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  animation: slideDown var(--duration-normal) var(--ease-out);
+}
+
+.prompt__scroll {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.prompt__text {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+}
+
+.prompt__key {
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: bold;
+}
+
+/* ========== 底部卡组条 ========== */
+
+.open-world__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  background: linear-gradient(180deg, var(--color-bg-dark) 0%, var(--color-bg) 100%);
+  border-top: 3px solid var(--color-primary);
+}
+
+.footer__card-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  max-width: 500px;
+}
+
+.footer__label {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.footer__controls {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.footer__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

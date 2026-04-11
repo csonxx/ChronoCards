@@ -1,0 +1,230 @@
+/* ChronoCards Global Styles - 古卷风 */
+
+@import url('./tokens.css');
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 古卷风纸张纹理背景 */
+.paper-texture {
+  background-color: var(--color-bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 30%, rgba(139, 105, 20, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(44, 74, 107, 0.03) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* 滚动条古卷风 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-dark);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-bg-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-light);
+}
+
+/* 标题字体 */
+h1, h2, h3 {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* 按钮基础样式 */
+button {
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 输入框基础样式 */
+input, textarea, select {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg);
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+}
+
+/* 古卷风边框效果 */
+.scroll-border {
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.scroll-border::before,
+.scroll-border::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-accent);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.scroll-border::before {
+  left: -10px;
+}
+
+.scroll-border::after {
+  right: -10px;
+}
+
+/* 动画关键帧 */
+@keyframes scrollExpand {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scrollCollapse {
+  from {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes stampPress {
+  0% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes inkDisappear {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* 古卷展开动画 */
+.scroll-expand {
+  animation: scrollExpand var(--duration-scroll) var(--ease-out) forwards;
+}
+
+.scroll-collapse {
+  animation: scrollCollapse 600ms var(--ease-in) forwards;
+}
+
+/* 墨迹消散 */
+.ink-disappear {
+  animation: inkDisappear var(--duration-slow) var(--ease-out) forwards;
+}
+
+/* 印章效果 */
+.stamp-effect {
+  animation: stampPress var(--duration-fast) var(--ease-out) forwards;
+}

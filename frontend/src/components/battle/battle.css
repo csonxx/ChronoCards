@@ -1,0 +1,704 @@
+/* S5 战斗界面样式 - 即时ARPG */
+
+/* ========== 战场容器 ========== */
+
+.battle-arena {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  overflow: hidden;
+  user-select: none;
+}
+
+.battle-arena--invincible {
+  animation: invincibleFlash 0.4s ease-out;
+}
+
+.battle-arena--attacking {
+  animation: attackShake 0.2s ease-out;
+}
+
+@keyframes invincibleFlash {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(1.5) hue-rotate(30deg); }
+}
+
+@keyframes attackShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ========== 水墨背景 ========== */
+
+.battle-background {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ink-wave {
+  position: absolute;
+  bottom: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(44, 74, 107, 0.3) 0%, transparent 60%);
+  animation: waveFloat 8s ease-in-out infinite;
+}
+
+.ink-wave--2 {
+  animation-delay: -2s;
+  opacity: 0.7;
+}
+
+.ink-wave--3 {
+  animation-delay: -4s;
+  opacity: 0.5;
+}
+
+@keyframes waveFloat {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(5%) translateY(-10px); }
+}
+
+/* ========== 玩家状态区 ========== */
+
+.battle-player-status {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+}
+
+.player-avatar {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.player-avatar:not([style*="background-image"]) {
+  background: var(--color-bg);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 140px;
+}
+
+.player-info__name {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-base);
+  color: var(--color-accent);
+}
+
+.player-info__level {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.player-elements {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: var(--space-2);
+}
+
+.element-status {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.element-stacks {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--color-bg);
+  background: var(--color-text);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== 敌人区域 ========== */
+
+.battle-enemies {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.enemy-container {
+  position: relative;
+}
+
+.enemy-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(26, 26, 46, 0.9);
+  border: 3px solid var(--color-danger);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.enemy-rod {
+  width: 120%;
+  height: 16px;
+  background: linear-gradient(
+    180deg,
+    var(--color-danger-light) 0%,
+    var(--color-danger) 50%,
+    var(--color-danger-dark) 100%
+  );
+}
+
+.enemy-rod--top {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  margin-bottom: -4px;
+}
+
+.enemy-rod--bottom {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  margin-top: -4px;
+}
+
+.enemy-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.enemy-avatar {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: rgba(155, 35, 53, 0.2);
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background-image: var(--asset-enemy-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.enemy-avatar:not([style*="background-image"]) {
+  background: rgba(155, 35, 53, 0.2);
+}
+
+.enemy-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 160px;
+}
+
+.enemy-name {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-lg);
+  color: var(--color-danger);
+}
+
+.enemy-level {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.enemy-elements {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+/* ========== 伤害数字 ========== */
+
+.damage-number {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-2xl);
+  font-weight: bold;
+  color: var(--color-bg);
+  text-shadow: 0 0 8px var(--color-danger), 2px 2px 0 var(--color-danger);
+  animation: damageFloat 0.8s ease-out forwards;
+  z-index: 10;
+}
+
+.damage-number--crit {
+  font-size: var(--text-4xl);
+  color: var(--color-accent);
+  text-shadow: 0 0 16px var(--color-accent), 0 0 32px var(--color-accent);
+}
+
+@keyframes damageFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+  20% { transform: translateX(-50%) translateY(-10px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
+}
+
+/* ========== 战斗场景区 ========== */
+
+.battle-scene {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 150px;
+}
+
+.player-character {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.1s ease-out;
+}
+
+.player-character--attack {
+  animation: attackLunge 0.2s ease-out;
+}
+
+.player-character--invincible {
+  animation: invincibleDodge 0.4s ease-out;
+}
+
+@keyframes attackLunge {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-30%) translateY(-10px); }
+}
+
+@keyframes invincibleDodge {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  50% { transform: translateX(-80%) translateY(-20px); opacity: 0.5; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.character-sprite {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  background: var(--color-bg);
+  border: 3px solid var(--color-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.5), var(--shadow-lg);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.character-sprite:not([style*="background-image"]) {
+  background: var(--color-bg);
+}
+
+.character-shadow {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  filter: blur(3px);
+}
+
+.invincible-flash {
+  position: absolute;
+  inset: -10px;
+  border: 3px solid var(--color-accent);
+  border-radius: 50%;
+  animation: invincibleRing 0.4s ease-out forwards;
+}
+
+@keyframes invincibleRing {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.player-damage {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+  font-size: var(--text-xl);
+  font-weight: bold;
+  color: var(--color-danger);
+  text-shadow: 0 0 8px var(--color-danger);
+  animation: damageFloat 0.8s ease-out forwards;
+}
+
+/* ========== 资源条区 ========== */
+
+.battle-resources {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 400px;
+  padding: var(--space-3);
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid var(--color-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.resource-label {
+  width: 40px;
+  font-size: var(--text-sm);
+  color: var(--color-bg);
+  opacity: 0.8;
+}
+
+.resource-bar-wrapper {
+  flex: 1;
+}
+
+.resource-value {
+  width: 60px;
+  font-size: var(--text-xs);
+  color: var(--color-bg);
+  text-align: right;
+}
+
+/* ========== 连击指示器 ========== */
+
+.combo-indicator {
+  position: absolute;
+  right: var(--space-6);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.combo-box {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-secondary);
+  border: 3px solid var(--color-secondary-light);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.combo-box--1 {
+  border-color: var(--color-stamina);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.combo-box--2 {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.5);
+}
+
+.combo-box--3 {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 16px rgba(155, 35, 53, 0.7);
+  animation: comboPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes comboPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.combo-number {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-2xl);
+  font-weight: bold;
+  color: var(--color-bg);
+}
+
+/* ========== 操作按钮区 ========== */
+
+.battle-controls {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: rgba(26, 26, 46, 0.95);
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+}
+
+.battle-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 50%, var(--color-primary-dark) 100%);
+  border: 3px solid var(--color-primary-light);
+  border-radius: var(--radius-lg);
+  color: var(--color-bg);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  overflow: hidden;
+  box-shadow: 0 4px 0 var(--color-primary-dark), 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.battle-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.battle-btn:hover:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--color-primary-dark), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.battle-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--color-primary-dark), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.battle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.battle-btn--dodge {
+  background: linear-gradient(180deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+  border-color: #60A5FA;
+}
+
+.battle-btn--attack {
+  background: linear-gradient(180deg, var(--color-danger-light) 0%, var(--color-danger) 50%, var(--color-danger-dark) 100%);
+  border-color: #EF4444;
+}
+
+.battle-btn--skill {
+  background: linear-gradient(180deg, var(--color-qi) 0%, #7C3AED 50%, #5B21B6 100%);
+  border-color: #A78BFA;
+}
+
+.battle-btn--ultimate {
+  background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 50%, var(--color-accent-dark) 100%);
+  border-color: #FCD34D;
+  width: 80px;
+  height: 80px;
+}
+
+.battle-btn--ultimate.battle-btn--ready {
+  animation: ultimateReady 0.8s ease-in-out infinite;
+}
+
+@keyframes ultimateReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.7); }
+  50% { box-shadow: 0 0 20px 10px rgba(201, 162, 39, 0.3); }
+}
+
+.battle-btn--block {
+  background: linear-gradient(180deg, var(--color-success-light) 0%, var(--color-success) 50%, #3D6B4A 100%);
+  border-color: #6EE7B7;
+}
+
+.battle-btn--cooldown {
+  filter: grayscale(0.7);
+}
+
+.battle-btn--active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--color-primary-dark), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-icon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.btn-label {
+  font-size: var(--text-xs);
+  font-family: var(--font-system), 'Noto Sans SC', sans-serif;
+}
+
+.btn-cost {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.btn-combo {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-accent);
+}
+
+.skill-cooldown-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--radius-md);
+  background: conic-gradient(transparent var(--progress), rgba(0, 0, 0, 0.5) var(--progress));
+  pointer-events: none;
+}
+
+/* ========== 操作提示 ========== */
+
+.battle-hints {
+  position: absolute;
+  bottom: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-bg);
+  opacity: 0.6;
+}
+
+.battle-hints span {
+  padding: var(--space-1) var(--space-2);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+}
+
+/* ========== 完美格挡特效 ========== */
+
+.perfect-block-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: perfectBlockAnim 0.5s ease-out forwards;
+}
+
+@keyframes perfectBlockAnim {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+.perfect-text {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--color-accent);
+  text-shadow: 0 0 20px var(--color-accent), 0 0 40px var(--color-accent);
+}
+
+/* ============================================
+   战斗特效动画 (4种×3帧循环)
+   ============================================ */
+
+/* 刀光特效 */
+.effect-blade {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  animation: effectBladeAnim 0.6s steps(1) forwards;
+}
+@keyframes effectBladeAnim {
+  0%   { background-image: var(--asset-effect-blade-1); opacity: 1; transform: scale(1) rotate(0deg); }
+  33%  { background-image: var(--asset-effect-blade-2); opacity: 0.8; transform: scale(1.2) rotate(15deg); }
+  66%  { background-image: var(--asset-effect-blade-3); opacity: 0.6; transform: scale(1.4) rotate(30deg); }
+  100% { opacity: 0; transform: scale(1.6) rotate(45deg); }
+}
+
+/* 火焰特效 */
+.effect-flame {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  animation: effectFlameAnim 0.6s steps(1) forwards;
+}
+@keyframes effectFlameAnim {
+  0%   { background-image: var(--asset-effect-flame-1); opacity: 1; transform: scale(0.8); }
+  33%  { background-image: var(--asset-effect-flame-2); opacity: 0.9; transform: scale(1.1); }
+  66%  { background-image: var(--asset-effect-flame-3); opacity: 0.7; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* 冰霜特效 */
+.effect-ice {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  pointer-events: none;
+  animation: effectIceAnim 0.6s steps(1) forwards;
+}
+@keyframes effectIceAnim {
+  0%   { background-image: var(--asset-effect-ice-1); opacity: 1; transform: scale(1) rotate(0deg); }
+  33%  { background-image: var(--asset-effect-ice-2); opacity: 0.8; transform: scale(1.15) rotate(-10deg); }
+  66%  { background-image: var(--asset-effect-ice-3); opacity: 0.6; transform: scale(1.25) rotate(-20deg); }
+  100% { opacity: 0; transform: scale(1.4) rotate(-30deg); }
+}
+
+/* 剑气特效 */
+.effect-sword-energy {
+  position: absolute;
+  width: 160px;
+  height: 100px;
+  pointer-events: none;
+  animation: effectSwordEnergyAnim 0.6s steps(1) forwards;
+}
+@keyframes effectSwordEnergyAnim {
+  0%   { background-image: var(--asset-effect-sword-energy-1); opacity: 1; transform: translateX(0) scaleX(1); }
+  33%  { background-image: var(--asset-effect-sword-energy-2); opacity: 0.9; transform: translateX(20px) scaleX(1.2); }
+  66%  { background-image: var(--asset-effect-sword-energy-3); opacity: 0.7; transform: translateX(40px) scaleX(1.4); }
+  100% { opacity: 0; transform: translateX(60px) scaleX(1.6); }
+}
+
+/* 特效挂载点 */
+.battle-effect-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
