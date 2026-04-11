@@ -90,6 +90,101 @@ export class ApiError extends Error {
   }
 }
 
+// ========== World Map API ==========
+export const worldApi = {
+  /** 世界概览 */
+  overview(): Promise<import('../types/world-map-schema').WorldOverview> {
+    return api.get<import('../types/world-map-schema').WorldOverview>('/world');
+  },
+
+  /** 所有大区列表 */
+  regions(params?: { danger_level?: number; climate?: string; tags?: string }): Promise<{
+    world: string; world_name: string; total_regions: number;
+    regions: import('../types/world-map-schema').Region[];
+  }> {
+    const qs = new URLSearchParams();
+    if (params?.danger_level) qs.set('danger_level', String(params.danger_level));
+    if (params?.climate) qs.set('climate', params.climate);
+    if (params?.tags) qs.set('tags', params.tags);
+    return api.get(`/world/regions${qs.size ? '?' + qs : ''}`);
+  },
+
+  /** 大区详情 */
+  regionDetail(regionId: string, includeLocations = true): Promise<{
+    region: import('../types/world-map-schema').Region;
+    locations: import('../types/world-map-schema').Location[];
+    stats: { total_locations: number; unlocked_count: number; visited_count: number };
+  }> {
+    return api.get(`/world/regions/${regionId}?include_locations=${includeLocations}`);
+  },
+
+  /** 大区下所有场景 */
+  regionLocations(
+    regionId: string,
+    params?: { type?: string; unlocked_only?: boolean; danger_level?: number }
+  ): Promise<{
+    region: import('../types/world-map-schema').Region;
+    locations: import('../types/world-map-schema').Location[];
+    pagination: import('../types/world-map-schema').Pagination;
+  }> {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.unlocked_only) qs.set('unlocked_only', 'true');
+    if (params?.danger_level) qs.set('danger_level', String(params.danger_level));
+    return api.get(`/world/regions/${regionId}/locations${qs.size ? '?' + qs : ''}`);
+  },
+
+  /** 搜索场景 */
+  searchLocations(params: {
+    q?: string; type?: string; region_id?: string; unlocked?: boolean;
+    page?: number; page_size?: number;
+  }): Promise<{
+    total: number;
+    locations: import('../types/world-map-schema').Location[];
+    pagination: import('../types/world-map-schema').Pagination;
+  }> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.type) qs.set('type', params.type);
+    if (params.region_id) qs.set('region_id', params.region_id);
+    if (params.unlocked !== undefined) qs.set('unlocked', String(params.unlocked));
+    if (params.page) qs.set('page', String(params.page));
+    if (params.page_size) qs.set('page_size', String(params.page_size));
+    return api.get(`/world/locations${qs.size ? '?' + qs : ''}`);
+  },
+
+  /** 场景详情 */
+  locationDetail(locationId: string, includeDealers = true): Promise<import('../types/world-map-schema').LocationDetail> {
+    return api.get(`/world/locations/${locationId}?include_dealers=${includeDealers}`);
+  },
+
+  /** 场景连通性 */
+  locationConnections(locationId: string, params?: { connection_type?: string; max_danger?: number }): Promise<{
+    current_location: import('../types/world-map-schema').Location;
+    connections: import('../types/world-map-schema').LocationConnection[];
+  }> {
+    const qs = new URLSearchParams();
+    if (params?.connection_type) qs.set('connection_type', params.connection_type);
+    if (params?.max_danger) qs.set('max_danger', String(params.max_danger));
+    return api.get(`/world/locations/${locationId}/connections${qs.size ? '?' + qs : ''}`);
+  },
+
+  /** 玩家当前位置 */
+  playerLocation(playerId: string): Promise<import('../types/world-map-schema').PlayerLocationInfo> {
+    return api.get(`/players/${playerId}/current-location`);
+  },
+
+  /** 导航到新场景 */
+  navigate(playerId: string, data: import('../types/world-map-schema').NavigateRequest): Promise<import('../types/world-map-schema').NavigateResponse> {
+    return api.post(`/players/${playerId}/navigate`, data);
+  },
+
+  /** 玩家访问历史 */
+  visitedHistory(playerId: string, regionId?: string): Promise<import('../types/world-map-schema').VisitedHistory> {
+    return api.get(`/players/${playerId}/visited${regionId ? '?region_id=' + regionId : ''}`);
+  },
+};
+
 // ========== Singleton ==========
 export const api = new ApiClient(BASE_URL);
 
