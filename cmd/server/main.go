@@ -1,17 +1,41 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/csonxx/ChronoCards/internal/api"
 	"github.com/csonxx/ChronoCards/internal/store"
 )
 
 func main() {
+	useDB := flag.Bool("db", false, "启用PostgreSQL持久化存储")
+	flag.Parse()
+
 	log.Println("ChronoCards Backend 启动中...")
 
-	s := store.NewStore()
+	var s store.StoreInterface
+	if *useDB || os.Getenv("DB_ENABLED") == "true" {
+		cfg := store.NewDBConfig()
+		db, err := store.Connect(cfg)
+		if err != nil {
+			log.Printf("警告: 数据库连接失败 (%v)，回退到内存存储", err)
+			s = store.NewStore()
+		} else {
+			pgStore := store.NewPGStore(db)
+			if err := pgStore.InitFromDB(); err != nil {
+				log.Printf("警告: 从数据库加载数据失败 (%v)，继续使用空存储", err)
+			}
+			s = pgStore
+			log.Println("已启用 PostgreSQL 持久化存储")
+		}
+	} else {
+		s = store.NewStore()
+		log.Println("使用内存存储（数据重启后会丢失）")
+	}
+
 	h := api.NewHandler(s)
 
 	mux := http.NewServeMux()
@@ -25,6 +49,7 @@ func main() {
 	mux.HandleFunc("PATCH /api/v1/players/{player_id}", h.UpdatePlayer)
 	mux.HandleFunc("GET /api/v1/players/{player_id}/battle-state", h.GetBattleState)
 	mux.HandleFunc("GET /api/v1/player/status/{player_id}", h.GetPlayerStatus) // 简化版状态查询
+	mux.HandleFunc("POST /api/v1/players/{player_id}/level-up", h.LevelUp)         // 手动触发升级判定
 
 	// Deck APIs
 	mux.HandleFunc("POST /api/v1/decks", h.CreateDeck)

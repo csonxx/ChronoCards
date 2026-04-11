@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/csonxx/ChronoCards/internal/game/battle"
+	gameplayer "github.com/csonxx/ChronoCards/internal/game/player"
 	"github.com/csonxx/ChronoCards/internal/game/deck"
 	"github.com/csonxx/ChronoCards/internal/game/element"
 	"github.com/csonxx/ChronoCards/internal/game/narrative"
@@ -16,7 +17,7 @@ import (
 
 // Handler HTTP处理器
 type Handler struct {
-	store        *store.Store
+	store        store.StoreInterface
 	deckSvc     *deck.Service
 	narrativeSvc *narrative.Service
 	elementCalc *element.Calculator
@@ -24,7 +25,7 @@ type Handler struct {
 }
 
 // NewHandler 创建处理器
-func NewHandler(s *store.Store) *Handler {
+func NewHandler(s store.StoreInterface) *Handler {
 	return &Handler{
 		store:        s,
 		deckSvc:     deck.NewService(),
@@ -844,6 +845,50 @@ func (h *Handler) BattleAction(w http.ResponseWriter, r *http.Request) {
 }
 
 // ---- Player Status (Simplified) ----
+
+// LevelUp 玩家手动触发升级判定
+func (h *Handler) LevelUp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	id := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(id)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 判断是否有足够的经验升级（AddExp(0)只检查不添加）
+	fromLevel := player.Level
+	leveledUp, times, newLevel := player.AddExp(0)
+
+	if !leveledUp {
+		h.json(w, http.StatusOK, map[string]interface{}{
+			"leveled_up":   false,
+			"level":        player.Level,
+			"exp":          player.Exp,
+			"exp_needed":   gameplayer.CalcExpToNextLevel(player.Level),
+			"message":      "经验不足，无法升级",
+		})
+		return
+	}
+
+	h.store.UpdatePlayer(player)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"leveled_up":    true,
+		"level_up_times": times,
+		"from_level":    fromLevel,
+		"new_level":     newLevel,
+		"exp":           player.Exp,
+		"max_hp":        player.MaxHP,
+		"max_mp":        player.MaxMP,
+		"max_stamina":   player.MaxStamina,
+		"message":       "升级成功！等级提升至 " + strconv.Itoa(newLevel),
+	})
+}
 
 // GetPlayerStatus 获取玩家状态（简化版）
 func (h *Handler) GetPlayerStatus(w http.ResponseWriter, r *http.Request) {

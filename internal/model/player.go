@@ -1,6 +1,7 @@
 package model
 
 import (
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -156,3 +157,59 @@ func (p *Player) ConsumeStamina(amount int) bool {
 	p.Stamina -= amount
 	return true
 }
+
+// AddExp 增加经验值，返回是否升级以及升级次数
+func (p *Player) AddExp(amount int) (leveledUp bool, times int, newLevel int) {
+	if amount <= 0 {
+		return false, 0, p.Level
+	}
+	p.Exp += amount
+	times = 0
+	for playerCanLevelUp(p.Level, p.Exp) {
+		p.LevelUp()
+		times++
+	}
+	return times > 0, times, p.Level
+}
+
+// LevelUp 执行升级，更新属性
+func (p *Player) LevelUp() {
+	growth := getPlayerStatGrowthForLevel(p.Level)
+	p.Level++
+	// 升级时 HP/MP 自动恢复满，并应用属性增长
+	p.MaxHP += growth.HPPerLevel
+	p.HP = p.MaxHP
+	p.MaxMP += growth.MPPerLevel
+	p.MP = p.MaxMP
+	p.MaxStamina += growth.StaminaPerLevel
+	p.Stamina = p.MaxStamina
+}
+
+// ---- 内部辅助（避免循环引用 level.go） ----
+
+// playerCanLevelUp 判断玩家当前经验是否足够升级（内部用）
+func playerCanLevelUp(level, exp int) bool {
+	// 几何级数: 100 * (1.2^(level) - 1) / 0.2
+	// 当 exp >= required 时可以升级
+	n := level // 升到 level+1 需要的经验项数
+	required := int(float64(100) * (math.Pow(1.2, float64(n)) - 1) / 0.2)
+	return exp >= required
+}
+
+// getPlayerStatGrowthForLevel 获取属性增长（内部用）
+func getPlayerStatGrowthForLevel(level int) playerStatGrowth {
+	return playerStatGrowth{
+		HPPerLevel:      10,
+		MPPerLevel:      5,
+		StaminaPerLevel: 0,
+		AttackPerLevel:  2,
+	}
+}
+
+type playerStatGrowth struct {
+	HPPerLevel      int
+	MPPerLevel      int
+	StaminaPerLevel int
+	AttackPerLevel  int
+}
+

@@ -2,8 +2,24 @@ package store
 
 import (
 	"sync"
+
 	"github.com/csonxx/ChronoCards/internal/model"
 )
+
+// StoreInterface 存储层接口（支持内存或PostgreSQL）
+type StoreInterface interface {
+	CreatePlayer(player *model.Player)
+	GetPlayer(id string) (*model.Player, bool)
+	UpdatePlayer(player *model.Player)
+	ListPlayers() []*model.Player
+	CreateDeck(deck *model.Deck)
+	GetDeck(id string) (*model.Deck, bool)
+	UpdateDeck(deck *model.Deck)
+	GetDecksByPlayer(playerID string) []*model.Deck
+	GetDealer(id string) (*model.Dealer, bool)
+	ListDealers() []*model.Dealer
+	CreateDealer(dealer *model.Dealer)
+}
 
 // Store 内存数据存储
 type Store struct {
