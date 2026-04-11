@@ -7,7 +7,7 @@ import './card.css';
 
 interface CardDrawProps {
   card: Card;
-  onSelect: (option: CardOption) => void;
+  onSelect: (option: CardOption, card: Card) => void;
   onClose: () => void;
 }
 
@@ -52,10 +52,10 @@ export const CardDraw: React.FC<CardDrawProps> = ({ card, onSelect, onClose }) =
     setTimeout(() => {
       setIsClosing(true);
       setTimeout(() => {
-        onSelect(option);
+        onSelect(option, card);
       }, 600);
     }, 200);
-  }, [isClosing, onSelect]);
+  }, [isClosing, onSelect, card]);
 
   // 关闭/跳过
   const handleClose = useCallback(() => {
