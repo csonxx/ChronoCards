@@ -1,0 +1,1304 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ChronoCards World Map API",
+    "description": "ChronoCards 世界地图/场景 API 契约 | 版本v2.0 | 日期2026-04-11 | 状态草稿",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.chronocards.game/api/v1",
+      "description": "生产环境"
+    },
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "本地开发"
+    }
+  ],
+  "paths": {
+    "/world": {
+      "get": {
+        "summary": "获取世界概览",
+        "description": "返回九州江湖世界的整体信息，包括所有大区和统计数据",
+        "tags": ["World"],
+        "responses": {
+          "200": {
+            "description": "世界概览",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/regions": {
+      "get": {
+        "summary": "获取所有大区列表",
+        "description": "返回九州江湖所有大区的基本信息，可按条件筛选",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "danger_level",
+            "in": "query",
+            "description": "按危险等级筛选",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "climate",
+            "in": "query",
+            "description": "按气候类型筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["温带季风", "亚热带季风", "温带大陆性", "热带沙漠", "热带季风"]
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "按标签筛选（多个标签用逗号分隔）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "大区列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "world": {
+                      "type": "string",
+                      "example": "jiuzhou"
+                    },
+                    "world_name": {
+                      "type": "string",
+                      "example": "九州江湖"
+                    },
+                    "total_regions": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "regions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Region"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/regions/{region_id}": {
+      "get": {
+        "summary": "获取大区详情",
+        "description": "根据大区ID获取详细信息，包括该大区下的所有场景",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "region_id",
+            "in": "path",
+            "required": true,
+            "description": "大区ID",
+            "schema": {
+              "type": "string",
+              "example": "region-central-plains"
+            }
+          },
+          {
+            "name": "include_locations",
+            "in": "query",
+            "description": "是否包含场景列表",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "大区详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "region": {
+                      "$ref": "#/components/schemas/Region"
+                    },
+                    "locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "total_locations": {
+                          "type": "integer"
+                        },
+                        "unlocked_count": {
+                          "type": "integer"
+                        },
+                        "visited_count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "大区不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/regions/{region_id}/locations": {
+      "get": {
+        "summary": "获取大区下的所有场景",
+        "description": "返回指定大区的所有场景列表，支持类型筛选",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "region_id",
+            "in": "path",
+            "required": true,
+            "description": "大区ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "按场景类型筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["city", "town", "village", "wilderness", "dungeon", "special"]
+            }
+          },
+          {
+            "name": "unlocked_only",
+            "in": "query",
+            "description": "仅返回已解锁的场景",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "danger_level",
+            "in": "query",
+            "description": "按危险等级筛选",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "场景列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "region": {
+                      "$ref": "#/components/schemas/Region"
+                    },
+                    "locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "大区不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/locations": {
+      "get": {
+        "summary": "搜索场景",
+        "description": "全局搜索场景，支持名称、标签、类型等条件",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "搜索关键词（匹配名称、描述）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "场景类型",
+            "schema": {
+              "type": "string",
+              "enum": ["city", "town", "village", "wilderness", "dungeon", "special"]
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "description": "限定大区",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unlocked",
+            "in": "query",
+            "description": "是否已解锁",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "搜索结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/locations/{location_id}": {
+      "get": {
+        "summary": "获取场景详情",
+        "description": "根据场景ID获取详细信息，包括可用发牌员、关联章节等",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "description": "场景ID",
+            "schema": {
+              "type": "string",
+              "example": "loc-changan"
+            }
+          },
+          {
+            "name": "include_dealers",
+            "in": "query",
+            "description": "是否包含可用发牌员详情",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "场景详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "场景不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world/locations/{location_id}/connections": {
+      "get": {
+        "summary": "获取场景连通性",
+        "description": "返回从该场景可到达的其他场景及路线信息",
+        "tags": ["World"],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "description": "场景ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_type",
+            "in": "query",
+            "description": "按连接类型筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["road", "river", "mountain", "teleport", "special"]
+            }
+          },
+          {
+            "name": "max_danger",
+            "in": "query",
+            "description": "最大危险等级筛选",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "连通性信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_location": {
+                      "$ref": "#/components/schemas/Location"
+                    },
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LocationConnection"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "场景不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/current-location": {
+      "get": {
+        "summary": "获取玩家当前位置",
+        "description": "返回玩家当前所在的大区和场景，以及访问历史统计",
+        "tags": ["Player"],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "description": "玩家ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "玩家位置信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "player_id": {
+                      "type": "string"
+                    },
+                    "current_location": {
+                      "$ref": "#/components/schemas/Location"
+                    },
+                    "current_region": {
+                      "$ref": "#/components/schemas/Region"
+                    },
+                    "visited_count": {
+                      "type": "object",
+                      "properties": {
+                        "locations": {
+                          "type": "integer",
+                          "description": "已访问场景数"
+                        },
+                        "regions": {
+                          "type": "integer",
+                          "description": "已访问大区数"
+                        }
+                      }
+                    },
+                    "travel_stats": {
+                      "type": "object",
+                      "properties": {
+                        "total_travels": {
+                          "type": "integer"
+                        },
+                        "total_distance": {
+                          "type": "integer"
+                        },
+                        "last_travel_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "玩家不存在或尚未设置位置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/navigate": {
+      "post": {
+        "summary": "导航到新场景",
+        "description": "玩家请求导航到指定场景，系统会验证路径并返回导航结果",
+        "tags": ["Player"],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "description": "玩家ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["target_location_id"],
+                "properties": {
+                  "target_location_id": {
+                    "type": "string",
+                    "description": "目标场景ID",
+                    "example": "loc-suzhou"
+                  },
+                  "use_optimal_route": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "是否使用最优路线（否则由玩家选择路线）"
+                  },
+                  "preferred_connection_id": {
+                    "type": "string",
+                    "description": "玩家偏好的路线ID（当 use_optimal_route=false 时）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导航成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "你踏上了前往苏州城的旅程，沿着京杭大运河顺流而下。"
+                    },
+                    "travel_time": {
+                      "type": "string",
+                      "description": "预计旅行时间",
+                      "example": "1天"
+                    },
+                    "route": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LocationSummary"
+                          },
+                          "description": "路线经过的场景（途经点）"
+                        },
+                        "total_distance": {
+                          "type": "integer"
+                        },
+                        "dangers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "location": {
+                                "type": "string"
+                              },
+                              "danger_level": {
+                                "type": "integer"
+                              },
+                              "description": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "new_location": {
+                      "$ref": "#/components/schemas/Location"
+                    },
+                    "available_dealers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Dealer"
+                      },
+                      "description": "新场景可用的发牌员"
+                    },
+                    "encounter_probability": {
+                      "type": "object",
+                      "properties": {
+                        "on_route": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "途中遭遇概率 0-1"
+                        },
+                        "at_destination": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "到达后遭遇概率 0-1"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "导航失败（位置不可达、被锁定等）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavigateError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "目标场景不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/visited": {
+      "get": {
+        "summary": "获取玩家访问历史",
+        "description": "返回玩家已访问的大区和场景列表",
+        "tags": ["Player"],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "description": "玩家ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "description": "限定大区",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "访问历史",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "player_id": {
+                      "type": "string"
+                    },
+                    "visited_regions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Region"
+                      }
+                    },
+                    "visited_locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "exploration_rate": {
+                      "type": "object",
+                      "properties": {
+                        "regions": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "大区探索百分比"
+                        },
+                        "locations": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "场景探索百分比"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{player_id}/set-location": {
+      "post": {
+        "summary": "设置玩家位置（GM/测试用）",
+        "description": "直接设置玩家当前位置，用于GM工具或测试",
+        "tags": ["Player"],
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "description": "玩家ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["location_id"],
+                "properties": {
+                  "location_id": {
+                    "type": "string",
+                    "description": "目标场景ID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "设置成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "current_location": {
+                      "$ref": "#/components/schemas/Location"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WorldOverview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "jiuzhou"
+          },
+          "name": {
+            "type": "string",
+            "example": "九州江湖"
+          },
+          "description": {
+            "type": "string",
+            "example": "一个架空的武侠世界，九州大地，英豪辈出"
+          },
+          "total_regions": {
+            "type": "integer",
+            "example": 5
+          },
+          "total_locations": {
+            "type": "integer",
+            "example": 35
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionSummary"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string"
+              },
+              "last_updated": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "RegionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "region-central-plains"
+          },
+          "name": {
+            "type": "string",
+            "example": "中原武林"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "danger_level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "location_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "region-central-plains"
+          },
+          "name": {
+            "type": "string",
+            "example": "中原武林"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string",
+            "example": "中原腹地，天下武学正宗所在..."
+          },
+          "climate": {
+            "type": "string",
+            "example": "温带季风"
+          },
+          "terrain": {
+            "type": "string",
+            "example": "平原"
+          },
+          "danger_level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["武侠", "中原", "名门正派"]
+          },
+          "connected_regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "可直达的大区ID",
+            "example": ["region-jiangnan", "region-northwest"]
+          },
+          "parent_world": {
+            "type": "string",
+            "example": "jiuzhou"
+          }
+        }
+      },
+      "LocationSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "loc-changan"
+          },
+          "name": {
+            "type": "string",
+            "example": "长安城"
+          },
+          "region_id": {
+            "type": "string"
+          },
+          "location_type": {
+            "type": "string",
+            "enum": ["city", "town", "village", "wilderness", "dungeon", "special"]
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "loc-changan"
+          },
+          "name": {
+            "type": "string",
+            "example": "长安城"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "region_id": {
+            "type": "string",
+            "example": "region-central-plains"
+          },
+          "region_name": {
+            "type": "string",
+            "example": "中原武林"
+          },
+          "location_type": {
+            "type": "string",
+            "enum": ["city", "town", "village", "wilderness", "dungeon", "special"],
+            "example": "city"
+          },
+          "location_type_ext": {
+            "type": "string",
+            "description": "扩展类型",
+            "example": "capital"
+          },
+          "description": {
+            "type": "string",
+            "example": "十三朝古都，大唐帝国的心脏..."
+          },
+          "danger_level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 2
+          },
+          "npc_count": {
+            "type": "integer",
+            "description": "驻留NPC数量",
+            "example": 120
+          },
+          "available_dealers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "可用发牌员类型数组",
+            "example": ["teahouse", "bounty_board", "merchant", "inn"]
+          },
+          "story_chapters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "关联主线章节ID",
+            "example": ["ch1", "ch2"]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["帝都", "繁华", "武林中枢"]
+          },
+          "unlocked": {
+            "type": "boolean",
+            "example": true
+          },
+          "unlock_condition": {
+            "type": "string",
+            "description": "解锁条件描述（仅 unlocked=false 时有值）",
+            "example": "完成主线章节楼兰遗迹后方可进入"
+          }
+        }
+      },
+      "LocationDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Location"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "dealers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Dealer"
+                },
+                "description": "该场景可用的发牌员详情"
+              },
+              "connections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LocationConnection"
+                },
+                "description": "可到达的相邻场景"
+              },
+              "narrative": {
+                "type": "object",
+                "properties": {
+                  "atmosphere": {
+                    "type": "string"
+                  },
+                  "notable_npcs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "secrets": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LocationConnection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "连接ID"
+          },
+          "to_location": {
+            "$ref": "#/components/schemas/LocationSummary"
+          },
+          "connection_type": {
+            "type": "string",
+            "enum": ["road", "river", "mountain", "teleport", "special"],
+            "example": "road"
+          },
+          "distance": {
+            "type": "integer",
+            "description": "距离/耗时",
+            "example": 2
+          },
+          "danger_level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "description": {
+            "type": "string",
+            "example": "京杭大运河，水路便捷"
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "是否被阻挡"
+          },
+          "blocked_reason": {
+            "type": "string",
+            "description": "阻挡原因"
+          }
+        }
+      },
+      "Dealer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "teahouse-1"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["teahouse", "bounty_board", "inn", "merchant", "enemy", "dynamic_encounter", "environment", "training_grounds"],
+            "example": "teahouse"
+          },
+          "name": {
+            "type": "string",
+            "example": "茶馆说书人"
+          },
+          "location": {
+            "type": "string",
+            "example": "长安城"
+          },
+          "description": {
+            "type": "string",
+            "example": "茶馆中的老说书人，知晓无数江湖秘闻"
+          },
+          "interaction_prompt": {
+            "type": "string",
+            "example": "说书人轻敲桌面：客官，可想听一段江湖旧事？"
+          },
+          "weight": {
+            "type": "integer",
+            "description": "触发权重"
+          }
+        }
+      },
+      "PlayerLocation": {
+        "type": "object",
+        "properties": {
+          "player_id": {
+            "type": "string"
+          },
+          "current_location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "current_region": {
+            "$ref": "#/components/schemas/Region"
+          },
+          "visited_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "已访问的场景ID列表"
+          },
+          "visited_regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "已访问的大区ID列表"
+          }
+        }
+      },
+      "NavigateError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error_code": {
+            "type": "string",
+            "enum": [
+              "LOCATION_NOT_FOUND",
+              "LOCATION_LOCKED",
+              "UNREACHABLE",
+              "INSUFFICIENT_ITEMS",
+              "PLAYER_NOT_FOUND",
+              "ALREADY_AT_LOCATION"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "example": "楼兰古城尚未解锁，需完成主线章节楼兰遗迹"
+          },
+          "unlock_requirements": {
+            "type": "object",
+            "description": "解锁所需条件（当 error_code=LOCATION_LOCKED 时）",
+            "properties": {
+              "required_chapters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "required_items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "alternative_routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocationConnection"
+            },
+            "description": "可用的替代路线"
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          },
+          "has_next": {
+            "type": "boolean"
+          },
+          "has_prev": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "NOT_FOUND"
+              },
+              "message": {
+                "type": "string",
+                "example": "指定的资源不存在"
+              },
+              "details": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "tags": [
+      {
+        "name": "World",
+        "description": "世界/地图相关接口"
+      },
+      {
+        "name": "Player",
+        "description": "玩家位置相关接口"
+      }
+    ]
+  }
+}
