@@ -72,7 +72,17 @@ func (s *Service) GetSkillCooldownRemaining(playerID, skillID string) int {
 	defer s.cooldownMu.RUnlock()
 	if playerCooldowns, ok := s.cooldowns[playerID]; ok {
 		if lastUsed, ok := playerCooldowns[skillID]; ok {
-			return int(time.Since(lastUsed).Seconds())
+			elapsed := int(time.Since(lastUsed).Seconds())
+			// 获取技能定义以获取冷却时间
+			skillDef := GetSkillByID(skillID)
+			if skillDef != nil && skillDef.CooldownSeconds > 0 {
+				remaining := skillDef.CooldownSeconds - elapsed
+				if remaining < 0 {
+					remaining = 0
+				}
+				return remaining
+			}
+			return 0
 		}
 	}
 	return 0
