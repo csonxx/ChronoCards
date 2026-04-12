@@ -128,6 +128,21 @@
   background: var(--color-secondary-dark);
 }
 
+.world-scene--with-bg {
+  background: transparent;
+}
+
+.world-scene--with-bg .world-scene__background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.world-scene--with-bg > *:not(.world-scene__background) {
+  position: relative;
+  z-index: 1;
+}
+
 /* 水墨山水背景 */
 .world-scene__background {
   position: absolute;
@@ -242,6 +257,29 @@
   white-space: nowrap;
 }
 
+/* 发牌员 - 附近状态 */
+.dealer--nearby {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 15;
+}
+
+.dealer--nearby .dealer__sprite {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px rgba(201, 162, 39, 0.5);
+  animation: dealerGlow 1.5s ease-in-out infinite;
+}
+
+.dealer--nearby .dealer__name {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+@keyframes dealerGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 162, 39, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(201, 162, 39, 0.7); }
+}
+
 /* ========== 玩家 ========== */
 
 .player {
@@ -264,6 +302,13 @@
   box-shadow: 
     0 0 16px rgba(201, 162, 39, 0.4),
     var(--shadow-md);
+  background-image: var(--asset-player-avatar);
+  background-size: cover;
+  background-position: center;
+}
+
+.player__sprite:not([style*="background-image"]) {
+  background: var(--color-bg);
 }
 
 .player__shadow {

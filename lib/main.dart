@@ -7,20 +7,24 @@ import 'presentation/screens/s5_battle/battle_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set preferred orientations
+
+  // Set preferred orientations - landscape for mobile gaming
   SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: AppTheme.primaryDark,
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+  // Set system UI overlay style for immersive gaming
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+    overlays: [],
+  );
+
+  // Lock to landscape
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
 
   runApp(const ChronoCardsApp());
 }
@@ -41,7 +45,6 @@ class ChronoCardsApp extends StatelessWidget {
         '/battle': (context) => const BattleScreen(),
       },
       onGenerateRoute: (settings) {
-        // Handle routes with arguments
         if (settings.name == '/battle') {
           final enemyId = settings.arguments as String?;
           return MaterialPageRoute(

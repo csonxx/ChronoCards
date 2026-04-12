@@ -29,14 +29,12 @@ interface BattleProps {
   enemy?: BattleEnemy;
   onVictory: () => void;
   onDefeat: () => void;
-  onEscape: () => void;
 }
 
 export const Battle: React.FC<BattleProps> = ({
   enemy = mockEnemy,
   onVictory,
   onDefeat,
-  onEscape: _onEscape,
 }) => {
   // 玩家战斗状态
   const [playerStats, setPlayerStats] = useState<BattleStats>({
@@ -67,82 +65,11 @@ export const Battle: React.FC<BattleProps> = ({
   const [skills, setSkills] = useState(mockSkills);
   const [showDamageNumber, setShowDamageNumber] = useState<{ value: number; isCrit: boolean } | null>(null);
   const [enemyShowDamage, setEnemyShowDamage] = useState<{ value: number; isCrit: boolean } | null>(null);
+  const [activeEffects, setActiveEffects] = useState<Array<{ id: number; type: string; x: number; y: number }>>([]);
+  const effectCounterRef = useRef(0);
 
   const battleRef = useRef<HTMLDivElement>(null);
   const lastAttackTime = useRef(0);
-
-  // 冷却更新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSkills(prev => prev.map(skill => ({
-        ...skill,
-        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
-      })));
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 体力自动恢复
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlayerStats(prev => ({
-        ...prev,
-        stamina: Math.min(prev.maxStamina, prev.stamina + 2),
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 内力自动恢复
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlayerStats(prev => ({
-        ...prev,
-        qi: Math.min(prev.maxQi, prev.qi + 3),
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 键盘输入处理
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key.toLowerCase()) {
-        case 'j':
-        case ' ':
-          handleAttack();
-          break;
-        case 'k':
-          handleBlock(true);
-          break;
-        case 'l':
-          handleDodge();
-          break;
-        case 'u':
-          handleSkill(0);
-          break;
-        case 'i':
-          handleSkill(1);
-          break;
-        case 'o':
-          handleSkill(2);
-          break;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k') {
-        handleBlock(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [comboStage, playerStats.stamina, skills]);
 
   // 普通攻击
   const handleAttack = useCallback(() => {
@@ -245,12 +172,96 @@ export const Battle: React.FC<BattleProps> = ({
     };
     setPlayerElements(prev => [...prev.slice(-3), newElement]);
 
+    // 触发战斗特效（根据技能索引映射特效类型）
+    const effectTypes = ['flame', 'blade', 'sword-energy'];
+    const effectType = effectTypes[index % effectTypes.length];
+    const effectId = ++effectCounterRef.current;
+    const enemyPosX = 300 + Math.random() * 60 - 30;
+    const enemyPosY = 100 + Math.random() * 40 - 20;
+    setActiveEffects(prev => [...prev, { id: effectId, type: effectType, x: enemyPosX, y: enemyPosY }]);
+    setTimeout(() => {
+      setActiveEffects(prev => prev.filter(e => e.id !== effectId));
+    }, 700);
+
     setTimeout(() => setEnemyShowDamage(null), 800);
 
     if (enemyHp - finalDamage <= 0) {
       setTimeout(onVictory, 500);
     }
   }, [skills, playerStats, enemyHp, onVictory]);
+
+  // 冷却更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSkills(prev => prev.map(skill => ({
+        ...skill,
+        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
+      })));
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 体力自动恢复
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerStats(prev => ({
+        ...prev,
+        stamina: Math.min(prev.maxStamina, prev.stamina + 2),
+      }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 内力自动恢复
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerStats(prev => ({
+        ...prev,
+        qi: Math.min(prev.maxQi, prev.qi + 3),
+      }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 键盘输入处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key.toLowerCase()) {
+        case 'j':
+        case ' ':
+          handleAttack();
+          break;
+        case 'k':
+          handleBlock(true);
+          break;
+        case 'l':
+          handleDodge();
+          break;
+        case 'u':
+          handleSkill(0);
+          break;
+        case 'i':
+          handleSkill(1);
+          break;
+        case 'o':
+          handleSkill(2);
+          break;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'k') {
+        handleBlock(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [comboStage, playerStats.stamina, playerStats.hp, skills, handleAttack, handleBlock, handleDodge, handleSkill]);
 
   // 模拟敌人攻击
   useEffect(() => {
@@ -320,7 +331,7 @@ export const Battle: React.FC<BattleProps> = ({
 
       {/* 玩家状态区（左上） */}
       <div className="battle-player-status">
-        <div className="player-avatar">🧑</div>
+        <div className="player-avatar" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="player-info">
           <div className="player-info__name">江湖游侠</div>
           <div className="player-info__level">Lv.{playerStats.level}</div>
@@ -349,7 +360,10 @@ export const Battle: React.FC<BattleProps> = ({
           <div className="enemy-scroll">
             <div className="enemy-rod enemy-rod--top" />
             <div className="enemy-content">
-              <div className="enemy-avatar">
+              <div 
+                className="enemy-avatar"
+                style={{ backgroundImage: 'var(--asset-enemy-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
                 {enemy.faction === 'mingjiao' ? '🔥' : '⚔️'}
               </div>
               <div className="enemy-info">
@@ -385,7 +399,7 @@ export const Battle: React.FC<BattleProps> = ({
       {/* 战斗场景区 */}
       <div className="battle-scene">
         <div className={`player-character ${isAttacking ? 'player-character--attack' : ''} ${isInvincible ? 'player-character--invincible' : ''}`}>
-          <div className="character-sprite">🧑</div>
+          <div className="character-sprite" style={{ backgroundImage: 'var(--asset-player-avatar)', backgroundSize: 'cover', backgroundPosition: 'center' }}>🧑</div>
           <div className="character-shadow" />
           {isInvincible && <div className="invincible-flash" />}
         </div>
@@ -396,6 +410,17 @@ export const Battle: React.FC<BattleProps> = ({
             {showDamageNumber.value === 0 ? '闪避!' : `-${showDamageNumber.value}`}
           </div>
         )}
+
+        {/* 战斗特效层 */}
+        <div className="battle-effect-layer">
+          {activeEffects.map(effect => (
+            <div
+              key={effect.id}
+              className={`effect-${effect.type}`}
+              style={{ left: effect.x - 60, top: effect.y - 60 }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* 资源条区 */}

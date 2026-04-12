@@ -7,6 +7,7 @@ import '../../bloc/card_draw_bloc.dart';
 import '../../bloc/card_draw_event.dart';
 import '../../bloc/card_draw_state.dart';
 import '../../widgets/game_card_widget.dart';
+import '../../widgets/card_draw_instructions_dialog.dart';
 
 /// S3 - Card Draw Screen (Core Interaction)
 /// The gacha/draw screen where players get new cards
@@ -32,6 +33,27 @@ class CardDrawView extends StatefulWidget {
 class _CardDrawViewState extends State<CardDrawView> {
   List<GameCard> _previewCards = [];
   bool _isDrawing = false;
+  bool _hasSeenInstructions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasSeenInstructions) {
+        _showInstructionsDialog();
+      }
+    });
+  }
+
+  void _showInstructionsDialog() {
+    setState(() => _hasSeenInstructions = true);
+    CardDrawInstructionsDialog.show(
+      context,
+      onGotIt: () {
+        setState(() => _hasSeenInstructions = true);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +68,12 @@ class _CardDrawViewState extends State<CardDrawView> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showInstructionsDialog,
+          ),
+        ],
       ),
       body: BlocConsumer<CardDrawBloc, CardDrawState>(
         listener: (context, state) {

@@ -1,0 +1,479 @@
+/* ========== 新手引导样式 ========== */
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 600ms var(--ease-out);
+}
+
+.tutorial-overlay--closing {
+  opacity: 0;
+}
+
+.tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 42, 42, 0.85);
+  backdrop-filter: blur(6px);
+}
+
+/* ========== 引导弹窗 ========== */
+
+.tutorial-modal {
+  position: relative;
+  background: var(--color-bg);
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-10);
+  max-width: 520px;
+  width: 90%;
+  box-shadow:
+    0 0 0 1px rgba(201, 162, 39, 0.2),
+    0 20px 60px rgba(42, 42, 42, 0.5),
+    0 0 40px rgba(201, 162, 39, 0.1);
+  animation: tutorialModalIn 500ms var(--ease-out);
+  text-align: center;
+}
+
+@keyframes tutorialModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 顶部区域 */
+.tutorial-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.tutorial-modal__step-badge {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-sm);
+  color: var(--color-accent);
+  background: rgba(201, 162, 39, 0.1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent);
+}
+
+.tutorial-modal__skip {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.tutorial-modal__skip:hover {
+  color: var(--color-text);
+}
+
+/* 标题 */
+.tutorial-modal__title {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-3xl);
+  color: var(--color-accent);
+  margin: 0 0 var(--space-4) 0;
+  text-shadow: 0 2px 8px rgba(201, 162, 39, 0.3);
+}
+
+/* 分隔线 */
+.tutorial-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.tutorial-divider__line {
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);
+}
+
+.tutorial-divider__icon {
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+}
+
+/* 内容 */
+.tutorial-modal__content {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  line-height: 1.9;
+  margin-bottom: var(--space-8);
+  white-space: pre-line;
+}
+
+/* 步骤指示器 */
+.tutorial-steps-indicator {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.tutorial-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(42, 42, 42, 0.2);
+  border: 2px solid var(--color-text-muted);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.tutorial-step-dot--done {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.tutorial-step-dot--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+  transform: scale(1.2);
+}
+
+/* 按钮 */
+.tutorial-modal__actions {
+  display: flex;
+  justify-content: center;
+}
+
+.tutorial-btn {
+  min-width: 200px;
+}
+
+.tutorial-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  box-shadow:
+    0 4px 0 var(--color-accent-dark),
+    0 6px 12px rgba(42, 42, 42, 0.3);
+}
+
+.tutorial-btn--primary:hover {
+  background: var(--color-accent-light);
+  box-shadow:
+    0 2px 0 var(--color-accent-dark),
+    0 4px 8px rgba(42, 42, 42, 0.3);
+}
+
+/* ========== 地图交互点提示标签 ========== */
+
+.dealer-hint-label {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-radius: var(--radius-md);
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  z-index: 5;
+}
+
+.dealer-hint-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--color-accent);
+}
+
+.dealer--nearby .dealer-hint-label {
+  opacity: 1;
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 0.8; transform: translateX(-50%) translateY(-3px); }
+}
+
+/* ========== 玩家操作菜单 ========== */
+
+.player-context-menu {
+  position: absolute;
+  z-index: 50;
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  min-width: 160px;
+  box-shadow: var(--shadow-lg);
+  animation: contextMenuIn 200ms var(--ease-out);
+}
+
+@keyframes contextMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.player-context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.player-context-menu__item:hover {
+  background: rgba(139, 105, 20, 0.1);
+  color: var(--color-primary);
+}
+
+.player-context-menu__item--danger:hover {
+  background: rgba(155, 35, 53, 0.1);
+  color: var(--color-danger);
+}
+
+.player-context-menu__item-icon {
+  font-size: var(--text-lg);
+}
+
+/* ========== 移动端虚拟摇杆 ========== */
+
+.mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.mobile-controls--active {
+  display: block;
+}
+
+.virtual-joystick {
+  position: absolute;
+  bottom: var(--space-8);
+  left: var(--space-8);
+  width: 100px;
+  height: 100px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick-base {
+  width: 100%;
+  height: 100%;
+  background: rgba(42, 42, 42, 0.4);
+  border: 2px solid rgba(201, 162, 39, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.joystick-thumb {
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 50ms linear;
+}
+
+.mobile-interact-btn {
+  position: absolute;
+  bottom: var(--space-8);
+  right: var(--space-8);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+  border: 3px solid var(--color-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-xl);
+  color: var(--color-bg);
+  font-weight: bold;
+  pointer-events: auto;
+  touch-action: none;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity var(--duration-normal) var(--ease-out), transform var(--duration-normal) var(--ease-out);
+}
+
+.mobile-interact-btn--visible {
+  opacity: 1;
+  transform: scale(1);
+  animation: interactBtnPulse 2s ease-in-out infinite;
+}
+
+@keyframes interactBtnPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(201, 162, 39, 0.4); }
+  50% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 12px rgba(201, 162, 39, 0); }
+}
+
+/* ========== 横屏锁定提示 ========== */
+
+.landscape-warning {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 200);
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-8);
+  display: none;
+}
+
+.landscape-warning--visible {
+  display: flex;
+}
+
+.landscape-warning__icon {
+  font-size: 64px;
+  animation: rotatePhone 1.5s ease-in-out infinite;
+}
+
+@keyframes rotatePhone {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+.landscape-warning__title {
+  font-family: var(--font-cursive), 'Noto Serif SC', cursive;
+  font-size: var(--text-2xl);
+  color: var(--color-accent);
+  text-align: center;
+}
+
+.landscape-warning__text {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* ========== 响应式检测 ========== */
+
+@media (max-width: 768px), (pointer: coarse) {
+  .mobile-controls--active {
+    display: block;
+  }
+}
+
+/* ========== 卡牌抽取说明弹窗 ========== */
+
+.card-draw-guide {
+  position: fixed;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: calc(var(--z-modal) + 5);
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-5);
+  max-width: 360px;
+  width: calc(100% - var(--space-8));
+  box-shadow: var(--shadow-lg);
+  animation: cardGuideSlide 400ms var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@keyframes cardGuideSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.card-draw-guide__icon {
+  font-size: var(--text-2xl);
+  flex-shrink: 0;
+}
+
+.card-draw-guide__text {
+  font-family: var(--font-body), 'Noto Serif SC', serif;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.card-draw-guide__title {
+  font-family: var(--font-title), 'Noto Serif SC', serif;
+  font-size: var(--text-base);
+  color: var(--color-accent);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.card-draw-guide__close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--text-lg);
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.card-draw-guide__close:hover {
+  color: var(--color-text);
+}

@@ -44,9 +44,18 @@ export function useTTS(options: UseTTSOptions = {}): UseTTSReturn {
   const [currentVoice, setCurrentVoice] = useState<VoiceOption>(
     VOICE_OPTIONS.find(v => v.id === options.voiceId) || VOICE_OPTIONS[0]
   );
+  const [currentSpeed, setCurrentSpeed] = useState(options.speed ?? 1.0);
+  const [currentVolume, setCurrentVolume] = useState(options.volume ?? 50);
+  const [currentPitch, setCurrentPitch] = useState(options.pitch ?? 0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentTextRef = useRef<string>('');
+  const optionsRef = useRef(options);
+  
+  // 保持 options 引用稳定，避免 useCallback 频繁重建
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   // 清理函数
   useEffect(() => {
@@ -68,15 +77,15 @@ export function useTTS(options: UseTTSOptions = {}): UseTTSReturn {
     setIsLoading(true);
     setError(null);
     currentTextRef.current = text;
-    options.onStart?.();
+    optionsRef.current.onStart?.();
 
     try {
       const result = await callMiniMaxTTS({
         text,
         voiceId: currentVoice.id,
-        speed: options.speed ?? 1.0,
-        volume: options.volume ?? 50,
-        pitch: options.pitch ?? 0,
+        speed: currentSpeed,
+        volume: currentVolume,
+        pitch: currentPitch,
       });
 
       if (!result.success || !result.audioBlob) {
@@ -94,7 +103,7 @@ export function useTTS(options: UseTTSOptions = {}): UseTTSReturn {
       audio.onended = () => {
         setIsPlaying(false);
         setIsLoading(false);
-        options.onEnd?.();
+        optionsRef.current.onEnd?.();
       };
 
       audio.onerror = () => {
@@ -102,16 +111,16 @@ export function useTTS(options: UseTTSOptions = {}): UseTTSReturn {
         setIsLoading(false);
         const errMsg = '音频播放失败';
         setError(errMsg);
-        options.onError?.(errMsg);
+        optionsRef.current.onError?.(errMsg);
       };
     } catch (err) {
       setIsLoading(false);
       setIsPlaying(false);
       const errMsg = err instanceof Error ? err.message : '未知错误';
       setError(errMsg);
-      options.onError?.(errMsg);
+      optionsRef.current.onError?.(errMsg);
     }
-  }, [currentVoice, options]);
+  }, [currentVoice, currentSpeed, currentVolume, currentPitch]);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -130,16 +139,16 @@ export function useTTS(options: UseTTSOptions = {}): UseTTSReturn {
     }
   }, []);
 
-  const setSpeed = useCallback((_speed: number) => {
-    // Speed will be applied on next speak
+  const setSpeed = useCallback((speed: number) => {
+    setCurrentSpeed(speed);
   }, []);
 
-  const setVolume = useCallback((_volume: number) => {
-    // Volume is handled by the audio element
+  const setVolume = useCallback((volume: number) => {
+    setCurrentVolume(volume);
   }, []);
 
-  const setPitch = useCallback((_pitch: number) => {
-    // Pitch is handled by the TTS API
+  const setPitch = useCallback((pitch: number) => {
+    setCurrentPitch(pitch);
   }, []);
 
   return {
