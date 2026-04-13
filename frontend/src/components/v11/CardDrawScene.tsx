@@ -51,9 +51,9 @@ export const CardDrawScene: React.FC<CardDrawSceneProps> = ({
     { id: 'voluntary', label: '主动退出', status: 'inactive' },
   ];
 
-  // 触发抽卡动画
+  // 触发抽卡动画（review#6修复：动画期间禁用，防止双击）
   const triggerDraw = useCallback(() => {
-    if (!currentCard) return;
+    if (isAnimating || !currentCard) return;
     setIsAnimating(true);
     setCompatibilityResult(null);
     // 动画结束后显示结果
@@ -66,7 +66,7 @@ export const CardDrawScene: React.FC<CardDrawSceneProps> = ({
       });
       setCompatibilityResult(isCompatible ? 'compatible' : 'exclusive');
     }, 2000);
-  }, [currentCard, activeTypes]);
+  }, [isAnimating, currentCard, activeTypes]);
 
   // 选择选项
   const handleCardSelect = useCallback((option: CardOption) => {
@@ -132,7 +132,7 @@ export const CardDrawScene: React.FC<CardDrawSceneProps> = ({
                 <span className="deck-icon">🀄</span>
                 <span className="deck-label">牌堆</span>
               </div>
-              <button className="scene-draw-btn" onClick={triggerDraw}>
+              <button className="scene-draw-btn" onClick={triggerDraw} disabled={isAnimating}>
                 抽 下一张
               </button>
             </div>
@@ -218,7 +218,7 @@ export const CardDrawScene: React.FC<CardDrawSceneProps> = ({
           <span className="action-icon">📖</span>
           <span className="action-label">负面变奏</span>
         </button>
-        <button className="scene-action-btn scene-action-btn--primary" onClick={triggerDraw}>
+        <button className="scene-action-btn scene-action-btn--primary" onClick={triggerDraw} disabled={isAnimating}>
           <span className="action-icon">🎴</span>
           <span className="action-label">抽下一张</span>
         </button>

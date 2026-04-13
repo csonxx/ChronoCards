@@ -150,10 +150,13 @@ export function useWorld() {
 
       return result;
     } catch (e) {
+      // 修复review#7：不滥用PLAYER_NOT_FOUND，网络/超时错误用UNREACHABLE
+      const msg = e instanceof Error ? e.message : '导航请求失败（网络错误或后端无响应）';
+      console.error('[useWorld] navigate error:', e);
       return {
         success: false,
-        error_code: 'PLAYER_NOT_FOUND',
-        message: '导航请求失败',
+        error_code: 'UNREACHABLE',
+        message: msg,
         alternative_routes: [],
       };
     }

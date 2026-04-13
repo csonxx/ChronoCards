@@ -1,6 +1,11 @@
 /* ChronoCards Design Tokens v1.1 - 水墨古风 + 武侠卡牌
    对应文档：ChronoCards_UI_Design_v1.md (v1.1 审核通过版)
    修订日期：2026-04-13
+
+   ⚠️ 注意：这是 v1.1 完整重新设计，非增量迁移。
+   旧版变量（--color-* / --text-* 等）已废弃，
+   所有使用旧 token 的组件需同步适配新变量（--cc-*）。
+   旧版组件 Battle.tsx / App.tsx 等需逐步迁移。
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');

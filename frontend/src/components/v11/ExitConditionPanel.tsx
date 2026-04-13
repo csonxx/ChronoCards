@@ -43,12 +43,21 @@ export const ExitConditionPanel: React.FC<ExitConditionPanelProps> = ({
   conditions,
   onVoluntaryExit,
 }) => {
-  const roundProgress = maxRound > 0 ? (round / maxRound) * 100 : 0;
+  // 从 conditions 数组中取 round_limit（修复review#2：进度条与conditions同步）
+  const roundLimit = conditions.find(c => c.id === 'round_limit');
+  const effectiveRound = roundLimit?.current ?? round;
+  const effectiveMax = roundLimit?.target ?? maxRound;
+  const safeMax = Math.max(1, effectiveMax); // 兜底：防止maxRound=0导致NaN（修复review#9）
+  const roundProgress = Math.min(100, Math.max(0, (effectiveRound / safeMax) * 100));
 
-  // 回合警告等级
+  // 回合警告等级：基于 conditions 中的 status（修复review#2）
   const getRoundStatus = (): ExitConditionStatus => {
-    if (round >= 10) return 'critical';
-    if (round >= 7) return 'warning';
+    if (roundLimit?.status === 'critical') return 'critical';
+    if (roundLimit?.status === 'warning') return 'warning';
+    if (roundLimit?.status === 'completed') return 'completed';
+    // fallback：用数值判断
+    if (effectiveRound >= 10) return 'critical';
+    if (effectiveRound >= 7) return 'warning';
     return 'active';
   };
 
@@ -69,7 +78,7 @@ export const ExitConditionPanel: React.FC<ExitConditionPanelProps> = ({
           />
         </div>
         <div className="chapter-progress__text">
-          第 <strong>{round}</strong> / {maxRound} 回合
+          第 <strong>{effectiveRound}</strong> / {effectiveMax} 回合
         </div>
       </div>
 
@@ -84,7 +93,6 @@ export const ExitConditionPanel: React.FC<ExitConditionPanelProps> = ({
                 'exit-condition-card',
                 cond.status === 'warning' ? 'exit-condition-card--warning' : '',
                 cond.status === 'critical' ? 'exit-condition-card--critical' : '',
-                cond.animated && cfg.animated ? `exit-condition-card--animated` : '',
               ].join(' ')}
               style={{ borderColor: cfg.borderColor, backgroundColor: cfg.bgColor }}
             >

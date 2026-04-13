@@ -1,7 +1,7 @@
 // 兼容矩阵可视化组件 v1.1
 // 规范来源：ChronoCards_UI_Design_v1.md §3
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import './compatibility-matrix.css';
 
 export type CardType =
@@ -100,47 +100,58 @@ export function areAllCompatible(selected: CardType[], target: CardType): boolea
 }
 
 interface CompatibilityMatrixProps {
-  selectedTypes: CardType[];           // 当前已选中的卡类型
-  onTypeClick?: (type: CardType) => void; // 点击类型切换选中
+  selectedTypes: CardType[];           // 当前已选中的卡类型（用于高亮）
+  onTypeClick?: (type: CardType) => void; // 点击类型切换选中（通知父组件）
   compact?: boolean;                  // 紧凑模式（手机用）
 }
 
 export const CompatibilityMatrix: React.FC<CompatibilityMatrixProps> = ({
-  selectedTypes,
+  selectedTypes = [],
   onTypeClick,
   compact = false,
 }) => {
   const [hoveredCell, setHoveredCell] = useState<{ row: CardType; col: CardType } | null>(null);
+  // 内部追踪：当前以哪个类型为基准显示兼容信息（解决review#1）
+  const [referenceType, setReferenceType] = useState<CardType | null>(null);
 
-  const getCellClass = (rowType: CardType, colType: CardType): string => {
+  // 点击格子 → 更新基准类型 + 通知父组件
+  const handleCellClick = useCallback((type: CardType) => {
+    setReferenceType(type);
+    onTypeClick?.(type);
+  }, [onTypeClick]);
+
+  // 当前显示用的基准类型：优先用内部追踪的，否则用 selectedTypes 最后一个
+  const displayType = referenceType ?? (selectedTypes.length > 0 ? selectedTypes[selectedTypes.length - 1] : null);
+
+  const getCellClass = useCallback((rowType: CardType, colType: CardType): string => {
     const val = getCompatibility(rowType, colType);
     const classes = ['matrix-cell'];
     if (val === 'compatible') classes.push('matrix-cell--compatible');
     if (val === 'exclusive') classes.push('matrix-cell--exclusive');
     if (val === 'self') classes.push('matrix-cell--self');
+    // 高亮：当前选中的类型所在行/列，以及基准类型所在行/列
     if (selectedTypes.includes(rowType)) classes.push('matrix-cell--selected-row');
     if (selectedTypes.includes(colType)) classes.push('matrix-cell--selected-col');
+    if (referenceType && (rowType === referenceType || colType === referenceType)) classes.push('matrix-cell--reference');
     if (hoveredCell?.row === rowType || hoveredCell?.col === colType) classes.push('matrix-cell--hovered');
     return classes.join(' ');
-  };
+  }, [selectedTypes, referenceType, hoveredCell]);
 
-  const getCellContent = (rowType: CardType, colType: CardType): React.ReactNode => {
+  const getCellContent = useCallback((rowType: CardType, colType: CardType): React.ReactNode => {
     const val = getCompatibility(rowType, colType);
     if (val === 'self') return '—';
     if (val === 'compatible') return '✓';
     if (val === 'exclusive') return '✗';
     return '?';
-  };
-
-  const selected = selectedTypes[selectedTypes.length - 1]; // 最新选中
+  }, []);
 
   return (
     <div className={`compatibility-matrix ${compact ? 'compatibility-matrix--compact' : ''}`}>
       <div className="matrix-header">
         <div className="matrix-title">卡牌兼容矩阵</div>
-        {selected && (
+        {displayType && (
           <div className="matrix-selected-label">
-            当前已选：<span style={{ color: CARD_TYPE_LIST.find(t => t.type === selected)?.color }}>{CARD_TYPE_LIST.find(t => t.type === selected)?.label}</span>
+            当前参考：<span style={{ color: CARD_TYPE_LIST.find(t => t.type === displayType)?.color }}>{CARD_TYPE_LIST.find(t => t.type === displayType)?.label}</span>
           </div>
         )}
       </div>
@@ -171,7 +182,7 @@ export const CompatibilityMatrix: React.FC<CompatibilityMatrixProps> = ({
                     className={getCellClass(row.type, col.type)}
                     onMouseEnter={() => setHoveredCell({ row: row.type, col: col.type })}
                     onMouseLeave={() => setHoveredCell(null)}
-                    onClick={() => onTypeClick?.(row.type)}
+                    onClick={() => handleCellClick(row.type)}
                     role="gridcell"
                     aria-label={`${row.label} × ${col.label}: ${getCompatibility(row.type, col.type)}`}
                   >
@@ -205,23 +216,25 @@ export const CompatibilityMatrix: React.FC<CompatibilityMatrixProps> = ({
       </div>
 
       {/* 兼容提示 */}
-      {selected && (
-        <div className="matrix-compatibility-hint">
-          {selectedTypes.length > 0 && (
-            <span className="hint-text">
-              当前生效卡：
-              {selectedTypes.map(t => {
-                const info = CARD_TYPE_LIST.find(x => x.type === t)!;
-                return (
-                  <span key={t} className="active-card-tag" style={{ borderColor: info.color, color: info.color }}>
-                    {info.icon} {info.label}
-                  </span>
-                );
-              })}
-            </span>
-          )}
-        </div>
-      )}
+      <div className="matrix-compatibility-hint">
+        {selectedTypes.length > 0 ? (
+          <span className="hint-text">
+            当前生效卡：
+            {selectedTypes.map(t => {
+              const info = CARD_TYPE_LIST.find(x => x.type === t)!;
+              return (
+                <span key={t} className="active-card-tag" style={{ borderColor: info.color, color: info.color }}>
+                  {info.icon} {info.label}
+                </span>
+              );
+            })}
+          </span>
+        ) : displayType ? (
+          <span className="hint-text" style={{ color: 'var(--cc-text-muted)' }}>
+            点击格子选择参考类型，查看与其他卡的兼容关系
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 };

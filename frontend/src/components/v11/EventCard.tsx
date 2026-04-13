@@ -74,18 +74,19 @@ export const EventCard: React.FC<EventCardProps> = ({
 
   const config = CARD_TYPE_CONFIG[card.type];
 
-  // 入场动画序列
+  // 入场动画序列（review#4修复：timer以card.id为key，每次换卡重置）
   useEffect(() => {
-    if (isAnimating) {
-      // 抽卡动画：烟雾 → 飞入 → 翻面 → 展开
-      const timer1 = setTimeout(() => setVisible(true), 100);
-      const timer2 = setTimeout(() => setFlipped(true), 800);
-      const timer3 = setTimeout(() => setFlipped(false), 1400); // 飞入后翻面
-      return () => {
-        clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3);
-      };
-    }
-  }, [isAnimating]);
+    if (!isAnimating) return;
+    setVisible(false);
+    setFlipped(false);
+    // 抽卡动画：烟雾 → 飞入 → 翻面 → 展开
+    const timer1 = setTimeout(() => setVisible(true), 100);
+    const timer2 = setTimeout(() => setFlipped(true), 800);
+    const timer3 = setTimeout(() => setFlipped(false), 1400);
+    return () => {
+      clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3);
+    };
+  }, [isAnimating, card.id]); // card.id 变化时重置动画
 
   const handleOptionSelect = useCallback((option: CardOption) => {
     setSelectedOption(option);
