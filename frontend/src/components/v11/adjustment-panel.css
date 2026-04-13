@@ -1,0 +1,173 @@
+/* 调整阈值面板样式 v1.1 */
+@import '../../styles/tokens.css';
+
+.adjustment-panel {
+  font-family: var(--font-sans);
+  color: var(--cc-text);
+}
+
+.adjustment-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.adjustment-panel__chapter {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--cc-text);
+}
+
+.adjustment-panel__era {
+  font-size: var(--text-sm);
+  color: var(--cc-warning);
+  opacity: 0.9;
+}
+
+/* ========== 双层面板 ========== */
+.adjustment-layers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.adjustment-layer {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid;
+}
+
+/* 内容层：黛青边框，优先级高 */
+.adjustment-layer--content {
+  border-color: rgba(45,90,90,0.5);
+  background: rgba(45,90,90,0.08);
+}
+
+/* 数值层：墨紫边框，优先级低 */
+.adjustment-layer--numeric {
+  border-color: rgba(74,58,92,0.4);
+  background: rgba(74,58,92,0.06);
+  opacity: 0.85;
+}
+
+.layer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.layer-arrow {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.layer-label {
+  color: var(--cc-text-secondary);
+  font-weight: var(--font-medium);
+}
+
+.layer-priority-tag {
+  margin-left: auto;
+  padding: 2px 6px;
+  background: rgba(45,90,90,0.3);
+  border: 1px solid rgba(45,90,90,0.5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--cc-primary-light);
+}
+
+/* ========== 指标网格 ========== */
+.layer-indicators {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+/* ========== 单个指标仪表 ========== */
+.indicator-gauge {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+}
+
+.indicator-gauge__label {
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+  margin-bottom: var(--space-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.indicator-gauge__track {
+  height: 6px;
+  background: #1A1A1A;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--space-1);
+}
+
+.indicator-gauge__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s var(--ease-out), background-color 0.3s;
+}
+
+.indicator-gauge__fill--glow {
+  box-shadow: 0 0 6px currentColor;
+  animation: indicator-glow 1.5s ease-in-out infinite;
+}
+
+.indicator-gauge__fill--pulse {
+  animation: indicator-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes indicator-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+@keyframes indicator-pulse {
+  0%, 100% { opacity: 1; transform: scaleY(1); }
+  50% { opacity: 0.8; transform: scaleY(1.2); }
+}
+
+.indicator-gauge__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  text-align: right;
+}
+
+.indicator-gauge__hint {
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+}
+
+/* ========== 触发提示 ========== */
+.layer-trigger-hint {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+  font-family: var(--font-serif);
+  border-left: 2px solid;
+}
+
+.adjustment-layer--content .layer-trigger-hint {
+  border-color: var(--cc-primary);
+  color: var(--cc-primary-light);
+}
+
+.adjustment-layer--numeric .layer-trigger-hint {
+  border-color: var(--cc-fate);
+  color: var(--cc-fate-light);
+}

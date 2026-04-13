@@ -1,159 +1,104 @@
-/* ChronoCards Design Tokens - 古卷风 (Ancient Scroll Style) */
+/* ChronoCards Design Tokens v1.1 - 水墨古风 + 武侠卡牌
+   对应文档：ChronoCards_UI_Design_v1.md (v1.1 审核通过版)
+   修订日期：2026-04-13
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');
 
 :root {
-  /* === 色彩系统 === */
-  /* 主色 - 赭石 */
-  --color-primary: #8B6914;
-  --color-primary-light: #A67C1A;
-  --color-primary-dark: #6B5010;
-  
-  /* 副色 - 靛青 */
-  --color-secondary: #2C4A6B;
-  --color-secondary-light: #3A5A7F;
-  --color-secondary-dark: #1E3A5B;
-  
-  /* 点缀色 - 赤金 */
-  --color-accent: #C9A227;
-  --color-accent-light: #D4B23D;
-  --color-accent-dark: #A68A1D;
-  
-  /* 点缀色2 - 朱砂 */
-  --color-danger: #9B2335;
-  --color-danger-light: #B33044;
-  --color-danger-dark: #7A1A28;
-  
-  /* 背景色 - 宣纸白 */
-  --color-bg: #F5EBD7;
-  --color-bg-light: #FAF3E8;
-  --color-bg-dark: #E8DCC6;
-  
-  /* 正文色 - 墨黑 */
-  --color-text: #2A2A2A;
-  --color-text-light: #4A4A4A;
-  
-  /* 辅助文字 - 淡墨 */
-  --color-text-muted: #6B6B6B;
-  
-  /* UI高亮 - 铜绿 */
-  --color-success: #4A7C59;
-  --color-success-light: #5A8C69;
-  
-  /* 战斗资源色 */
-  --color-hp: #4A7C59;
-  --color-hp-low: #EF4444;
-  --color-stamina: #F59E0B;
-  --color-qi: #8B5CF6;
-  --color-sword-intent: #E5E5E5;
-  
-  /* 元素色 */
-  --color-element-fire: #EF4444;
-  --color-element-water: #3B82F6;
-  --color-element-thunder: #FBBF24;
-  --color-element-ice: #A5F3FC;
-  --color-element-wind: #A3E635;
-  --color-element-poison: #A855F7;
-  
-  /* === 材质纹理 === */
-  --texture-paper: url('/assets/textures/sangpi.jpeg');
-  --texture-scroll: url('/assets/decorations/scroll_roller.jpeg');
-  --texture-wood: url('/assets/decorations/xuanzhi_card_border.jpeg');
-  
-  /* === 卡牌素材 === */
-  --asset-card-back: url('/assets/card_back.png');
-  --asset-card-frame: url('/assets/card_frame.png');
-  
-  /* === 角色立绘 === */
-  --asset-player-avatar: url('/assets/player_avatar.png');
-  --asset-enemy-avatar: url('/assets/enemy_avatar.png');
-  
-  /* === 地图背景 === */
-  --asset-map-background: url('/assets/map_background.png');
-  
-  /* === 场景地图（5场景×3变体）=== */
-  --asset-scene-01-1: url('/assets/scenes/scene_01_ink_mountain_1.png');
-  --asset-scene-01-2: url('/assets/scenes/scene_01_ink_mountain_2.png');
-  --asset-scene-01-3: url('/assets/scenes/scene_01_ink_mountain_3.png');
-  --asset-scene-02-1: url('/assets/scenes/scene_02_monastery_1.png');
-  --asset-scene-02-2: url('/assets/scenes/scene_02_monastery_2.png');
-  --asset-scene-02-3: url('/assets/scenes/scene_02_monastery_3.png');
-  --asset-scene-03-1: url('/assets/scenes/scene_03_riverside_1.png');
-  --asset-scene-03-2: url('/assets/scenes/scene_03_riverside_2.png');
-  --asset-scene-03-3: url('/assets/scenes/scene_03_riverside_3.png');
-  --asset-scene-04-1: url('/assets/scenes/scene_04_bamboo_1.png');
-  --asset-scene-04-2: url('/assets/scenes/scene_04_bamboo_2.png');
-  --asset-scene-04-3: url('/assets/scenes/scene_04_bamboo_3.png');
-  --asset-scene-05-1: url('/assets/scenes/scene_05_battlefield_1.png');
-  --asset-scene-05-2: url('/assets/scenes/scene_05_battlefield_2.png');
-  --asset-scene-05-3: url('/assets/scenes/scene_05_battlefield_3.png');
+  /* ========== 核心色彩系统 ========== */
 
-  /* === 角色立绘（10门派×3姿态）=== */
-  /* 少林 */
-  --asset-char-shaolin-1: url('/assets/characters/char_sect_01_shaolin_1.png');
-  --asset-char-shaolin-2: url('/assets/characters/char_sect_01_shaolin_2.png');
-  --asset-char-shaolin-3: url('/assets/characters/char_sect_01_shaolin_3.png');
-  /* 峨眉 */
-  --asset-char-emei-1: url('/assets/characters/char_sect_02_emei_1.png');
-  --asset-char-emei-2: url('/assets/characters/char_sect_02_emei_2.png');
-  --asset-char-emei-3: url('/assets/characters/char_sect_02_emei_3.png');
-  /* 武当 */
-  --asset-char-wudang-1: url('/assets/characters/char_sect_03_wudang_1.png');
-  --asset-char-wudang-2: url('/assets/characters/char_sect_03_wudang_2.png');
-  --asset-char-wudang-3: url('/assets/characters/char_sect_03_wudang_3.png');
-  /* 唐门 */
-  --asset-char-tang-1: url('/assets/characters/char_sect_04_tang_1.png');
-  --asset-char-tang-2: url('/assets/characters/char_sect_04_tang_2.png');
-  --asset-char-tang-3: url('/assets/characters/char_sect_04_tang_3.png');
-  /* 丐帮 */
-  --asset-char-gaibang-1: url('/assets/characters/char_sect_05_gaibang_1.png');
-  --asset-char-gaibang-2: url('/assets/characters/char_sect_05_gaibang_2.png');
-  --asset-char-gaibang-3: url('/assets/characters/char_sect_05_gaibang_3.png');
-  /* 明教 */
-  --asset-char-mingjiao-1: url('/assets/characters/char_sect_06_mingyue_1.png');
-  --asset-char-mingjiao-2: url('/assets/characters/char_sect_06_mingyue_2.png');
-  --asset-char-mingjiao-3: url('/assets/characters/char_sect_06_mingyue_3.png');
-  /* 华山 */
-  --asset-char-huashan-1: url('/assets/characters/char_sect_07_hua_1.png');
-  --asset-char-huashan-2: url('/assets/characters/char_sect_07_hua_2.png');
-  --asset-char-huashan-3: url('/assets/characters/char_sect_07_hua_3.png');
-  /* 洛阳 */
-  --asset-char-luoyang-1: url('/assets/characters/char_sect_08_luoyang_1.png');
-  --asset-char-luoyang-2: url('/assets/characters/char_sect_08_luoyang_2.png');
-  --asset-char-luoyang-3: url('/assets/characters/char_sect_08_luoyang_3.png');
-  /* 影盟 */
-  --asset-char-shadowfang-1: url('/assets/characters/char_sect_09_shadowfang_1.png');
-  --asset-char-shadowfang-2: url('/assets/characters/char_sect_09_shadowfang_2.png');
-  --asset-char-shadowfang-3: url('/assets/characters/char_sect_09_shadowfang_3.png');
-  /* 孔雀 */
-  --asset-char-peacock-1: url('/assets/characters/char_sect_10_peacock_1.png');
-  --asset-char-peacock-2: url('/assets/characters/char_sect_10_peacock_2.png');
-  --asset-char-peacock-3: url('/assets/characters/char_sect_10_peacock_3.png');
+  /* 玄墨系（背景） */
+  --cc-bg: #0D0D0D;           /* 全局主背景 */
+  --cc-bg-card: #1A1A1A;       /* 卡片/面板底 */
+  --cc-bg-overlay: rgba(13,13,13,0.85); /* 遮罩层 */
 
-  /* === 战斗特效（4种×3帧）=== */
-  --asset-effect-blade-1: url('/assets/effects/effect_blade_1.png');
-  --asset-effect-blade-2: url('/assets/effects/effect_blade_2.png');
-  --asset-effect-blade-3: url('/assets/effects/effect_blade_3.png');
-  --asset-effect-flame-1: url('/assets/effects/effect_flame_1.png');
-  --asset-effect-flame-2: url('/assets/effects/effect_flame_2.png');
-  --asset-effect-flame-3: url('/assets/effects/effect_flame_3.png');
-  --asset-effect-ice-1: url('/assets/effects/effect_ice_1.png');
-  --asset-effect-ice-2: url('/assets/effects/effect_ice_2.png');
-  --asset-effect-ice-3: url('/assets/effects/effect_ice_3.png');
-  --asset-effect-sword-energy-1: url('/assets/effects/effect_sword_energy_1.png');
-  --asset-effect-sword-energy-2: url('/assets/effects/effect_sword_energy_2.png');
-  --asset-effect-sword-energy-3: url('/assets/effects/effect_sword_energy_3.png');
-  
-  /* === 门派印章 === */
-  --asset-huashan-seal: url('/assets/huashan_seal.png');
-  --asset-kongtong-seal: url('/assets/kongtong_seal.png');
-  
-  /* === 字体系统 === */
-  --font-title: 'STKaiti', '华文楷体', 'KaiTi', serif;
-  --font-cursive: 'STXingkai', '华文行楷', 'Xingkai', cursive;
-  --font-body: 'STSong', '宋体', 'SimSun', serif;
-  --font-system: 'STHeiti', '黑体', 'SimHei', sans-serif;
-  --font-seal: '篆体', 'Zhuanti', serif;
-  
-  /* === 字号 === */
+  /* 黛青系（主色调） */
+  --cc-primary: #2D5A5A;
+  --cc-primary-light: #3D7A7A;
+  --cc-primary-dark: #1D3A3A;
+  --cc-primary-glow: rgba(45,90,90,0.4);
+
+  /* 朱砂红（警示/主线） */
+  --cc-danger: #C23A2B;
+  --cc-danger-light: #D84A3B;
+  --cc-danger-dark: #922A1B;
+  --cc-danger-glow: rgba(194,58,43,0.5);
+
+  /* 金箔（装饰/边框） */
+  --cc-gold: #D4AF37;
+  --cc-gold-light: #E4BF57;
+  --cc-gold-dark: #B48F27;
+
+  /* 胭脂粉（情感类卡） */
+  --cc-emotion: #D4606A;
+  --cc-emotion-light: #E48090;
+  --cc-emotion-dark: #B4405A;
+
+  /* 墨紫（命运转折卡） */
+  --cc-fate: #4A3A5C;
+  --cc-fate-light: #6A5A7C;
+  --cc-fate-dark: #3A2A4C;
+  --cc-fate-glow: rgba(74,58,92,0.5);
+
+  /* 琥珀黄（时代印记/警告） */
+  --cc-warning: #D4A017;
+  --cc-warning-light: #E4B037;
+  --cc-warning-dark: #B48007;
+
+  /* 翠绿（安全/数值提升） */
+  --cc-success: #3D8B5F;
+  --cc-success-light: #4DAB7F;
+  --cc-success-dark: #2D6B4F;
+
+  /* 宣纸白（文字） */
+  --cc-text: #E8E4DC;
+  --cc-text-secondary: #B8B4AC;
+  --cc-text-muted: #8A8A8A;
+
+  /* 银灰（次要边框） */
+  --cc-silver: #8A8A8A;
+  --cc-silver-light: #AAAAAA;
+  --cc-silver-dark: #6A6A6A;
+
+  /* 支线灰蓝（支线卡） */
+  --cc-side: #5A7A8A;
+  --cc-side-border: #A9A9A9;
+
+  /* 土黄（经济卡） */
+  --cc-economy: #8B6914;
+  --cc-economy-border: #A67C00;
+
+  /* 素白（空白卡） */
+  --cc-blank: #E8E4DC;
+  --cc-blank-border: #C0C0C0;
+
+  /* ========== 战斗资源色 ========== */
+  --cc-hp: #3D8B5F;
+  --cc-hp-low: #C23A2B;
+  --cc-stamina: #D4A017;
+  --cc-qi: #8B5CF6;
+  --cc-sword-intent: #D4AF37;
+
+  /* ========== 元素色 ========== */
+  --cc-element-fire: #EF4444;
+  --cc-element-water: #3B82F6;
+  --cc-element-thunder: #FBBF24;
+  --cc-element-ice: #67E8F9;
+  --cc-element-wind: #A3E635;
+  --cc-element-poison: #A855F7;
+
+  /* ========== 兼容矩阵色 ========== */
+  --cc-matrix-compatible: #3D8B5F;
+  --cc-matrix-exclusive: #C23A2B;
+  --cc-matrix-selected: #2D5A5A;
+
+  /* ========== 字体系统 ========== */
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'Source Han Sans CN', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Menlo', monospace;
+
+  /* 字号 */
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
@@ -162,8 +107,13 @@
   --text-2xl: 28px;
   --text-3xl: 32px;
   --text-4xl: 48px;
-  
-  /* === 间距 === */
+
+  /* 字重 */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-bold: 700;
+
+  /* ========== 间距 ========== */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -173,36 +123,59 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  
-  /* === 圆角 === */
+
+  /* ========== 圆角 ========== */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  
-  /* === 阴影 === */
-  --shadow-sm: 0 2px 4px rgba(42, 42, 42, 0.1);
-  --shadow-md: 0 4px 8px rgba(42, 42, 42, 0.15);
-  --shadow-lg: 0 8px 16px rgba(42, 42, 42, 0.2);
-  --shadow-inset: inset 0 2px 4px rgba(42, 42, 42, 0.2);
-  
-  /* === 动效时长 === */
+
+  /* ========== 阴影 ========== */
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.2);
+  --shadow-glow-green: 0 0 12px rgba(61,139,95,0.6);
+  --shadow-glow-red: 0 0 12px rgba(194,58,43,0.6);
+  --shadow-glow-gold: 0 0 16px rgba(212,175,55,0.5);
+  --shadow-glow-purple: 0 0 16px rgba(74,58,92,0.7);
+
+  /* ========== 动效时长 ========== */
   --duration-fast: 150ms;
   --duration-normal: 200ms;
   --duration-slow: 400ms;
-  --duration-scroll: 800ms;
-  --duration-page: 500ms;
-  
-  /* === 缓动曲线 === */
+  --duration-draw: 800ms;       /* 抽卡速度 */
+  --duration-flip: 600ms;       /* 翻牌旋转，书页感 */
+  --duration-expand: 500ms;     /* 卡牌展开 */
+  --duration-judge: 400ms;      /* 效果判定 */
+  --duration-pulse: 800ms;      /* 闪烁脉冲 */
+
+  /* 缓动曲线 */
   --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
-  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-flip: cubic-bezier(0.4, 0, 0.2, 1);  /* 书页感 */
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  
-  /* === Z-Index 层级 === */
+
+  /* ========== Z-Index 层级 ========== */
   --z-base: 0;
   --z-card: 10;
+  --z-matrix: 15;
   --z-ui: 20;
+  --z-panel: 25;
   --z-modal: 30;
   --z-overlay: 40;
   --z-toast: 50;
+
+  /* ========== 卡牌尺寸 ========== */
+  /* PC / 平板横屏 */
+  --card-main-w: 320px;
+  --card-main-h: 480px;
+  --card-thumb-w: 120px;
+  --card-thumb-h: 180px;
+  /* 手机竖屏 */
+  --card-mobile-w: 280px;
+  --card-mobile-h: 420px;
+  /* 迷你卡（已生效区） */
+  --card-mini-w: 100px;
+  --card-mini-h: 150px;
+
+  /* ========== 卡牌边框 ========== */
+  --card-border: 2px solid var(--cc-gold);
+  --card-border-radius: var(--radius-lg);
 }

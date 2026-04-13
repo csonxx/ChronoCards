@@ -79,20 +79,6 @@ function App() {
     }
   }, []);
 
-  // 战斗胜利 → 写存档 + 返回世界
-  const handleVictory = useCallback(() => {
-    saveManager.onBattleWon();
-    saveManager.save();
-    setCurrentScene('world');
-  }, []);
-
-  // 战斗失败 → 扣血 + 返回世界
-  const handleDefeat = useCallback(() => {
-    saveManager.updatePlayer(p => { p.hp = Math.floor(p.hp * 0.5); });
-    saveManager.save();
-    setCurrentScene('world');
-  }, []);
-
   // 开始战斗
   const handleBattle = useCallback(() => {
     setCurrentScene('battle');

@@ -1,0 +1,224 @@
+/* 兼容矩阵样式 v1.1 */
+@import '../../styles/tokens.css';
+
+.compatibility-matrix {
+  background: var(--cc-bg-card);
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  font-family: var(--font-sans);
+}
+
+.matrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.matrix-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--cc-text);
+  letter-spacing: 0.05em;
+}
+
+.matrix-selected-label {
+  font-size: var(--text-sm);
+  color: var(--cc-text-secondary);
+}
+
+.matrix-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.matrix-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 500px;
+}
+
+.matrix-corner {
+  width: 60px;
+}
+
+/* 列头 */
+.matrix-col-header {
+  padding: var(--space-2);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--cc-text-secondary);
+  min-width: 50px;
+}
+
+.matrix-col-icon {
+  font-size: 16px;
+  display: block;
+}
+
+.matrix-col-label {
+  display: block;
+  margin-top: 2px;
+}
+
+/* 行头 */
+.matrix-row-header {
+  padding: var(--space-2);
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--cc-text-secondary);
+  white-space: nowrap;
+}
+
+.matrix-row-icon {
+  font-size: 14px;
+}
+
+.matrix-row-label {
+  margin-right: var(--space-1);
+}
+
+/* 格子 */
+.matrix-cell {
+  width: 36px;
+  height: 36px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+}
+
+.matrix-cell--hovered {
+  transform: scale(1.08);
+  z-index: 2;
+}
+
+.matrix-cell-content {
+  font-size: 14px;
+  font-weight: var(--font-bold);
+  position: relative;
+  z-index: 1;
+}
+
+/* 可叠加 */
+.matrix-cell--compatible .matrix-cell-content { color: var(--cc-matrix-compatible); }
+.matrix-cell--compatible {
+  background: rgba(61,139,95,0.08);
+  border-color: rgba(61,139,95,0.3);
+}
+
+/* 互斥 */
+.matrix-cell--exclusive .matrix-cell-content { color: var(--cc-matrix-exclusive); }
+.matrix-cell--exclusive {
+  background: rgba(194,58,43,0.06);
+  border-color: rgba(194,58,43,0.2);
+}
+/* 互斥格子加对角线 */
+.matrix-cell--exclusive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(194,58,43,0.15) 4px,
+    rgba(194,58,43,0.15) 5px
+  );
+  pointer-events: none;
+}
+
+/* 自身 */
+.matrix-cell--self .matrix-cell-content { color: var(--cc-silver); }
+.matrix-cell--self {
+  background: rgba(138,138,138,0.06);
+}
+
+/* 高亮选中行/列 */
+.matrix-cell--selected-row {
+  background: rgba(45,90,90,0.15) !important;
+}
+
+.matrix-cell--selected-col {
+  background: rgba(45,90,90,0.1) !important;
+}
+
+/* 图例 */
+.matrix-legend {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+}
+
+.legend-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: var(--font-bold);
+}
+
+.legend-dot--compatible { background: rgba(61,139,95,0.2); color: var(--cc-matrix-compatible); }
+.legend-dot--exclusive  { background: rgba(194,58,43,0.2);  color: var(--cc-matrix-exclusive); }
+.legend-dot--self       { background: rgba(138,138,138,0.2); color: var(--cc-silver); }
+.legend-dot--star        { background: rgba(232,228,220,0.15); color: var(--cc-text-secondary); }
+
+/* 兼容提示 */
+.matrix-compatibility-hint {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.hint-text {
+  font-size: var(--text-sm);
+  color: var(--cc-text-secondary);
+}
+
+.active-card-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+/* 紧凑模式 */
+.compatibility-matrix--compact .matrix-col-label,
+.compatibility-matrix--compact .matrix-row-label {
+  display: none;
+}
+
+.compatibility-matrix--compact .matrix-cell {
+  width: 28px;
+  height: 28px;
+}
+
+/* ========== 动画 ========== */
+@keyframes matrix-cell-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.matrix-cell--exclusive .matrix-cell-content {
+  animation: matrix-cell-pulse 1.5s ease-in-out infinite;
+}

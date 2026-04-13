@@ -1,0 +1,170 @@
+/* 退出条件面板样式 v1.1 */
+@import '../../styles/tokens.css';
+
+.exit-condition-panel {
+  font-family: var(--font-sans);
+  color: var(--cc-text);
+}
+
+/* ========== 章节进度条 ========== */
+.chapter-progress {
+  margin-bottom: var(--space-4);
+}
+
+.chapter-progress__label {
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.chapter-progress__track {
+  height: 8px;
+  background: #1A1A1A;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.chapter-progress__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s var(--ease-out);
+}
+
+.chapter-progress__fill--pulse {
+  animation: chapter-pulse var(--duration-pulse) ease-in-out infinite;
+}
+
+@keyframes chapter-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.chapter-progress__text {
+  font-size: var(--text-xs);
+  color: var(--cc-text-secondary);
+  margin-top: var(--space-1);
+  text-align: right;
+}
+
+/* ========== 退出条件卡片网格 ========== */
+.exit-conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.exit-condition-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  background: var(--cc-bg-card);
+  cursor: default;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.exit-condition-card--voluntary {
+  cursor: pointer;
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+.exit-condition-card--voluntary:hover {
+  opacity: 1;
+  border-color: var(--cc-primary);
+}
+
+/* 警告状态 */
+.exit-condition-card--warning {
+  animation: condition-warning-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes condition-warning-glow {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 8px rgba(212,160,23,0.4); }
+}
+
+/* 临界状态 */
+.exit-condition-card--critical {
+  animation: condition-critical-pulse var(--duration-pulse) ease-in-out infinite;
+}
+
+@keyframes condition-critical-pulse {
+  0%, 100% { box-shadow: none; opacity: 1; }
+  50% { box-shadow: 0 0 12px rgba(194,58,43,0.6); opacity: 0.8; }
+}
+
+.exit-condition-card__icon {
+  font-size: 16px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.progress-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: dot-blink 1s ease-in-out infinite;
+}
+
+@keyframes dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.exit-condition-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.exit-condition-card__label {
+  font-size: var(--text-xs);
+  color: var(--cc-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exit-condition-card__status {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  margin-top: 2px;
+}
+
+/* ========== 回合警告图例 ========== */
+.round-warning-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+}
+
+.legend-bar {
+  width: 24px;
+  height: 6px;
+  border-radius: 3px;
+  background: #3D8B5F;
+}
+
+.legend-bar--warning {
+  background: #D4A017;
+}
+
+.legend-bar--critical {
+  background: #C23A2B;
+}
