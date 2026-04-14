@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/game_card.dart';
+import '../../../domain/entities/event_card.dart';
 
+/// CardDraw states - Chapter 7 design
 abstract class CardDrawState extends Equatable {
   const CardDrawState();
 
@@ -8,49 +9,145 @@ abstract class CardDrawState extends Equatable {
   List<Object?> get props => [];
 }
 
-class CardDrawInitial extends CardDrawState {}
+/// Initial state
+class CardDrawInitial extends CardDrawState {
+  const CardDrawInitial();
+}
 
-class CardDrawLoading extends CardDrawState {}
+/// Loading state
+class CardDrawLoading extends CardDrawState {
+  const CardDrawLoading();
+}
 
-class CardDrawReady extends CardDrawState {
-  final List<GameCard> deck;
-  final List<GameCard> hand;
-  final List<GameCard> discardPile;
-  final int drawsRemaining;
+/// Card stack ready state (deck visible, waiting for draw)
+class CardStackState extends CardDrawState {
+  final int remainingCards;
+  final int totalCards;
+  final int currentTurn;
+  final int maxTurns;
+  final List<ExitCondition> exitConditions;
+  final DeckDistributorStatus distributorStatus;
+  final EventCard? activeCard;
+  final List<EventCard> drawnHistory;
 
-  const CardDrawReady({
-    required this.deck,
-    required this.hand,
-    required this.discardPile,
-    required this.drawsRemaining,
+  const CardStackState({
+    required this.remainingCards,
+    required this.totalCards,
+    required this.currentTurn,
+    required this.maxTurns,
+    required this.exitConditions,
+    required this.distributorStatus,
+    this.activeCard,
+    this.drawnHistory = const [],
   });
 
   @override
-  List<Object?> get props => [deck, hand, discardPile, drawsRemaining];
+  List<Object?> get props => [
+        remainingCards,
+        totalCards,
+        currentTurn,
+        maxTurns,
+        exitConditions,
+        distributorStatus,
+        activeCard,
+        drawnHistory,
+      ];
+
+  CardStackState copyWith({
+    int? remainingCards,
+    int? totalCards,
+    int? currentTurn,
+    int? maxTurns,
+    List<ExitCondition>? exitConditions,
+    DeckDistributorStatus? distributorStatus,
+    EventCard? activeCard,
+    List<EventCard>? drawnHistory,
+  }) {
+    return CardStackState(
+      remainingCards: remainingCards ?? this.remainingCards,
+      totalCards: totalCards ?? this.totalCards,
+      currentTurn: currentTurn ?? this.currentTurn,
+      maxTurns: maxTurns ?? this.maxTurns,
+      exitConditions: exitConditions ?? this.exitConditions,
+      distributorStatus: distributorStatus ?? this.distributorStatus,
+      activeCard: activeCard ?? this.activeCard,
+      drawnHistory: drawnHistory ?? this.drawnHistory,
+    );
+  }
 }
 
-class CardDrawing extends CardDrawState {
-  final List<GameCard> currentCards;
+/// Card is being drawn (flying animation)
+class CardDrawingState extends CardDrawState {
+  final EventCard card;
+  final int remainingCards;
 
-  const CardDrawing(this.currentCards);
-
-  @override
-  List<Object?> get props => [currentCards];
-}
-
-class CardDrawn extends CardDrawState {
-  final List<GameCard> drawnCards;
-  final List<GameCard> updatedHand;
-
-  const CardDrawn({
-    required this.drawnCards,
-    required this.updatedHand,
+  const CardDrawingState({
+    required this.card,
+    required this.remainingCards,
   });
 
   @override
-  List<Object?> get props => [drawnCards, updatedHand];
+  List<Object?> get props => [card, remainingCards];
 }
 
+/// Card is revealed (flip animation completed)
+class CardRevealedState extends CardDrawState {
+  final EventCard card;
+  final List<ExitCondition> exitConditions;
+  final DeckDistributorStatus distributorStatus;
+  final bool hasConflict;
+  final String? conflictMessage;
+  final int drawnCount;
+
+  const CardRevealedState({
+    required this.card,
+    required this.exitConditions,
+    required this.distributorStatus,
+    this.hasConflict = false,
+    this.conflictMessage,
+    required this.drawnCount,
+  });
+
+  @override
+  List<Object?> get props => [
+        card,
+        exitConditions,
+        distributorStatus,
+        hasConflict,
+        conflictMessage,
+        drawnCount,
+      ];
+}
+
+/// Exit condition triggered state
+class ExitTriggeredState extends CardDrawState {
+  final ExitCondition condition;
+  final String message;
+
+  const ExitTriggeredState({
+    required this.condition,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [condition, message];
+}
+
+/// Scene completed
+class CardDrawCompleted extends CardDrawState {
+  final List<EventCard> allDrawnCards;
+  final int totalDrawn;
+
+  const CardDrawCompleted({
+    required this.allDrawnCards,
+    required this.totalDrawn,
+  });
+
+  @override
+  List<Object?> get props => [allDrawnCards, totalDrawn];
+}
+
+/// Error state
 class CardDrawError extends CardDrawState {
   final String message;
 
