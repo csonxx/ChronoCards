@@ -43,7 +43,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
       totalCards: _deck.length + event.deckSize - 20,
       currentTurn: _currentTurn,
       maxTurns: _maxTurns,
-      exitConditions: _buildExitConditions(),
+      exitConditions: List.from(_buildExitConditions()),
       distributorStatus: const DeckDistributorStatus(
         busyCount: 1,
         totalCount: 3,
@@ -102,7 +102,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
 
     emit(CardRevealedState(
       card: card,
-      exitConditions: _buildExitConditions(),
+      exitConditions: List.from(_buildExitConditions()),
       distributorStatus: DeckDistributorStatus(
         busyCount: 2,
         totalCount: 3,
@@ -146,7 +146,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
       totalCards: _deck.length + _discardPile.length,
       currentTurn: _currentTurn,
       maxTurns: _maxTurns,
-      exitConditions: conditions,
+      exitConditions: List.from(conditions),
       distributorStatus: const DeckDistributorStatus(
         busyCount: 1,
         totalCount: 3,
@@ -176,7 +176,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
       totalCards: _deck.length + _discardPile.length,
       currentTurn: _currentTurn,
       maxTurns: _maxTurns,
-      exitConditions: _buildExitConditions(),
+      exitConditions: List.from(_buildExitConditions()),
       distributorStatus: const DeckDistributorStatus(
         busyCount: 1,
         totalCount: 3,

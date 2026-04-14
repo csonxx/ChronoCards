@@ -327,6 +327,7 @@ class _CardDrawViewState extends State<_CardDrawView>
               blankCardText: _blankCardText,
               onBlankCardTextChanged: (text) {
                 setState(() => _blankCardText = text);
+                context.read<CardDrawBloc>().add(BlankCardInputChanged(text));
               },
               onOptionSelected: (id) {
                 setState(() => _selectedOptionId = id);
