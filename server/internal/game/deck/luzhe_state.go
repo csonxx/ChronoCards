@@ -202,25 +202,31 @@ func (sm *LuzheStateMachine) GetNextCard(state *LuzhePlayerState) *LuzheCardDef 
 }
 
 // checkCardConditions 检查卡牌触发条件是否满足
+// 状态机设计采用 OR 判断：任一条件满足即可触发
 func (sm *LuzheStateMachine) checkCardConditions(card *LuzheCardDef, state *LuzhePlayerState) bool {
 	for _, cond := range card.TriggerConditions {
-		if cond == "state:encountered" && state.CurrentPhase != LuzhePhaseIdle {
-			return false
+		// state:encountered — 状态为 idle 时满足
+		if cond == "state:encountered" && state.CurrentPhase == LuzhePhaseIdle {
+			return true
 		}
-		if cond == "state:trial_passed" && state.CurrentPhase != LuzhePhaseTrialPassed {
-			return false
+		// state:trial_passed — 状态为 trial_passed 时满足
+		if cond == "state:trial_passed" && state.CurrentPhase == LuzhePhaseTrialPassed {
+			return true
 		}
-		if cond == "state:background" && state.CurrentPhase != LuzhePhaseRevealed {
-			return false
+		// state:background — 状态为 revealed 时满足
+		if cond == "state:background" && state.CurrentPhase == LuzhePhaseRevealed {
+			return true
 		}
-		if cond == "state:uprising" && state.CurrentPhase != LuzhePhaseClimax {
-			return false
+		// state:uprising — 状态为 climax 时满足
+		if cond == "state:uprising" && state.CurrentPhase == LuzhePhaseClimax {
+			return true
 		}
-		if cond == "first_jiangnan_entry" && state.CurrentPhase != LuzhePhaseIdle {
-			return false
+		// first_jiangnan_entry — 状态为 idle 时满足
+		if cond == "first_jiangnan_entry" && state.CurrentPhase == LuzhePhaseIdle {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // AdvancePhase 推进状态机
@@ -253,9 +259,12 @@ func (sm *LuzheStateMachine) AdvancePhase(state *LuzhePlayerState, trigger strin
 			state.CurrentPhase = LuzhePhaseEnding
 		}
 	case LuzhePhaseTrialPassed:
-		state.CurrentPhase = LuzhePhaseRevealed
-		state.TrustLevel += 30
-		state.CardHistory = append(state.CardHistory, "char-luzhe-003")
+		// 只有 trial_count >= 3 或 explicit_trigger 才允许推进到 Revealed
+		if state.TrialCount >= 3 || trigger == "explicit_trigger" {
+			state.CurrentPhase = LuzhePhaseRevealed
+			state.TrustLevel += 30
+			state.CardHistory = append(state.CardHistory, "char-luzhe-003")
+		}
 	case LuzhePhaseRevealed:
 		state.CurrentPhase = LuzhePhaseClimax
 		state.CardHistory = append(state.CardHistory, "char-luzhe-004")

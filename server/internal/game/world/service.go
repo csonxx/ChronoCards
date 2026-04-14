@@ -183,11 +183,12 @@ func (s *Service) isLuzheTriggerLocation(locationID string) bool {
 	return false
 }
 
-// getLuzheState 获取玩家陆喆状态（Phase 1 内存模拟，后续接 store）
-// TODO: 后续接入数据库 store 层
+// getLuzheState 获取玩家陆喆状态
+// 如果玩家从未触发过陆喆事件线，返回初始状态 LuzheState{idle, 0} 而不是 nil
 func (s *Service) getLuzheState(playerID string) *deck.LuzhePlayerState {
-	// Phase 1 暂时返回 nil（视为未触发状态），后续 store 层实现后接入
-	return nil
+	// Phase 1 暂时返回初始状态（视为未触发状态），后续 store 层实现后改为数据库查询
+	// 查不到记录时返回初始状态，而不是 nil，确保触发逻辑正常运作
+	return deck.NewLuzheStateMachine().NewPlayerState(playerID)
 }
 
 func pickEncounterType(dangerLevel int) string {
