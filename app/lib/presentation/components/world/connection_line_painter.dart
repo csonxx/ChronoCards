@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/world_connection.dart';
 import '../../../domain/entities/world_location.dart';
 
@@ -19,14 +20,12 @@ class ConnectionLinesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final connection in connections) {
-      final fromLocation = locations.firstWhere(
-        (l) => l.id == connection.fromLocationId,
-        orElse: () => locations.first,
-      );
-      final toLocation = locations.firstWhere(
-        (l) => l.id == connection.toLocationId,
-        orElse: () => locations.first,
-      );
+      // Safe lookup with null fallback
+      final fromLocation = locations.where((l) => l.id == connection.fromLocationId).firstOrNull;
+      final toLocation = locations.where((l) => l.id == connection.toLocationId).firstOrNull;
+      
+      // Skip if either location not found
+      if (fromLocation == null || toLocation == null) continue;
 
       final start = Offset(
         fromLocation.mapX * size.width,
@@ -61,22 +60,22 @@ class ConnectionLinesPainter extends CustomPainter {
       switch (connection.pathType) {
         case 'road':
           paint.color = isHovered
-              ? const Color(0xFFFFD700)
+              ? AppTheme.accentGold
               : const Color(0xFF8B7355).withOpacity(0.6);
           break;
         case 'trekking':
           paint.color = isHovered
-              ? const Color(0xFF4ECDC4)
+              ? AppTheme.manaBlue
               : const Color(0xFF228B22).withOpacity(0.5);
           break;
         case 'teleport':
           paint.color = isHovered
-              ? const Color(0xFF9D4EDD)
-              : const Color(0xFF533483).withOpacity(0.6);
+              ? AppTheme.accentMystic
+              : AppTheme.accentCosmic.withOpacity(0.6);
           paint.strokeWidth = isHovered ? 4 : 2;
           break;
         case 'story_locked':
-          paint.color = Colors.red.withOpacity(0.5);
+          paint.color = AppTheme.healthRed.withOpacity(0.5);
           break;
         default:
           paint.color = Colors.grey.withOpacity(0.4);
@@ -136,13 +135,13 @@ class ConnectionLinesPainter extends CustomPainter {
         ..close();
 
       final paint = Paint()
-        ..color = isHovered ? const Color(0xFF9D4EDD) : const Color(0xFF533483)
+        ..color = isHovered ? AppTheme.accentMystic : AppTheme.accentCosmic
         ..style = PaintingStyle.fill;
       canvas.drawPath(path, paint);
     } else if (connection.pathType == 'trekking') {
       // Draw mountain marker
       final iconPaint = Paint()
-        ..color = isHovered ? const Color(0xFF4ECDC4) : const Color(0xFF228B22)
+        ..color = isHovered ? AppTheme.manaBlue : const Color(0xFF228B22)
         ..style = PaintingStyle.fill;
 
       final path = Path()
@@ -223,14 +222,14 @@ class ConnectionLinesPainter extends CustomPainter {
       textPainter.width + 12,
       textPainter.height + 8,
     );
-    final bgPaint = Paint()..color = const Color(0xCC1A1A2E);
+    final bgPaint = Paint()..color = AppTheme.primaryDark.withOpacity(0.8);
     canvas.drawRRect(
       RRect.fromRectAndRadius(bgRect, const Radius.circular(6)),
       bgPaint,
     );
 
     final borderPaint = Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.8)
+      ..color = AppTheme.accentGold.withOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     canvas.drawRRect(

@@ -10,19 +10,44 @@ import 'world_hud.dart';
 
 /// World Map Screen - Full screen 2D map for world exploration
 /// Navigable world map showing all 6 regions with their locations
-class WorldMapScreen extends StatelessWidget {
+class WorldMapScreen extends StatefulWidget {
   final String? playerId;
 
   const WorldMapScreen({super.key, this.playerId});
 
   @override
+  State<WorldMapScreen> createState() => _WorldMapScreenState();
+}
+
+class _WorldMapScreenState extends State<WorldMapScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Lock to landscape orientation using standard Flutter approach
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    // Restore orientations when leaving
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ForceLandscape(
-      child: BlocProvider(
-        create: (context) => WorldMapBloc(playerId: playerId ?? 'player_1')
-          ..add(LoadWorldMap()),
-        child: const _WorldMapScreenContent(),
-      ),
+    return BlocProvider(
+      create: (context) => WorldMapBloc(playerId: widget.playerId ?? 'player_1')
+        ..add(LoadWorldMap()),
+      child: const _WorldMapScreenContent(),
     );
   }
 }
@@ -160,28 +185,6 @@ class _WorldMapScreenContentState extends State<_WorldMapScreenContent> {
           return const SizedBox.shrink();
         },
       ),
-    );
-  }
-}
-
-/// Landscape lock wrapper
-class ForceLandscape extends StatelessWidget {
-  final Widget child;
-
-  const ForceLandscape({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        if (orientation == Orientation.portrait) {
-          return RotatedBox(
-            quarterTurns: 1,
-            child: child,
-          );
-        }
-        return child;
-      },
     );
   }
 }

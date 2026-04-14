@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/world_location.dart';
 
 /// Location Info Panel - Slide-up panel showing current scene details
@@ -177,7 +178,7 @@ class LocationInfoPanel extends StatelessWidget {
   }
 
   Widget _buildDangerBadge() {
-    final color = _getDangerColor(location.dangerLevel);
+    final color = AppTheme.getDangerColor(location.dangerLevel);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -306,9 +307,9 @@ class LocationInfoPanel extends StatelessWidget {
       case 'enemy':
         return {'icon': Icons.sports_kabaddi, 'color': AppTheme.healthRed};
       case 'inn':
-        return {'icon': Icons.hotel, 'color': const Color(0xFF9D4EDD)};
+        return {'icon': Icons.hotel, 'color': AppTheme.accentMystic};
       case 'merchant':
-        return {'icon': Icons.store, 'color': const Color(0xFFFFD700)};
+        return {'icon': Icons.store, 'color': AppTheme.accentGold};
       default:
         return {'icon': Icons.help_outline, 'color': AppTheme.textSecondary};
     }
@@ -397,24 +398,7 @@ class LocationInfoPanel extends StatelessWidget {
   }
 
   Color _getLocationColor() {
-    switch (location.type.toLowerCase()) {
-      case 'city':
-        return const Color(0xFF4ECDC4);
-      case 'town':
-        return AppTheme.accentGold;
-      case 'village':
-        return const Color(0xFF8B4513);
-      case 'wilderness':
-        return const Color(0xFF228B22);
-      case 'dungeon':
-        return const Color(0xFF533483);
-      case 'inn':
-        return const Color(0xFF9D4EDD);
-      case 'special':
-        return AppTheme.accentGold;
-      default:
-        return AppTheme.textSecondary;
-    }
+    return AppTheme.getLocationTypeColor(location.type);
   }
 
   IconData _getLocationIcon() {
@@ -437,24 +421,4 @@ class LocationInfoPanel extends StatelessWidget {
         return Icons.place;
     }
   }
-
-  Color _getDangerColor(int level) {
-    if (level <= 1) return AppTheme.manaBlue;
-    if (level <= 2) return const Color(0xFFFFE66D);
-    if (level <= 3) return const Color(0xFFFF9800);
-    return AppTheme.healthRed;
-  }
-}
-
-// Theme color aliases
-class AppTheme {
-  static const Color primaryDark = Color(0xFF1A1A2E);
-  static const Color primaryMid = Color(0xFF16213E);
-  static const Color primaryLight = Color(0xFF0F3460);
-  static const Color accentGold = Color(0xFFFFD700);
-  static const Color textGold = Color(0xFFFFD700);
-  static const Color cardBorder = Color(0xFF393E46);
-  static const Color manaBlue = Color(0xFF4ECDC4);
-  static const Color healthRed = Color(0xFFFF6B6B);
-  static const Color textSecondary = Color(0xFFB0B0B0);
 }

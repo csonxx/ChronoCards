@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/world_region.dart';
 
 /// Custom painter for drawing region color blocks on the world map
@@ -115,37 +116,4 @@ class RegionBlocksPainter extends CustomPainter {
     return oldDelegate.regions != regions ||
         oldDelegate.currentRegionId != currentRegionId;
   }
-}
-
-/// Helper to get region color by name
-Color getRegionColor(String regionName) {
-  switch (regionName.toLowerCase()) {
-    case 'mingjiao':
-    case '明教':
-      return const Color(0xFFFF6B35); // Orange-red
-    case 'shaolin':
-    case '少林':
-      return const Color(0xFFFFD700); // Gold
-    case 'wudang':
-    case '武当':
-      return const Color(0xFF4ECDC4); // Teal
-    case 'biaoju':
-    case '镖局':
-      return const Color(0xFF8B4513); // Brown
-    case 'gaibang':
-    case '丐帮':
-      return const Color(0xFF9ACD32); // Yellow-green
-    case 'yewai':
-    case '野外':
-      return const Color(0xFF228B22); // Forest green
-    default:
-      return const Color(0xFF666666); // Gray
-  }
-}
-
-// Re-export theme colors
-class AppTheme {
-  static const Color accentGold = Color(0xFFFFD700);
-  static const Color textGold = Color(0xFFFFD700);
-  static const Color cardBorder = Color(0xFF393E46);
 }

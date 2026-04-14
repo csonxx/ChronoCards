@@ -32,15 +32,15 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
       final connections = _getConnections();
 
       // Find player's current location (default to first unlocked)
-      final currentLocation = locations.firstWhere(
-        (l) => l.isUnlocked,
-        orElse: () => locations.first,
-      );
+      final currentLocation = locations.where((l) => l.isUnlocked).firstOrNull ?? locations.firstOrNull;
+      final currentRegion = currentLocation != null
+          ? regions.where((r) => r.id == currentLocation.regionId).firstOrNull ?? regions.firstOrNull
+          : regions.firstOrNull;
 
-      final currentRegion = regions.firstWhere(
-        (r) => r.id == currentLocation.regionId,
-        orElse: () => regions.first,
-      );
+      if (currentLocation == null || currentRegion == null) {
+        emit(const WorldMapError('No locations or regions available'));
+        return;
+      }
 
       final unlockedCount = locations.where((l) => l.isUnlocked).length;
 
@@ -81,7 +81,7 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
   ) async {
     final currentState = state;
     if (currentState is WorldMapLoaded) {
-      emit(currentState.copyWith(isNavigating: true));
+      emit(currentState.copyWith(navigationState: NavigationState(isNavigating: true)));
 
       try {
         // Call API: POST /api/players/{id}/location/navigate
@@ -91,9 +91,17 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
         // Simulate API call
         await Future.delayed(const Duration(milliseconds: 800));
 
-        final toLocation = currentState.locations.firstWhere(
-          (l) => l.id == event.toLocationId,
-        );
+        final toLocation = currentState.locations.where((l) => l.id == event.toLocationId).firstOrNull;
+        if (toLocation == null) {
+          emit(currentState.copyWith(
+            navigationState: const NavigationState(
+              isNavigating: false,
+              success: false,
+              message: 'Location not found',
+            ),
+          ));
+          return;
+        }
 
         // Check if path is valid
         final validConnection = currentState.connections.any((conn) =>
@@ -105,33 +113,30 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
 
         if (!validConnection && currentState.currentLocationId != event.toLocationId) {
           emit(currentState.copyWith(
-            isNavigating: false,
-            navigationSuccess: false,
-            navigationMessage: '无法直接到达该地点，需要寻找其他路径。',
+            navigationState: const NavigationState(
+              isNavigating: false,
+              success: false,
+              message: '无法直接到达该地点，需要寻找其他路径。',
+            ),
           ));
           return;
         }
 
         // Check if locked
-        final connection = currentState.connections.firstWhere(
-          (conn) =>
-            (conn.fromLocationId == currentState.currentLocationId &&
-             conn.toLocationId == event.toLocationId) ||
-            (conn.fromLocationId == event.toLocationId &&
-             conn.toLocationId == currentState.currentLocationId),
-          orElse: () => const WorldConnection(
-            id: '',
-            fromLocationId: '',
-            toLocationId: '',
-            pathType: 'road',
-          ),
-        );
+        final connection = currentState.connections.where((conn) =>
+          (conn.fromLocationId == currentState.currentLocationId &&
+           conn.toLocationId == event.toLocationId) ||
+          (conn.fromLocationId == event.toLocationId &&
+           conn.toLocationId == currentState.currentLocationId)
+        ).firstOrNull;
 
-        if (connection.isLocked) {
+        if (connection != null && connection.isLocked) {
           emit(currentState.copyWith(
-            isNavigating: false,
-            navigationSuccess: false,
-            navigationMessage: '该路径被锁定，需要完成特定条件才能通行。',
+            navigationState: const NavigationState(
+              isNavigating: false,
+              success: false,
+              message: '该路径被锁定，需要完成特定条件才能通行。',
+            ),
           ));
           return;
         }
@@ -139,18 +144,17 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
         // Check if location is unlocked
         if (!toLocation.isUnlocked) {
           emit(currentState.copyWith(
-            isNavigating: false,
-            navigationSuccess: false,
-            navigationMessage: '${toLocation.name}尚未解锁，需要达到 ${toLocation.recommendedLevel} 级。',
+            navigationState: NavigationState(
+              isNavigating: false,
+              success: false,
+              message: '${toLocation.name}尚未解锁，需要达到 ${toLocation.recommendedLevel} 级。',
+            ),
           ));
           return;
         }
 
         // Navigate successfully
-        final newRegion = currentState.regions.firstWhere(
-          (r) => r.id == toLocation.regionId,
-          orElse: () => currentState.regions.first,
-        );
+        final newRegion = currentState.regions.where((r) => r.id == toLocation.regionId).firstOrNull ?? currentState.regions.first;
 
         // Update visit count
         final updatedLocations = currentState.locations.map((l) {
@@ -168,16 +172,20 @@ class WorldMapBloc extends Bloc<WorldMapEvent, WorldMapState> {
           selectedLocation: toLocation,
           selectedLocationDealers: toLocation.availableDealers,
           locationVisitCount: toLocation.visitCount + 1,
-          isNavigating: false,
-          navigationSuccess: true,
-          navigationMessage: '成功抵达 ${toLocation.name}！',
+          navigationState: NavigationState(
+            isNavigating: false,
+            success: true,
+            message: '成功抵达 ${toLocation.name}！',
+          ),
         ));
 
       } catch (e) {
         emit(currentState.copyWith(
-          isNavigating: false,
-          navigationSuccess: false,
-          navigationMessage: '导航失败：$e',
+          navigationState: NavigationState(
+            isNavigating: false,
+            success: false,
+            message: '导航失败：$e',
+          ),
         ));
       }
     }

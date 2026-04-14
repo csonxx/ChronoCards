@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/world_location.dart';
 import '../../../domain/entities/world_region.dart';
-import 'region_block.dart';
 
 /// Location marker widget for the world map
 /// Shows location icon with state: unlocked/locked/current
 class LocationMarkerWidget extends StatefulWidget {
   final WorldLocation location;
-  final WorldRegion region;
+  final WorldRegion? region; // nullable for safety
   final bool isCurrentLocation;
   final bool isHovered;
   final VoidCallback onTap;
@@ -16,7 +16,7 @@ class LocationMarkerWidget extends StatefulWidget {
   const LocationMarkerWidget({
     super.key,
     required this.location,
-    required this.region,
+    this.region,
     this.isCurrentLocation = false,
     this.isHovered = false,
     required this.onTap,
@@ -69,7 +69,8 @@ class _LocationMarkerWidgetState extends State<LocationMarkerWidget>
   @override
   Widget build(BuildContext context) {
     final isLocked = !widget.location.isUnlocked;
-    final color = widget.region.color;
+    // Use region color if available, otherwise derive from location type
+    final color = widget.region?.color ?? AppTheme.getLocationTypeColor(widget.location.type);
 
     return AnimatedBuilder(
       animation: _bounceAnimation,

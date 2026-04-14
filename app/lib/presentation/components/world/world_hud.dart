@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// World HUD - Top bar overlay showing world overview info
 class WorldHud extends StatelessWidget {
@@ -178,16 +179,4 @@ class WorldHud extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Re-use app theme colors
-class AppTheme {
-  static const Color accentGold = Color(0xFFFFD700);
-  static const Color textGold = Color(0xFFFFD700);
-  static const Color cardBorder = Color(0xFF393E46);
-  static const Color primaryDark = Color(0xFF1A1A2E);
-  static const Color accentCosmic = Color(0xFF533483);
-  static const Color accentMystic = Color(0xFF9D4EDD);
-  static const Color manaBlue = Color(0xFF4ECDC4);
-  static const Color textSecondary = Color(0xFFB0B0B0);
 }

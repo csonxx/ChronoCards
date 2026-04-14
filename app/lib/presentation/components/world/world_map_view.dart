@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/world_region.dart';
 import '../../../domain/entities/world_location.dart';
 import '../../../domain/entities/world_connection.dart';
@@ -76,6 +77,7 @@ class _WorldMapViewState extends State<WorldMapView>
               size: Size(constraints.maxWidth, constraints.maxHeight),
               painter: ConnectionLinesPainter(
                 connections: widget.connections,
+                locations: widget.locations,
                 hoveredConnectionId: _hoveredConnectionId,
                 onHover: (id) => setState(() => _hoveredConnectionId = id),
               ),
@@ -115,10 +117,8 @@ class _WorldMapViewState extends State<WorldMapView>
 
   List<Widget> _buildLocationMarkers(BoxConstraints constraints) {
     return widget.locations.map((location) {
-      final region = widget.regions.firstWhere(
-        (r) => r.id == location.regionId,
-        orElse: () => widget.regions.first,
-      );
+      // Safe lookup with null fallback
+      final region = widget.regions.where((r) => r.id == location.regionId).firstOrNull;
 
       return Positioned(
         left: location.mapX * constraints.maxWidth - 30,
@@ -136,10 +136,9 @@ class _WorldMapViewState extends State<WorldMapView>
   }
 
   Widget _buildCurrentLocationIndicator(BoxConstraints constraints) {
-    final currentLocation = widget.locations.firstWhere(
-      (l) => l.id == widget.currentLocationId,
-      orElse: () => widget.locations.first,
-    );
+    // Safe lookup - use firstOrNull instead of first to avoid throw
+    final currentLocation = widget.locations.where((l) => l.id == widget.currentLocationId).firstOrNull;
+    if (currentLocation == null) return const SizedBox.shrink();
 
     return AnimatedBuilder(
       animation: _pulseController,
@@ -227,14 +226,14 @@ class _WorldMapViewState extends State<WorldMapView>
                       children: [
                         Icon(
                           Icons.warning_amber,
-                          color: _getDangerColor(location.dangerLevel),
+                          color: AppTheme.getDangerColor(location.dangerLevel),
                           size: 14,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Danger: ${location.dangerLevel}',
                           style: TextStyle(
-                            color: _getDangerColor(location.dangerLevel),
+                            color: AppTheme.getDangerColor(location.dangerLevel),
                             fontSize: 12,
                           ),
                         ),
@@ -279,13 +278,6 @@ class _WorldMapViewState extends State<WorldMapView>
       default:
         return Icons.place;
     }
-  }
-
-  Color _getDangerColor(int level) {
-    if (level <= 1) return AppTheme.manaBlue;
-    if (level <= 2) return AppTheme.energyYellow;
-    if (level <= 3) return const Color(0xFFFF9800);
-    return AppTheme.healthRed;
   }
 }
 
