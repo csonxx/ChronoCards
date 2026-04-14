@@ -6,16 +6,21 @@ import (
 
 	"github.com/csonxx/ChronoCards/internal/model"
 	"github.com/csonxx/ChronoCards/internal/store"
+	"github.com/csonxx/ChronoCards/server/internal/game/deck"
 )
 
 // Service 世界地图服务
 type Service struct {
-	store store.StoreInterface
+	store               store.StoreInterface
+	luzheStateMachine  *deck.LuzheStateMachine
 }
 
 // NewService 创建世界地图服务
 func NewService(s store.StoreInterface) *Service {
-	return &Service{store: s}
+	return &Service{
+		store:              s,
+		luzheStateMachine: deck.NewLuzheStateMachine(),
+	}
 }
 
 // GetWorldOverview 获取世界概览
@@ -128,7 +133,8 @@ func (s *Service) ProcessNavigation(playerID, targetLocationID string) *Navigate
 	s.store.SetPlayerLocation(playerID, targetLocationID)
 
 	newLoc := GetLocationByID(targetLocationID)
-	return &NavigateResult{
+
+	result := &NavigateResult{
 		Success:            true,
 		FromLocationID:     fromID,
 		ToLocationID:       targetLocationID,
@@ -137,6 +143,51 @@ func (s *Service) ProcessNavigation(playerID, targetLocationID string) *Navigate
 		Message:            fmt.Sprintf("抵达%s", newLoc.Name),
 		NewLocation:        newLoc,
 	}
+
+	// ⬇️ Phase 1 新增：陆喆角色主导卡触发检查
+	// 检查是否在苏州城/丐帮相关Location时触发
+	if s.isLuzheTriggerLocation(targetLocationID) {
+		luzheCtx := deck.NewPlayerLocationContext(
+			playerID,
+			playerData.CurrentLocation,
+			playerData.CurrentRegion,
+			playerData.VisitedLocations,
+			playerData.VisitedRegions,
+			playerData.StoryProgress,
+		)
+		// 从 store 获取玩家陆喆状态（Phase 1 阶段暂时用内存模拟）
+		luzheState := s.getLuzheState(playerID)
+		triggerResult := s.luzheStateMachine.CheckTrigger(luzheCtx, luzheState)
+		if triggerResult.ShouldTrigger && triggerResult.Card != nil {
+			result.LuzheTriggered = true
+			result.LuzheCardID = triggerResult.Card.ID
+			result.LuzheCardTitle = triggerResult.Card.Title
+			result.LuzheReason = triggerResult.Reason
+		}
+	}
+
+	return result
+}
+
+// isLuzheTriggerLocation 判断是否为陆喆事件触发场景
+func (s *Service) isLuzheTriggerLocation(locationID string) bool {
+	triggerLocations := []string{
+		"loc-suzhou",    // 苏州城（丐帮江南据点）
+		"loc-gaibang",   // 丐帮总舵
+	}
+	for _, loc := range triggerLocations {
+		if loc == locationID {
+			return true
+		}
+	}
+	return false
+}
+
+// getLuzheState 获取玩家陆喆状态（Phase 1 内存模拟，后续接 store）
+// TODO: 后续接入数据库 store 层
+func (s *Service) getLuzheState(playerID string) *deck.LuzhePlayerState {
+	// Phase 1 暂时返回 nil（视为未触发状态），后续 store 层实现后接入
+	return nil
 }
 
 func pickEncounterType(dangerLevel int) string {

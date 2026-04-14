@@ -30,6 +30,18 @@ const (
 	CardEmotion    CardType = "emotion"
 	CardEconomy    CardType = "economy"
 	CardBlank      CardType = "blank"
+	CardCharacter  CardType = "character" // 角色主导卡（父类型）
+)
+
+// LuzheCardType 陆喆专属卡牌子类型
+type LuzheCardType string
+
+const (
+	LuzheEncounter  LuzheCardType = "encounter"   // 首次遭遇
+	LuzheTrial      LuzheCardType = "trial"       // 考验玩家
+	LuzheBackground LuzheCardType = "background"   // 揭示身世
+	LuzheUprising   LuzheCardType = "uprising"     // 丐帮内乱
+	LuzheResolution LuzheCardType = "resolution"    // 结局分支
 )
 
 // SkillType 技能类型

@@ -55,6 +55,15 @@ var MVPLocations = []*Location{
 		AvailableDealers: []string{"enemy", "dynamic_encounter"},
 		StoryChapters: []string{"ch3", "final"}, Tags: []string{"明教", "教主", "最终战"},
 		Unlocked: false, UnlockCondition: "unlock_final_battle", SceneBG: "/assets/scenes/guangming_summit.webp", MusicTrack: "boss_battle"},
+
+	// 场景7：苏州城（丐帮江南据点，陆喆事件线触发地）
+	{ID: "loc-suzhou", Name: "苏州城", DisplayOrder: 7, RegionID: "region-central-plains",
+		LocationType: "city", LocationTypeExt: "faction_headquarters",
+		Description: "园林之城，小桥流水。丝绸之府，江南繁华代表。丐帮江南分舵在此扎根，陆喆偶尔现身于此。",
+		Atmosphere: "烟雨江南，暗流涌动", DangerLevel: 2, NPCCount: 50,
+		AvailableDealers: []string{"teahouse", "inn", "merchant", "gaibang_informant"},
+		StoryChapters: []string{"ch2", "ch3"}, Tags: []string{"园林", "丐帮", "江南", "陆喆"},
+		Unlocked: true, SceneBG: "/assets/scenes/suzhou_city.webp", MusicTrack: "suzhou_ambient"},
 }
 
 // MVPConnections MVP连通性数据（9条）
@@ -68,6 +77,9 @@ var MVPConnections = []*LocationConnection{
 	{ID: "conn-shaolin-guangming", FromLocation: "loc-shaolin", ToLocation: "loc-guangming", ConnectionType: "story_locked", TravelTimeMin: 60, DangerLevel: 5, EncounterRate: 0.800, Description: "少林至光明顶，需穿越明教外围防线。", Unlocked: false},
 	{ID: "conn-wudang-guangming", FromLocation: "loc-wudang", ToLocation: "loc-guangming", ConnectionType: "story_locked", TravelTimeMin: 60, DangerLevel: 5, EncounterRate: 0.800, Description: "武当至光明顶，需穿越明教外围防线。", Unlocked: false},
 	{ID: "conn-inn-network", FromLocation: "loc-inn-anchor", ToLocation: "loc-inn-anchor", ConnectionType: "teleport", TravelTimeMin: 0, DangerLevel: 0, EncounterRate: 0.000, Description: "客栈网络可实现快速旅行。", Unlocked: true},
+
+	// 平阳城 <-> 苏州城 (京杭大运河)
+	{ID: "conn-pingyang-suzhou", FromLocation: "loc-pingyang", ToLocation: "loc-suzhou", ConnectionType: "road", TravelTimeMin: 20, DangerLevel: 1, EncounterRate: 0.150, Description: "平阳城沿运河南下可达苏州城，水路便捷。", Unlocked: true},
 }
 
 // GetLocationByID 根据ID获取场景

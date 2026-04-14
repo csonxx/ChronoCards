@@ -84,4 +84,10 @@ type NavigateResult struct {
 	Message           string    `json:"message"`
 	NewLocation       *Location `json:"new_location,omitempty"`
 	UnlockReward      string    `json:"unlock_reward,omitempty"`
+
+	// Luzhe 陆喆角色主导卡触发（Phase 1 新增）
+	LuzheTriggered bool   `json:"luzhe_triggered,omitempty"`
+	LuzheCardID    string `json:"luzhe_card_id,omitempty"`
+	LuzheCardTitle string `json:"luzhe_card_title,omitempty"`
+	LuzheReason    string `json:"luzhe_reason,omitempty"`
 }

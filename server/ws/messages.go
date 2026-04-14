@@ -53,6 +53,9 @@ const (
 	EventLevelUp           EventType = "event_level_up"
 	EventElementReaction   EventType = "event_element_reaction"
 	EventNarrative         EventType = "event_narrative"
+
+	// EventCharacterCardTrigger 角色主导卡触发（服务器主动推送）
+	EventCharacterCardTrigger EventType = "event_character_card_trigger"
 )
 
 // ErrorCode represents server error codes
@@ -413,6 +416,21 @@ type NarrativeContent struct {
 	Dialogue   string `json:"dialogue,omitempty"`
 	Atmosphere string `json:"atmosphere,omitempty"`
 	AudioCue   string `json:"audio_cue,omitempty"`
+}
+
+// EventCharacterCardTriggerData 角色主导卡触发推送数据
+type EventCharacterCardTriggerData struct {
+	PlayerID       string             `json:"player_id"`
+	CharacterID    string             `json:"character_id"`
+	CharacterName  string             `json:"character_name"`
+	CardID         string             `json:"card_id"`
+	CardTitle      string             `json:"card_title"`
+	State          string             `json:"state"`
+	TrustLevel     int                `json:"trust_level"`
+	Narrative      string             `json:"narrative"`
+	Choices        []ChoiceEntry      `json:"choices,omitempty"`
+	ChoicesPrompt  string             `json:"choices_prompt"`
+	RewardsPreview string             `json:"rewards_preview,omitempty"`
 }
 
 // NowISO returns the current ISO 8601 timestamp in UTC
