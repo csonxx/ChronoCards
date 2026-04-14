@@ -5,7 +5,6 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -30,11 +29,7 @@ type Hub struct {
 	// JWT authenticator
 	auth *Authenticator
 
-	// IdleTimeout is the max duration between messages from a client.
-	// If a client doesn't send anything for this duration, their connection is closed.
-	IdleTimeout time.Duration
-
-	// done signals the Run loop to exit
+	// done signals the Run goroutine to exit
 	done chan struct{}
 
 	mu      sync.RWMutex
@@ -45,13 +40,12 @@ type Hub struct {
 // NewHub creates a new Hub instance
 func NewHub(auth *Authenticator) *Hub {
 	return &Hub{
-		Clients:     make(map[string]*Client),
-		Register:    make(chan *Client),
-		Unregister:  make(chan *Client),
-		Receive:     make(chan *MessagePacket, 512),
-		auth:        auth,
-		IdleTimeout: 60 * time.Second,
-		done:        make(chan struct{}),
+		Clients:    make(map[string]*Client),
+		Register:   make(chan *Client),
+		Unregister: make(chan *Client),
+		Receive:    make(chan *MessagePacket, 512),
+		auth:       auth,
+		done:       make(chan struct{}),
 	}
 }
 
@@ -141,7 +135,6 @@ func (h *Hub) ClientCount() int {
 func (h *Hub) handleMessage(packet *MessagePacket) {
 	var base BaseMessage
 	if err := json.Unmarshal(packet.Data, &base); err != nil {
-		log.Printf("[WS] JSON unmarshal error from client %s: %v", packet.Client.ID, err)
 		return
 	}
 

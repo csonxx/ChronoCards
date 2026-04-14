@@ -93,10 +93,20 @@ func (c *Client) ReadPump() {
 		c.Conn.Close(websocket.StatusNormalClosure, "")
 	}()
 
+	// Idle timeout: disconnect if no message received for 60 seconds
+	idleTimer := time.NewTimer(60 * time.Second)
+	defer idleTimer.Stop()
+
 	for {
 		if c.IsClosed() {
 			return
 		}
+
+		// Reset idle timer on each read attempt
+		if !idleTimer.Stop() {
+			<-idleTimer.C
+		}
+		idleTimer.Reset(60 * time.Second)
 
 		_, msg, err := c.Conn.Read(c.ctx)
 		if err != nil {
@@ -117,6 +127,14 @@ func (c *Client) ReadPump() {
 		case c.Hub.Receive <- &MessagePacket{Client: c, Data: msg}:
 		default:
 			// Drop if buffer full
+		}
+
+		// Check if idle timer fired (client was idle too long)
+		select {
+		case <-idleTimer.C:
+			c.Hub.Unregister <- c
+			return
+		default:
 		}
 	}
 }
