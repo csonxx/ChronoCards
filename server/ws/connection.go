@@ -25,19 +25,21 @@ type Client struct {
 	closed     atomic.Bool
 	ctx        context.Context
 	cancel     context.CancelFunc
-	pingCount  int32 // consecutive missed pongs
+	// idleReset signals that client activity was detected, resetting the idle timeout.
+	idleReset chan struct{}
 }
 
 // NewClient creates a new client connection
 func NewClient(hub *Hub, conn *websocket.Conn, id string) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Client{
-		ID:     id,
-		Conn:   conn,
-		Hub:    hub,
-		Send:   make(chan []byte, 256),
-		ctx:    ctx,
-		cancel: cancel,
+		ID:        id,
+		Conn:      conn,
+		Hub:       hub,
+		Send:      make(chan []byte, 256),
+		ctx:       ctx,
+		cancel:    cancel,
+		idleReset: make(chan struct{}, 1),
 	}
 }
 
@@ -105,6 +107,12 @@ func (c *Client) ReadPump() {
 			return
 		}
 
+		// Signal activity to reset idle timeout
+		select {
+		case c.idleReset <- struct{}{}:
+		default:
+		}
+
 		select {
 		case c.Hub.Receive <- &MessagePacket{Client: c, Data: msg}:
 		default:
@@ -115,11 +123,32 @@ func (c *Client) ReadPump() {
 
 // WritePump pumps messages from the hub send channel to the websocket connection
 func (c *Client) WritePump() {
-	// Server-side ping ticker: every 30 seconds
 	pingTick := time.NewTicker(30 * time.Second)
 	defer func() {
 		pingTick.Stop()
 		c.Conn.Close(websocket.StatusNormalClosure, "")
+	}()
+
+	idleTimeout := c.Hub.IdleTimeout
+	idleTimer := time.NewTimer(idleTimeout)
+	idleTimer.Stop() // start stopped; first ping starts it
+
+	// Single goroutine managing idle timeout.
+	// Whenever a message is received from the client (ReadPump signals idleReset),
+	// or whenever a ping is sent, the timer resets.
+	// If the timer fires, the client is unresponsive → close.
+	go func() {
+		for {
+			select {
+			case <-c.ctx.Done():
+				return
+			case <-c.idleReset:
+				idleTimer.Reset(idleTimeout)
+			case <-idleTimer.C:
+				c.Hub.Unregister <- c
+				return
+			}
+		}
 	}()
 
 	for {
@@ -128,7 +157,6 @@ func (c *Client) WritePump() {
 			return
 
 		case <-pingTick.C:
-			// Server-side ping: require client to respond with pong
 			c.mu.RLock()
 			authenticated := c.authenticated
 			c.mu.RUnlock()
@@ -147,7 +175,8 @@ func (c *Client) WritePump() {
 
 			select {
 			case c.Send <- pingMsg:
-				// sent
+				// Ping sent → reset idle timeout
+				idleTimer.Reset(idleTimeout)
 			default:
 				// skip if buffer full
 			}
