@@ -15,20 +15,30 @@ import (
 
 // Handler handles WebSocket connections
 type Handler struct {
-	hub    *Hub
-	auth   *Authenticator
-	mux    *http.ServeMux
-	server *http.Server
+	hub            *Hub
+	auth           *Authenticator
+	mux            *http.ServeMux
+	server         *http.Server
+	narrativeSvc   any // narrative service, may be nil
 }
 
 // NewHandler creates a new WebSocket handler
-func NewHandler(jwtSecret string) *Handler {
+// jwtSecret is the JWT secret for authentication
+// narrativeSvc is optional (may be nil) and should implement:
+//   GenerateCardDrawNarrative(ctx context.Context, req CardDrawNarrativeReq) (*EventNarrativeData, error)
+func NewHandler(jwtSecret string, narrativeSvc ...any) *Handler {
 	auth := NewAuthenticator(jwtSecret)
 	hub := NewHub(auth)
 	h := &Handler{
-		hub:  hub,
-		auth: auth,
-		mux:  http.NewServeMux(),
+		hub:          hub,
+		auth:         auth,
+		mux:          http.NewServeMux(),
+		narrativeSvc: nil,
+	}
+	// Accept variadic narrative service argument
+	if len(narrativeSvc) > 0 {
+		h.narrativeSvc = narrativeSvc[0]
+		hub.NarrativeSvc = narrativeSvc[0]
 	}
 	h.setupRoutes()
 	return h
@@ -212,26 +222,28 @@ func (h *Hub) handleCardDraw(packet *MessagePacket, base *BaseMessage) {
 		forceType = "attack"
 	}
 
+	drawnCards := []CardInfo{
+		{
+			ID:          "card_" + uuid.New().String()[:8],
+			Type:        forceType,
+			Title:       "破天一剑",
+			Description: "凝聚全身真气，发出毁天灭地的一击",
+			Element:     "thunder",
+			Damage:      85,
+			MPCost:      20,
+			Cooldown:    0,
+			Effects:     []string{"破甲", "眩晕"},
+		},
+	}
+
 	resp := BaseMessage{
 		Type:      TypeResponse,
 		Event:     EventCardDrawResp,
 		Seq:       base.Seq,
 		Timestamp: NowISO(),
 		Data: CardDrawResponseData{
-			Success: true,
-			DrawnCards: []CardInfo{
-				{
-					ID:          "card_" + uuid.New().String()[:8],
-					Type:        forceType,
-					Title:       "破天一剑",
-					Description: "凝聚全身真气，发出毁天灭地的一击",
-					Element:     "thunder",
-					Damage:      85,
-					MPCost:      20,
-					Cooldown:    0,
-					Effects:     []string{"破甲", "眩晕"},
-				},
-			},
+			Success:          true,
+			DrawnCards:       drawnCards,
 			NextCardTypeHint: "defense",
 			DeckExhausted:    false,
 			DealerHint:       "说书人轻敲桌面：此剑一出，江湖再无安宁",
@@ -242,6 +254,45 @@ func (h *Hub) handleCardDraw(packet *MessagePacket, base *BaseMessage) {
 	case packet.Client.Send <- MustMarshal(resp):
 	default:
 	}
+
+	// Asynchronously generate and push narrative for each drawn card
+	if h.NarrativeSvc != nil {
+		go func() {
+			for _, card := range drawnCards {
+				narrativeReq := CardDrawNarrativeReq{
+					PlayerID:   packet.Client.PlayerID,
+					CardInfo:   card,
+					DealerID:   req.DealerID,
+					DealerName: "说书人",
+					Location:   "长安城",
+					DrawCount: len(drawnCards),
+				}
+				// Type assert and call narrative service
+				type narrativeGenerator interface {
+					GenerateCardDrawNarrative(ctx context.Context, req CardDrawNarrativeReq) (*EventNarrativeData, error)
+				}
+				if gen, ok := h.NarrativeSvc.(narrativeGenerator); ok {
+					data, err := gen.GenerateCardDrawNarrative(context.Background(), narrativeReq)
+					if err != nil {
+						log.Printf("[Narrative] generate error: %v", err)
+						continue
+					}
+					h.PushNarrativeEvent(packet.Client.PlayerID, *data)
+				}
+			}
+		}()
+	}
+}
+
+// CardDrawNarrativeReq is the request type for card draw narrative generation.
+// Duplicated here to avoid circular import with narrative package.
+type CardDrawNarrativeReq struct {
+	PlayerID   string
+	CardInfo   CardInfo
+	DealerID   string
+	DealerName string
+	Location   string
+	DrawCount  int
 }
 
 func (h *Hub) handleBattleAction(packet *MessagePacket, base *BaseMessage) {

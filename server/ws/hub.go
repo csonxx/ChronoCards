@@ -29,6 +29,9 @@ type Hub struct {
 	// JWT authenticator
 	auth *Authenticator
 
+	// NarrativeSvc generates LLM-driven narrative content (may be nil)
+	NarrativeSvc any
+
 	// done signals the Run goroutine to exit
 	done chan struct{}
 

@@ -10,7 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"chronocards/ws"
+	"github.com/csonxx/ChronoCards/narrative"
+	"github.com/csonxx/ChronoCards/ws"
 )
 
 func main() {
@@ -18,7 +19,11 @@ func main() {
 	jwtSecret := flag.String("jwt-secret", "chronocards-secret-key-change-in-production", "JWT secret key")
 	flag.Parse()
 
-	handler := ws.NewHandler(*jwtSecret)
+	// Initialize LLM narrative service
+	narrativeSvc := narrative.NewNarrativeService("")
+	log.Printf("[Narrative] LLM service initialized (MINIMAX_API_KEY env var: %v)", os.Getenv("MINIMAX_API_KEY") != "")
+
+	handler := ws.NewHandler(*jwtSecret, narrativeSvc)
 
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
