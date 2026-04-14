@@ -120,8 +120,11 @@ export const CompatibilityMatrix: React.FC<CompatibilityMatrixProps> = ({
     onTypeClick?.(type);
   }, [onTypeClick]);
 
-  // 当前显示用的基准类型：优先用内部追踪的，否则用 selectedTypes 最后一个
-  const displayType = referenceType ?? (selectedTypes.length > 0 ? selectedTypes[selectedTypes.length - 1] : null);
+  // 当前显示用的基准类型：
+  // 1. 优先用用户当前悬停/点击的 referenceType（优先采用）
+  // 2. 若无 referenceType，用 selectedTypes 第一个（兜底）
+  // 3. 若均无，显示空（引导用户点击矩阵）
+  const displayType = referenceType ?? (selectedTypes.length > 0 ? selectedTypes[0] : null);
 
   const getCellClass = useCallback((rowType: CardType, colType: CardType): string => {
     const val = getCompatibility(rowType, colType);
