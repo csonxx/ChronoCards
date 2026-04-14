@@ -29,6 +29,9 @@ type Hub struct {
 	// JWT authenticator
 	auth *Authenticator
 
+	// done signals the Run goroutine to exit
+	done chan struct{}
+
 	mu      sync.RWMutex
 	wg      sync.WaitGroup
 	running atomic.Bool
@@ -42,6 +45,7 @@ func NewHub(auth *Authenticator) *Hub {
 		Unregister: make(chan *Client),
 		Receive:    make(chan *MessagePacket, 512),
 		auth:       auth,
+		done:       make(chan struct{}),
 	}
 }
 
@@ -56,6 +60,9 @@ func (h *Hub) Run() {
 		defer h.wg.Done()
 		for {
 			select {
+			case <-h.done:
+				return
+
 			case client := <-h.Register:
 				h.mu.Lock()
 				h.Clients[client.ID] = client
@@ -81,6 +88,7 @@ func (h *Hub) Stop() {
 	if !h.running.Swap(false) {
 		return
 	}
+	close(h.done)
 	h.wg.Wait()
 }
 
