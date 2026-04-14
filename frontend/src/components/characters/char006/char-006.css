@@ -1,0 +1,474 @@
+/* #006 丐帮帮主 · 角色UI样式表
+ * 规范来源：UI_006_丐帮帮主_v1.md
+ * 主色：土黄 #C4A35A · 暗青 #4A5568
+ * 情绪6套：常态/豪爽/愤怒/算计/感伤/威严
+ */
+
+/* ===== 全局 CSS 变量 ===== */
+.char006-avatar,
+.char006-card,
+.char006-bubble {
+  --bubble-bg:      #E8D5A3;
+  --bubble-border:  #3D4A5C;
+  --bubble-text:    #2D3748;
+  --bubble-primary: #C4A35A;
+  --card-primary:   #C4A35A;
+  --card-secondary: #4A5568;
+  --card-text:      #2D3748;
+}
+
+/* ===================================================================
+   头像组件
+   =================================================================== */
+.char006-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: solid;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  background: linear-gradient(135deg, var(--card-primary) 0%, var(--card-secondary) 100%);
+}
+
+.char006-avatar--sm  { width:  64px; height:  64px; border-radius: 6px; }
+.char006-avatar--md  { width: 128px; height: 128px; border-radius: 8px; }
+.char006-avatar--lg  { width: 256px; height: 256px; border-radius: 12px; }
+
+/* 面部区域 */
+.char006-avatar__face-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.8);
+  /* 待美术资源接入后替换 background-image */
+  background: url('/assets/characters/char_006_placeholder.png') center/cover no-repeat,
+              linear-gradient(160deg, rgba(196,163,90,0.6) 0%, rgba(74,85,104,0.8) 100%);
+}
+
+/* 情绪图标 */
+.char006-avatar__emotion-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 14px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+/* 旧疤标记 */
+.char006-avatar__scar {
+  position: absolute;
+  top: 25%;
+  left: 35%;
+  width: 3px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 1px;
+  transform: rotate(-20deg);
+  pointer-events: none;
+}
+
+/* 愤怒青筋叠加 */
+.char006-avatar__vein-overlay {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(26, 32, 44, 0.15) 8px,
+    rgba(26, 32, 44, 0.15) 9px
+  );
+  pointer-events: none;
+}
+
+/* 选中时打狗棒徽标 */
+.char006-avatar__staff-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  opacity: 0.9;
+}
+
+/* 情绪色调变体 */
+.char006-avatar--hearty   { box-shadow: 0 0 0 1px #D4A843; }
+.char006-avatar--angry    { box-shadow: 0 0 8px rgba(26,32,44,0.7); }
+.char006-avatar--scheming { filter: saturate(0.7); }
+.char006-avatar--sorrowful{ filter: sepia(0.3) brightness(0.9); }
+.char006-avatar--solemn   { box-shadow: 0 0 12px rgba(26,32,44,0.9); }
+
+/* 状态变体 */
+.char006-avatar--selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid #D4A843;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.char006-avatar--disabled {
+  cursor: not-allowed;
+}
+.char006-avatar--hovered:not(.char006-avatar--disabled) {
+  box-shadow: 0 0 12px rgba(212, 168, 67, 0.3);
+}
+
+
+/* ===================================================================
+   武器图标
+   =================================================================== */
+.char006-weapon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 打狗棒攻击动画 */
+@keyframes staffSwing {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-20deg); }
+  60%  { transform: rotate(15deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.char006-weapon--attacking .char006-weapon__staff-svg--attack {
+  animation: staffSwing 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  transform-origin: 80% 80%;
+}
+
+/* 飞蝗石飞行动画 */
+@keyframes stoneFly {
+  0%   { transform: translate(0, 0) rotate(0deg);   opacity: 1; }
+  100% { transform: translate(60px, -40px) rotate(360deg); opacity: 0; }
+}
+
+.char006-weapon--flying .char006-weapon__stone-svg--fly {
+  animation: stoneFly 0.5s ease-out forwards;
+}
+
+
+/* ===================================================================
+   对话气泡  （土黄底 + 左下角缺角 — 丐帮不拘小节）
+   =================================================================== */
+.char006-bubble {
+  position: relative;
+  display: inline-block;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 0;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.char006-bubble__body {
+  background: var(--bubble-bg);
+  border: 2px solid var(--bubble-border);
+  border-radius: 10px 10px 10px 0;  /* 左下角无圆角 → 缺角效果 */
+  padding: 10px 14px 12px;
+  position: relative;
+}
+
+/* 左下角"缺角"三角 clip-path 实现 */
+.char006-bubble__body::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 12px 12px 0 0;
+  border-color: transparent var(--bubble-bg) transparent transparent;
+  transform: translate(-10px, 10px);
+  filter: drop-shadow(-1px 1px 0 var(--bubble-border));
+}
+
+/* 人名标签 */
+.char006-bubble__nameplate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.char006-bubble__gourd-icon { font-size: 13px; }
+.char006-bubble__name       { color: #D4A843; }
+.char006-bubble__emotion-badge { font-size: 12px; }
+
+/* 台词 */
+.char006-bubble__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bubble-text);
+  font-family: 'Noto Serif SC', serif;
+}
+
+/* 情绪气泡变体 */
+.char006-bubble--hearty   .char006-bubble__body { border-color: #D4A843; box-shadow: 0 0 6px rgba(212,168,67,0.2); }
+.char006-bubble--angry    .char006-bubble__body { border-color: #1A202C; box-shadow: 0 0 6px rgba(26,32,44,0.4); }
+.char006-bubble--angry    .char006-bubble__text { font-weight: 700; }
+.char006-bubble--scheming .char006-bubble__body { border-color: #4A5568; }
+.char006-bubble--sorrowful .char006-bubble__body { border-color: #A0845C; opacity: 0.9; }
+.char006-bubble--solemn   .char006-bubble__body { border-color: #2C3E50; box-shadow: 0 2px 8px rgba(26,32,44,0.5); }
+
+
+/* ===================================================================
+   角色卡片
+   =================================================================== */
+.char006-card {
+  background: linear-gradient(180deg, #1A1612 0%, #0D0A07 100%);
+  border: 1px solid var(--card-primary);
+  border-radius: 12px;
+  padding: 14px;
+  width: 260px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+  font-family: 'Noto Serif SC', serif;
+  color: #E2D9C8;
+}
+
+.char006-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* 情绪卡片背景变体 */
+.char006-card--angry    { border-color: #2D3748; background: linear-gradient(180deg,#161A20 0%,#0A0D12 100%); }
+.char006-card--hearty   { border-color: #D4A843; }
+.char006-card--solemn   { border-color: #1A202C; background: linear-gradient(180deg,#111418 0%,#080A0D 100%); }
+.char006-card--scheming { border-color: #4A5568; filter: saturate(0.85); }
+
+/* 头部 */
+.char006-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.char006-card__header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.char006-card__title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--card-primary);
+}
+
+.char006-card__gourd-badge { font-size: 14px; }
+.char006-card__name        { letter-spacing: 1px; }
+.char006-card__id          { font-size: 10px; color: #718096; }
+
+.char006-card__faction {
+  font-size: 11px;
+  color: #718096;
+  margin-top: 2px;
+}
+
+.char006-card__emotion-tag {
+  font-size: 11px;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+/* 展开按钮 */
+.char006-card__expand-btn {
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.char006-card__expand-btn:hover { color: var(--card-primary); }
+
+/* 战斗状态栏 */
+.char006-card__battle-bars {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.char006-card__bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.char006-card__bar-label {
+  font-size: 10px;
+  width: 26px;
+  text-align: right;
+  color: #718096;
+  flex-shrink: 0;
+}
+
+.char006-card__bar-track {
+  flex: 1;
+  height: 6px;
+  background: #2D3748;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.char006-card__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.char006-card__bar-value {
+  font-size: 10px;
+  color: #A0AEC0;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* 展开详情 */
+.char006-card__detail {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(196,163,90,0.2);
+}
+
+.char006-card__spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  color: #A0AEC0;
+  margin-bottom: 10px;
+}
+
+.char006-card__spec-table td { padding: 3px 6px; }
+.char006-card__spec-table .spec-key {
+  color: #718096;
+  white-space: nowrap;
+  width: 40px;
+}
+
+/* 武器图例 */
+.char006-card__weapons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.char006-card__weapon-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weapon-name  { font-size: 12px; color: #D4A843; font-weight: 600; }
+.weapon-desc  { font-size: 10px; color: #718096; }
+
+/* 攻击按钮 */
+.char006-card__attack-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.char006-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.char006-btn:hover {
+  background: rgba(196,163,90,0.1);
+  transform: scale(1.02);
+}
+
+.char006-btn:active { transform: scale(0.97); }
+
+
+/* ===================================================================
+   情绪演示面板（开发用）
+   =================================================================== */
+.char006-showcase {
+  padding: 24px;
+  background: #0D0A07;
+  min-height: 100vh;
+  font-family: 'Noto Serif SC', serif;
+  color: #E2D9C8;
+}
+
+.char006-showcase__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.char006-showcase__tab {
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  color: #718096;
+}
+
+.char006-showcase__tab--active {
+  background: rgba(196,163,90,0.1);
+  font-weight: 600;
+}
+
+.char006-showcase__stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.char006-showcase__portrait-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.char006-showcase__emotion-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
+}
+
+.char006-showcase__bubble-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
