@@ -12,6 +12,8 @@ class CardEffectPanel extends StatelessWidget {
   final VoidCallback? onConfirm;
   final VoidCallback? onSkip;
   final String? selectedOptionId;
+  final String blankCardText;
+  final Function(String)? onBlankCardTextChanged;
 
   const CardEffectPanel({
     super.key,
@@ -22,6 +24,8 @@ class CardEffectPanel extends StatelessWidget {
     this.onConfirm,
     this.onSkip,
     this.selectedOptionId,
+    this.blankCardText = '',
+    this.onBlankCardTextChanged,
   });
 
   @override
@@ -328,7 +332,7 @@ class CardEffectPanel extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Custom text input
+          // Custom text input with onChanged
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -336,10 +340,11 @@ class CardEffectPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFF393E46)),
             ),
-            child: const TextField(
+            child: TextField(
+              onChanged: onBlankCardTextChanged,
               maxLines: 2,
-              style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
-              decoration: InputDecoration(
+              style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
+              decoration: const InputDecoration(
                 hintText: '输入你的自由行动...',
                 hintStyle: TextStyle(color: Color(0xFF666666)),
                 border: InputBorder.none,

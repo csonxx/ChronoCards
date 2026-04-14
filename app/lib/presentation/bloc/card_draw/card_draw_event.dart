@@ -29,6 +29,11 @@ class DrawCard extends CardDrawEvent {
   const DrawCard();
 }
 
+/// Animation completed after draw (called by UI)
+class DrawCardAnimationComplete extends CardDrawEvent {
+  const DrawCardAnimationComplete();
+}
+
 /// Player confirms the drawn card
 class ConfirmCard extends CardDrawEvent {
   final String? selectedOptionId;
@@ -62,4 +67,14 @@ class TriggerExit extends CardDrawEvent {
 /// Reset the scene
 class ResetCardDrawScene extends CardDrawEvent {
   const ResetCardDrawScene();
+}
+
+/// Blank card custom text input changed
+class BlankCardInputChanged extends CardDrawEvent {
+  final String value;
+
+  const BlankCardInputChanged(this.value);
+
+  @override
+  List<Object?> get props => [value];
 }

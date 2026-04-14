@@ -1,23 +1,26 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entities/event_card.dart';
+import 'package:chrono_cards/domain/entities/event_card.dart';
 import 'card_draw_event.dart';
 import 'card_draw_state.dart';
 
 class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
   List<EventCard> _deck = [];
   List<EventCard> _discardPile = [];
-  List<EventCard> _drawnHistory = [];
+  final List<EventCard> _drawnHistory = [];
   int _currentTurn = 1;
   int _maxTurns = 10;
   int _totalDrawn = 0;
+  EventCard? _lastDrawnCard;
 
   CardDrawBloc() : super(const CardDrawInitial()) {
     on<InitializeCardDrawScene>(_onInitialize);
     on<DrawCard>(_onDrawCard);
+    on<DrawCardAnimationComplete>(_onDrawCardAnimationComplete);
     on<ConfirmCard>(_onConfirmCard);
     on<SkipCard>(_onSkipCard);
     on<TriggerExit>(_onTriggerExit);
     on<ResetCardDrawScene>(_onReset);
+    on<BlankCardInputChanged>(_onBlankCardInputChanged);
   }
 
   Future<void> _onInitialize(
@@ -28,11 +31,12 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
 
     _deck = _generateEventDeck();
     _deck.shuffle();
-    _discardPile = [];
-    _drawnHistory = [];
+    _discardPile.clear();
+    _drawnHistory.clear();
     _currentTurn = event.currentTurn;
     _maxTurns = event.maxTurns;
     _totalDrawn = 0;
+    _lastDrawnCard = null;
 
     emit(CardStackState(
       remainingCards: _deck.length,
@@ -63,15 +67,23 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
     }
 
     final card = _deck.removeAt(0);
+    _lastDrawnCard = card;
 
     // Emit drawing state (triggers flying animation)
+    // UI should listen for this and after animation completes,
+    // dispatch DrawCardAnimationComplete event
     emit(CardDrawingState(
       card: card,
       remainingCards: _deck.length,
     ));
+  }
 
-    // Wait for animation (600ms fly + 500ms flip = ~1100ms)
-    await Future.delayed(const Duration(milliseconds: 1200));
+  void _onDrawCardAnimationComplete(
+    DrawCardAnimationComplete event,
+    Emitter<CardDrawState> emit,
+  ) {
+    final card = _lastDrawnCard;
+    if (card == null) return;
 
     // Check for conflicts
     String? conflictMessage;
@@ -122,9 +134,9 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
 
     // Check if turn limit reached
     if (_currentTurn > _maxTurns) {
-      emit(const CardDrawCompleted(
-        allDrawnCards: [],
-        totalDrawn: 0,
+      emit(CardDrawCompleted(
+        allDrawnCards: List.from(_drawnHistory),
+        totalDrawn: _totalDrawn,
       ));
       return;
     }
@@ -139,7 +151,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         busyCount: 1,
         totalCount: 3,
       ),
-      drawnHistory: _drawnHistory,
+      drawnHistory: List.from(_drawnHistory),
     ));
   }
 
@@ -169,7 +181,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         busyCount: 1,
         totalCount: 3,
       ),
-      drawnHistory: _drawnHistory,
+      drawnHistory: List.from(_drawnHistory),
     ));
   }
 
@@ -198,6 +210,15 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
     Emitter<CardDrawState> emit,
   ) {
     add(const InitializeCardDrawScene());
+  }
+
+  String _blankCardInput = '';
+
+  void _onBlankCardInputChanged(
+    BlankCardInputChanged event,
+    Emitter<CardDrawState> emit,
+  ) {
+    _blankCardInput = event.value;
   }
 
   List<ExitCondition> _buildExitConditions() {
@@ -238,8 +259,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.mainline,
         triggerCondition: '触发条件：明教大区',
         options: [
-          CardOption(id: 'a', text: '前往明教探查', result: '你孤身前往明教...', isPrimary: true),
-          CardOption(id: 'b', text: '返回武当报信', result: '你连夜赶回武当...', isPrimary: false),
+          CardOption(id: 'a', text: '前往明教探查', isPrimary: true),
+          CardOption(id: 'b', text: '返回武当报信', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -249,8 +270,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.emotion,
         triggerCondition: '触发条件：茶馆场景',
         options: [
-          CardOption(id: 'a', text: '与她深谈', result: '你们彻夜长谈...', isPrimary: true),
-          CardOption(id: 'b', text: '婉言谢绝', result: '你转身离去...', isPrimary: false),
+          CardOption(id: 'a', text: '与她深谈', isPrimary: true),
+          CardOption(id: 'b', text: '婉言谢绝', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -260,8 +281,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.branch,
         triggerCondition: '触发条件：野外区域',
         options: [
-          CardOption(id: 'a', text: '谨慎探索', result: '你步步为营...', isPrimary: true),
-          CardOption(id: 'b', text: '快速穿过', result: '你施展轻功...', isPrimary: false),
+          CardOption(id: 'a', text: '谨慎探索', isPrimary: true),
+          CardOption(id: 'b', text: '快速穿过', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -272,8 +293,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         triggerCondition: '触发条件：随机触发',
         isExclusive: true,
         options: [
-          CardOption(id: 'a', text: '顺从天命', result: '你决定顺应...', isPrimary: true),
-          CardOption(id: 'b', text: '逆天改命', result: '你不甘平庸...', isPrimary: false),
+          CardOption(id: 'a', text: '顺从天命', isPrimary: true),
+          CardOption(id: 'b', text: '逆天改命', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -283,8 +304,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.era,
         triggerCondition: '触发条件：章节结局',
         options: [
-          CardOption(id: 'a', text: '支持新政', result: '你拥护新势力...', isPrimary: true),
-          CardOption(id: 'b', text: '坚守旧序', result: '你誓死追随...', isPrimary: false),
+          CardOption(id: 'a', text: '支持新政', isPrimary: true),
+          CardOption(id: 'b', text: '坚守旧序', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -302,8 +323,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.numeric,
         triggerCondition: '触发条件：随机遭遇',
         options: [
-          CardOption(id: 'a', text: '欣然应战', result: '你来我往...', isPrimary: true),
-          CardOption(id: 'b', text: '谦虚请教', result: '你躬身求教...', isPrimary: false),
+          CardOption(id: 'a', text: '欣然应战', isPrimary: true),
+          CardOption(id: 'b', text: '谦虚请教', isPrimary: false),
         ],
       ),
       const EventCard(
@@ -313,8 +334,8 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         type: EventCardType.economic,
         triggerCondition: '触发条件：商贩场景',
         options: [
-          CardOption(id: 'a', text: '倾囊购买', result: '你付出全部身家...', isPrimary: true),
-          CardOption(id: 'b', text: '讨价还价', result: '你使出三寸不烂之舌...', isPrimary: false),
+          CardOption(id: 'a', text: '倾囊购买', isPrimary: true),
+          CardOption(id: 'b', text: '讨价还价', isPrimary: false),
         ],
       ),
     ];

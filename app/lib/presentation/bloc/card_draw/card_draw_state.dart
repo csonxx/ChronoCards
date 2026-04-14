@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/event_card.dart';
+import 'package:chrono_cards/domain/entities/event_card.dart';
 
 /// CardDraw states - Chapter 7 design
 abstract class CardDrawState extends Equatable {

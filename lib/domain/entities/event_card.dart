@@ -251,13 +251,11 @@ class EventCard {
 class CardOption {
   final String id;
   final String text;
-  final String result;
   final bool isPrimary;
 
   const CardOption({
     required this.id,
     required this.text,
-    required this.result,
     this.isPrimary = true,
   });
 }

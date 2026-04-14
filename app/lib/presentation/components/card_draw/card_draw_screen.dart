@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/event_card.dart';
-import '../../bloc/card_draw_bloc.dart';
-import '../../bloc/card_draw_event.dart';
-import '../../bloc/card_draw_state.dart';
+import '../../bloc/card_draw/card_draw_bloc.dart';
+import '../../bloc/card_draw/card_draw_event.dart';
+import '../../bloc/card_draw/card_draw_state.dart';
 import 'event_card_widget.dart';
 import 'card_stack_widget.dart';
 import 'exit_condition_hud.dart';
@@ -45,6 +45,51 @@ class _CardDrawViewState extends State<_CardDrawView>
   String? _selectedOptionId;
   EventCard? _flyingCard;
   bool _isFlying = false;
+  String _blankCardText = '';
+
+  // Animation controller for flying card
+  AnimationController? _flyingAnimationController;
+  Animation<Offset>? _flyingAnimation;
+  Animation<double>? _flyingScaleAnimation;
+
+  @override
+  void dispose() {
+    _flyingAnimationController?.dispose();
+    super.dispose();
+  }
+
+  void _startFlyingAnimation(EventCard card) {
+    _flyingAnimationController?.dispose();
+    _flyingAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _flyingAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _flyingAnimationController!,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _flyingScaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _flyingAnimationController!,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _flyingAnimationController!.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        // Animation complete - dispatch event to bloc
+        context.read<CardDrawBloc>().add(const DrawCardAnimationComplete());
+      }
+    });
+
+    _flyingAnimationController!.forward();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +102,7 @@ class _CardDrawViewState extends State<_CardDrawView>
               _flyingCard = state.card;
               _isFlying = true;
             });
+            _startFlyingAnimation(state.card);
           } else if (state is CardRevealedState) {
             setState(() {
               _flyingCard = null;
@@ -232,14 +278,22 @@ class _CardDrawViewState extends State<_CardDrawView>
     return Positioned.fill(
       child: IgnorePointer(
         child: Center(
-          child: EventCardWidget(
-            card: _flyingCard!,
-            isFlipped: false,
-            showOptions: false,
-          )
-              .animate(curve: Curves.easeOutCubic)
-              .moveY(begin: -100, end: 0, duration: 600.ms)
-              .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1)),
+          child: AnimatedBuilder(
+            animation: _flyingAnimationController!,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: _flyingAnimation?.value ?? Offset.zero,
+                child: Transform.scale(
+                  scale: _flyingScaleAnimation?.value ?? 1.0,
+                  child: EventCardWidget(
+                    card: _flyingCard!,
+                    isFlipped: false,
+                    showOptions: false,
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -270,6 +324,10 @@ class _CardDrawViewState extends State<_CardDrawView>
               hasConflict: state.hasConflict,
               conflictMessage: state.conflictMessage,
               selectedOptionId: _selectedOptionId,
+              blankCardText: _blankCardText,
+              onBlankCardTextChanged: (text) {
+                setState(() => _blankCardText = text);
+              },
               onOptionSelected: (id) {
                 setState(() => _selectedOptionId = id);
               },
@@ -279,7 +337,10 @@ class _CardDrawViewState extends State<_CardDrawView>
                     );
               },
               onSkip: () {
-                context.read<CardDrawBloc>().add(const SkipCard());
+                context.read<CardDrawBloc>().add(
+                      SkipCard(customText: _blankCardText.isNotEmpty ? _blankCardText : null),
+                    );
+                setState(() => _blankCardText = '');
               },
             ),
           ],
