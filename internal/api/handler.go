@@ -10,7 +10,9 @@ import (
 	gameplayer "github.com/csonxx/ChronoCards/internal/game/player"
 	"github.com/csonxx/ChronoCards/internal/game/deck"
 	"github.com/csonxx/ChronoCards/internal/game/element"
+	"github.com/csonxx/ChronoCards/internal/game/equipment"
 	"github.com/csonxx/ChronoCards/internal/game/item"
+	"github.com/csonxx/ChronoCards/internal/game/martial_art"
 	"github.com/csonxx/ChronoCards/internal/game/narrative"
 	"github.com/csonxx/ChronoCards/internal/game/skill"
 	"github.com/csonxx/ChronoCards/internal/model"
@@ -27,6 +29,8 @@ type Handler struct {
 	skillSvc     *skill.Service
 	inventorySvc *item.InventoryService
 	shopSvc      *item.Service
+	equipmentSvc *equipment.Service
+	martialArtSvc *martial_art.Service
 }
 
 // NewHandler 创建处理器
@@ -40,6 +44,8 @@ func NewHandler(s store.StoreInterface) *Handler {
 		skillSvc:     skill.NewService(s),
 		inventorySvc: item.NewInventoryService(s),
 		shopSvc:      item.NewService(s),
+		equipmentSvc: equipment.NewService(),
+		martialArtSvc: martial_art.NewService(),
 	}
 }
 
@@ -1422,4 +1428,328 @@ func (h *Handler) ListPresetItems(w http.ResponseWriter, r *http.Request) {
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"items": items,
 	})
+}
+
+// ---- Equipment APIs (基于装备系统) ----
+
+// GetPlayerEquipment 获取玩家装备
+func (h *Handler) GetPlayerEquipment(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 获取装备数据
+	eq, ok := h.store.GetEquipment(playerID)
+	if !ok {
+		eq = &model.Equipment{PlayerID: playerID}
+		h.store.CreateEquipment(eq)
+	}
+
+	// 获取背包数据
+	inv, _ := h.store.GetInventory(playerID)
+	if inv == nil {
+		inv = model.NewInventory(playerID)
+	}
+
+	// 获取完整装备信息
+	eqInfo := h.equipmentSvc.GetEquipmentInfo(&model.PlayerEquipment{
+		PlayerID:  playerID,
+		Slots:     h.getEquipmentSlots(eq),
+		StatsBonus: model.PlayerStatsBonus{},
+	})
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id":  playerID,
+		"equipment":  eqInfo,
+		"inventory":  inv,
+	})
+}
+
+// EquipItemToSlot 装备物品到指定槽位
+func (h *Handler) EquipItemToSlot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		Slot  string `json:"slot"`  // weapon, armor, accessory1, accessory2
+		ItemID string `json:"item_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.Slot == "" || req.ItemID == "" {
+		h.badRequest(w, "slot and item_id are required")
+		return
+	}
+
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 获取装备和背包
+	eq, _ := h.store.GetEquipment(playerID)
+	if eq == nil {
+		eq = &model.Equipment{PlayerID: playerID}
+	}
+
+	inv, _ := h.store.GetInventory(playerID)
+	if inv == nil {
+		inv = model.NewInventory(playerID)
+	}
+
+	// 转换为装备槽位类型
+	var slotType model.EquipmentSlotType
+	switch req.Slot {
+	case "weapon":
+		slotType = model.EquipSlotWeapon
+	case "armor":
+		slotType = model.EquipSlotArmor
+	case "accessory1":
+		slotType = model.EquipSlotAccessory1
+	case "accessory2":
+		slotType = model.EquipSlotAccessory2
+	default:
+		h.badRequest(w, "invalid slot: must be weapon, armor, accessory1, or accessory2")
+		return
+	}
+
+	// 创建PlayerEquipment用于调用service
+	playerEq := &model.PlayerEquipment{
+		PlayerID: playerID,
+		Slots:    h.getEquipmentSlots(eq),
+	}
+
+	resp := h.equipmentSvc.EquipItem(playerEq, inv, slotType, req.ItemID)
+	if !resp.Success {
+		h.badRequest(w, resp.Message)
+		return
+	}
+
+	// 更新存储
+	h.updateEquipmentFromSlots(eq, playerEq)
+	h.store.UpdateEquipment(eq)
+	h.store.UpdateInventory(inv)
+
+	h.json(w, http.StatusOK, resp)
+}
+
+// getEquipmentSlots 转换Equipment到PlayerEquipment的槽位map
+func (h *Handler) getEquipmentSlots(eq *model.Equipment) map[model.EquipmentSlotType]*model.EquipmentSlot {
+	slots := make(map[model.EquipmentSlotType]*model.EquipmentSlot)
+	slots[model.EquipSlotWeapon] = &model.EquipmentSlot{Type: model.EquipSlotWeapon, ItemID: h.getItemIDFromEquipment(eq, "weapon")}
+	slots[model.EquipSlotArmor] = &model.EquipmentSlot{Type: model.EquipSlotArmor, ItemID: h.getItemIDFromEquipment(eq, "armor")}
+	slots[model.EquipSlotAccessory1] = &model.EquipmentSlot{Type: model.EquipSlotAccessory1, ItemID: h.getItemIDFromEquipment(eq, "accessory1")}
+	slots[model.EquipSlotAccessory2] = &model.EquipmentSlot{Type: model.EquipSlotAccessory2, ItemID: h.getItemIDFromEquipment(eq, "accessory2")}
+	return slots
+}
+
+// getItemIDFromEquipment 从Equipment获取物品ID
+func (h *Handler) getItemIDFromEquipment(eq *model.Equipment, slotType string) string {
+	if eq == nil {
+		return ""
+	}
+	switch slotType {
+	case "weapon":
+		if eq.Weapon != nil {
+			return eq.Weapon.ID
+		}
+	case "armor":
+		if eq.Armor != nil {
+			return eq.Armor.ID
+		}
+	case "accessory1":
+		if eq.Accessory1 != nil {
+			return eq.Accessory1.ID
+		}
+	case "accessory2":
+		if eq.Accessory2 != nil {
+			return eq.Accessory2.ID
+		}
+	}
+	return ""
+}
+
+// updateEquipmentFromSlots 从PlayerEquipment更新回Equipment
+func (h *Handler) updateEquipmentFromSlots(eq *model.Equipment, playerEq *model.PlayerEquipment) {
+	if playerEq == nil || playerEq.Slots == nil {
+		return
+	}
+
+	// 清空所有槽位
+	eq.Weapon = nil
+	eq.Armor = nil
+	eq.Accessory1 = nil
+	eq.Accessory2 = nil
+
+	// 根据槽位类型设置物品
+	for slotType, slot := range playerEq.Slots {
+		if slot.ItemID == "" {
+			continue
+		}
+		item := item.GetPresetItem(slot.ItemID)
+		if item == nil {
+			continue
+		}
+		switch slotType {
+		case model.EquipSlotWeapon:
+			eq.Weapon = item
+		case model.EquipSlotArmor:
+			eq.Armor = item
+		case model.EquipSlotAccessory1:
+			eq.Accessory1 = item
+		case model.EquipSlotAccessory2:
+			eq.Accessory2 = item
+		}
+	}
+}
+
+// ---- Martial Arts APIs ----
+
+// GetPlayerMartialArts 获取玩家武学列表
+func (h *Handler) GetPlayerMartialArts(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 获取或创建玩家武学数据
+	pm := h.getOrCreatePlayerMartialArts(playerID)
+
+	// 获取技能树信息
+	skillTree := h.martialArtSvc.GetSkillTree(pm)
+	skillTree["player_id"] = playerID
+	skillTree["name"] = player.Name
+	skillTree["level"] = player.Level
+
+	h.json(w, http.StatusOK, skillTree)
+}
+
+// LearnMartialArt 学习武学
+func (h *Handler) LearnMartialArt(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		MartialArtID string `json:"martial_art_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.MartialArtID == "" {
+		h.badRequest(w, "martial_art_id is required")
+		return
+	}
+
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	pm := h.getOrCreatePlayerMartialArts(playerID)
+
+	resp := h.martialArtSvc.LearnMartialArt(pm, player, req.MartialArtID)
+	if !resp.Success {
+		h.badRequest(w, resp.Message)
+		return
+	}
+
+	h.store.SetPlayerMartialArts(pm)
+
+	h.json(w, http.StatusOK, resp)
+}
+
+// EquipMartialArt 装备武学
+func (h *Handler) EquipMartialArt(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		MartialArtID string `json:"martial_art_id"`
+		Type         string `json:"type"` // external, internal, lightness
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.MartialArtID == "" {
+		h.badRequest(w, "martial_art_id is required")
+		return
+	}
+
+	pm := h.getOrCreatePlayerMartialArts(playerID)
+
+	// 获取武学定义
+	art := h.martialArtSvc.GetMartialArt(req.MartialArtID)
+	if art == nil {
+		h.badRequest(w, "武学不存在")
+		return
+	}
+
+	// 如果指定了type，使用指定type；否则使用武学原本的type
+	artType := art.Type
+	if req.Type != "" {
+		artType = model.MartialArtType(req.Type)
+	}
+
+	// 检查是否是有效的武学类型
+	switch artType {
+	case model.MartialArtExternal, model.MartialArtInternal, model.MartialArtLightness:
+		// 有效
+	default:
+		h.badRequest(w, "invalid type: must be external, internal, or lightness")
+		return
+	}
+
+	// 临时修改art的type用于Equip
+	originalType := art.Type
+	art.Type = artType
+
+	resp := h.martialArtSvc.EquipMartialArt(pm, req.MartialArtID)
+
+	// 恢复原始type
+	art.Type = originalType
+
+	if !resp.Success {
+		h.badRequest(w, resp.Message)
+		return
+	}
+
+	h.store.SetPlayerMartialArts(pm)
+
+	h.json(w, http.StatusOK, resp)
+}
+
+// getOrCreatePlayerMartialArts 获取或创建玩家武学数据
+func (h *Handler) getOrCreatePlayerMartialArts(playerID string) *model.PlayerMartialArts {
+	pm, ok := h.store.GetPlayerMartialArts(playerID)
+	if !ok {
+		pm = model.NewPlayerMartialArts(playerID)
+		h.store.CreatePlayerMartialArts(pm)
+	}
+	return pm
 }

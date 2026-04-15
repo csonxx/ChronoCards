@@ -114,6 +114,15 @@ func main() {
 	mux.HandleFunc("POST /api/v1/players/{player_id}/skills/use", h.UseSkill)
 	mux.HandleFunc("GET /api/v1/players/{player_id}/skills/{skill_id}/cooldown", h.GetSkillCooldown)
 
+	// Equipment APIs (基于装备系统)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/equipment", h.GetPlayerEquipment)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/equipment/equip", h.EquipItemToSlot)
+
+	// Martial Arts APIs
+	mux.HandleFunc("GET /api/v1/players/{player_id}/martial-arts", h.GetPlayerMartialArts)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/martial-arts/learn", h.LearnMartialArt)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/martial-arts/equip", h.EquipMartialArt)
+
 	addr := ":8080"
 	log.Printf("ChronoCards Backend 已启动，监听 %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {

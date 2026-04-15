@@ -32,6 +32,10 @@ type StoreInterface interface {
 	GetEquipment(playerID string) (*model.Equipment, bool)
 	CreateEquipment(eq *model.Equipment)
 	UpdateEquipment(eq *model.Equipment)
+	// Player MartialArts 操作
+	GetPlayerMartialArts(playerID string) (*model.PlayerMartialArts, bool)
+	CreatePlayerMartialArts(pm *model.PlayerMartialArts)
+	SetPlayerMartialArts(pm *model.PlayerMartialArts)
 	// Player Location 操作
 	SetPlayerLocation(playerID, locationID string) error
 	GetPlayerLocation(playerID string) (*model.PlayerLocation, error)
@@ -46,6 +50,7 @@ type Store struct {
 	dealers          map[string]*model.Dealer
 	inventories      map[string]*model.PlayerInventory
 	equipments       map[string]*model.Equipment
+	martialArts      map[string]*model.PlayerMartialArts
 	playerLocations  map[string]*model.PlayerLocation
 }
 
@@ -57,6 +62,7 @@ func NewStore() *Store {
 		dealers:          make(map[string]*model.Dealer),
 		inventories:      make(map[string]*model.PlayerInventory),
 		equipments:       make(map[string]*model.Equipment),
+		martialArts:      make(map[string]*model.PlayerMartialArts),
 		playerLocations:  make(map[string]*model.PlayerLocation),
 	}
 	// 初始化默认发牌员
@@ -329,4 +335,28 @@ func (s *Store) AddVisited(playerID, locationID string) {
 		newLoc.TotalTravelCount = 1
 		s.playerLocations[playerID] = newLoc
 	}
+}
+
+// ---- PlayerMartialArts 操作 ----
+
+// GetPlayerMartialArts 获取玩家武学数据
+func (s *Store) GetPlayerMartialArts(playerID string) (*model.PlayerMartialArts, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	pm, ok := s.martialArts[playerID]
+	return pm, ok
+}
+
+// CreatePlayerMartialArts 创建玩家武学数据
+func (s *Store) CreatePlayerMartialArts(pm *model.PlayerMartialArts) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.martialArts[pm.PlayerID] = pm
+}
+
+// SetPlayerMartialArts 更新玩家武学数据
+func (s *Store) SetPlayerMartialArts(pm *model.PlayerMartialArts) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.martialArts[pm.PlayerID] = pm
 }
