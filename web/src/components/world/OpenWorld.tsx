@@ -42,12 +42,48 @@ const NPC_PORTRAITS: Record<string, { avatar: string; color: string; accent: str
 
 // 模拟发牌员数据
 const mockDealers: Dealer[] = [
-  { id: 'd1', name: '茶馆说书人', type: 'teahouse', position: { x: 180, y: 160 }, avatar: '/assets/characters/shen_moyuan_1.png' },
-  { id: 'd2', name: '悬赏公告栏', type: 'billboard', position: { x: 420, y: 280 }, avatar: '/assets/scenes/battle_bg_1.png' },
-  { id: 'd3', name: '客栈掌柜', type: 'inn', position: { x: 320, y: 400 }, avatar: '/assets/characters/liao_chen_1.png' },
-  { id: 'd4', name: '神秘商贩', type: 'merchant', position: { x: 540, y: 180 }, avatar: '/assets/characters/mowentian_1.png' },
-  { id: 'd5', name: '江湖恶徒', type: 'enemy', position: { x: 120, y: 340 }, avatar: '/assets/characters/yin_wuhen_1.png' },
-  { id: 'd6', name: '神秘奇遇', type: 'encounter', position: { x: 480, y: 120 }, avatar: '/assets/characters/lan_ruodie_1.png' },
+  { id: 'd1', name: '茶馆说书人', type: 'teahouse', position: { x: 180, y: 160 }, avatar: '/assets/characters/shen_moyuan_1.png',
+    dialog: [
+      '客官，你可听说过光明顶的事？近日明教广招天下英豪，似有大事将发...',
+      '华山论剑已过三十载，但那日的情景，老朽至今历历在目。',
+      '少林、武当素来交好，可这两派的弟子最近在山下起了争执，客官若有心，不妨去看看。',
+    ]
+  },
+  { id: 'd2', name: '悬赏公告栏', type: 'billboard', position: { x: 420, y: 280 }, avatar: '/assets/characters/yin_wuhen_1.png',
+    dialog: [
+      '【通缉令】明教逆贼沈墨渊，击杀者赏银千两，活捉者赏银五千两！',
+      '【悬赏】华山脚下近日有邪派中人出没，护镖平安者，赏银百两。',
+      '【密令】锦衣卫正在追查一伙江湖败类，提供线索者有重赏。',
+    ]
+  },
+  { id: 'd3', name: '客栈掌柜', type: 'inn', position: { x: 320, y: 400 }, avatar: '/assets/characters/liao_chen_1.png',
+    dialog: [
+      '客官打尖还是住店？小店的女儿红可是方圆十里最好的。',
+      '昨儿来了几位少林高僧，说是去光明顶方向去了。江湖怕是要起风了。',
+      '本店提供上房一间，热水一桶，干粮一份。客官慢用。',
+    ]
+  },
+  { id: 'd4', name: '神秘商贩', type: 'merchant', position: { x: 540, y: 180 }, avatar: '/assets/characters/mowentian_1.png',
+    dialog: [
+      '有缘千里来相会，客官可要看看我这儿的宝贝？',
+      '这本《武当太极剑谱》，可是从真武殿里流出来的孤本，只卖有缘人。',
+      '明教圣火令碎片，锦衣卫绣春刀残片...客官要什么，我这儿都有。',
+    ]
+  },
+  { id: 'd5', name: '江湖恶徒', type: 'enemy', position: { x: 120, y: 340 }, avatar: '/assets/characters/yin_wuhen_1.png',
+    dialog: [
+      '站住！此路是我开，此树是我栽，要打此路过，留下买路财！',
+      '哼，又是一个初出茅庐的小子，让你见识见识什么叫江湖险恶！',
+      '你就是那个新来的？哼，想在这江湖立足，先问问我的刀答不答应！',
+    ]
+  },
+  { id: 'd6', name: '神秘奇遇', type: 'encounter', position: { x: 480, y: 120 }, avatar: '/assets/characters/lan_ruodie_1.png',
+    dialog: [
+      '你我有缘在此相遇，我这儿有一桩机缘，不知客官敢不敢接？',
+      '看你根骨不错，若能通过我的考验，便传你一门绝学如何？',
+      '这华山之上，藏着一桩百年秘密，你想知道吗？',
+    ]
+  },
 ];
 
 const mockRecentCards = ['支线', '成长', '主线'];
@@ -126,7 +162,7 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
           id: `card-${Date.now()}`,
           type: nearbyDealer.type === 'teahouse' ? 'side' : nearbyDealer.type === 'billboard' ? 'main' : 'growth',
           title: nearbyDealer.type === 'teahouse' ? '江湖传闻' : nearbyDealer.type === 'billboard' ? '悬赏任务' : '奇遇发现',
-          description: `你在${nearbyDealer.name}处听闻了一桩江湖轶事...`,
+          description: nearbyDealer.dialog ? nearbyDealer.dialog[Math.floor(Math.random() * nearbyDealer.dialog.length)] : `你在${nearbyDealer.name}处听闻了一桩江湖轶事...`,
           triggered: false,
           options: [
             { id: 'o1', text: '欣然接受' },

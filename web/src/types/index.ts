@@ -136,6 +136,7 @@ export interface BattleEnemy {
   skills: Skill[];
   position: { x: number; y: number };
   avatar?: string;
+  dialog?: string[];
 }
 
 // ========== 角色系统 ==========
