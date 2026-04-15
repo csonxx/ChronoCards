@@ -8,6 +8,7 @@ interface TutorialStep {
   content: string;
   highlight?: string;
   action?: string;
+  audio?: string;
 }
 
 const TUTORIAL_STEPS: TutorialStep[] = [
@@ -15,6 +16,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'welcome',
     title: '欢迎来到 ChronoCards',
     content: '你将扮演一位江湖游侠，在武林中冒险、抽卡、战斗。\n准备好开始了吗？',
+    audio: '/assets/audio/tutorial_narration.mp3',
     action: 'next',
   },
   {
@@ -57,6 +59,12 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
   const step = TUTORIAL_STEPS[currentStep];
 
   const handleNext = useCallback(() => {
+    // Play step audio
+    if (TUTORIAL_STEPS[currentStep]?.audio) {
+      const audio = new Audio(TUTORIAL_STEPS[currentStep].audio!);
+      audio.volume = 0.7;
+      audio.play().catch(() => {});
+    }
     if (currentStep < TUTORIAL_STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {

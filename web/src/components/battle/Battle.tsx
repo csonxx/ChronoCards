@@ -319,7 +319,7 @@ export const Battle: React.FC<BattleProps> = ({ enemy = mockEnemy, onVictory, on
     <div className={`battle-arena ${battleState.isInvincible ? 'battle-arena--invincible' : ''} ${isAttacking ? 'battle-arena--attacking' : ''}`}>
       <div className="battle-background"><div className="ink-wave ink-wave--1" /><div className="ink-wave ink-wave--2" /><div className="ink-wave ink-wave--3" /></div>
       <div className="battle-player-status">
-        <div className="player-avatar" />
+        <img src="/assets/characters/shen_moyuan_1.png" alt="玩家" style={{width:64,height:64,borderRadius:8,border:"2px solid gold"}} />
         <div className="player-info"><div className="player-info__name">江湖游侠</div><div className="player-info__level">Lv.{playerStats.level}</div><InkProgressBar value={playerStats.hp} max={playerStats.maxHp} color="hp" size="md" showLabel /></div>
         <div className="player-elements">{playerStats.playerElements.map((e, i) => (<div key={i} className="element-status"><ElementIcon element={e.element} size="sm" /><span className="element-stacks">×{e.stacks}</span></div>))}</div>
       </div>
@@ -328,7 +328,7 @@ export const Battle: React.FC<BattleProps> = ({ enemy = mockEnemy, onVictory, on
           <div className="enemy-scroll">
             <div className="enemy-rod enemy-rod--top" />
             <div className="enemy-content">
-              <div className="enemy-avatar">🔥</div>
+              <img src="/assets/characters/yin_wuhen_1.png" alt="敌人" style={{width:80,height:80,borderRadius:8,border:"2px solid red"}} />
               <div className="enemy-info">
                 <div className="enemy-name">{enemy.name}</div><div className="enemy-level">Lv.{enemy.level}</div>
                 <InkProgressBar value={enemyHp} max={enemy.maxHp} color="hp" size="sm" showLabel />

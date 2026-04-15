@@ -126,6 +126,11 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       setBattlePhase('battle');
+    // 切换到战斗BGM
+    const battleMusic = new Audio('/assets/audio/battle_bgm.mp3');
+    battleMusic.loop = true;
+    battleMusic.volume = 0.4;
+    battleMusic.play().catch(() => {});
     }, 800);
     return () => clearTimeout(timer);
   }, []);
@@ -136,6 +141,7 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
 
     if (enemyCurrentHp <= 0) {
       setBattlePhase('victory');
+      playVictorySound();
       if (enemyAttackTimer.current) clearInterval(enemyAttackTimer.current);
       setTimeout(onVictory, 1500);
     } else if (hp <= 0) {
@@ -148,8 +154,30 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
   const canDodge = stamina >= 15 && battlePhase === 'battle';
   const canAttack = !isStaggered && battlePhase === 'battle';
 
+  // 攻击音效
+  const playAttackSound = () => {
+    const sfx = new Audio('/assets/audio/attack.mp3');
+    sfx.volume = 0.5;
+    sfx.play().catch(() => {});
+  };
+  const playDodgeSound = () => {
+    const sfx = new Audio('/assets/audio/card_draw.mp3');
+    sfx.volume = 0.4;
+    sfx.play().catch(() => {});
+  };
+  const playVictorySound = () => {
+    const sfx = new Audio('/assets/audio/quest_complete.mp3');
+    sfx.volume = 0.5;
+    sfx.play().catch(() => {});
+  };
+
   return (
-    <div className={`battle-mvp ${battlePhase === 'intro' ? 'battle-mvp--intro' : ''} ${isInvincible ? 'battle-mvp--invincible' : ''} ${battlePhase === 'defeat' ? 'battle-mvp--defeat' : ''}`}>
+    <div style={{
+      backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(20,10,5,0.85) 100%), url("/assets/scenes/battle_bg_1.png")`,
+      backgroundSize: "cover, cover",
+      backgroundPosition: "center, center",
+      minHeight: "100vh",
+    }} className={`battle-mvp ${battlePhase === 'intro' ? 'battle-mvp--intro' : ''} ${isInvincible ? 'battle-mvp--invincible' : ''} ${battlePhase === 'defeat' ? 'battle-mvp--defeat' : ''}`}>
 
       {/* 战斗开始提示 */}
       {battlePhase === 'intro' && (
@@ -158,7 +186,7 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
 
       {/* 玩家状态区（左上） */}
       <div className="battle-mvp__player-status">
-        <div className="battle-mvp__avatar">🧑</div>
+        <img src="/assets/characters/shen_moyuan_1.png" alt="玩家" className="battle-mvp__avatar" style={{width:64,height:64,borderRadius:8,border:"2px solid gold"}} />
         <div className="battle-mvp__player-info">
           <div className="battle-mvp__player-name">江湖游侠</div>
           <div className="battle-mvp__player-level">Lv.{playerLevel}</div>
