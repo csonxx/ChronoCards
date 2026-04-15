@@ -373,6 +373,10 @@ class SaveManager {
     // 检查升级
     if (this._current.player.exp >= this._current.player.level * 100) {
       this._current.player.level++;
+      // 升级音效
+      const sfx = new Audio('/assets/audio/levelup.mp3');
+      sfx.volume = 0.6;
+      sfx.play().catch(() => {});
       this._current.player.maxHp += 50;
       this._current.player.hp = this._current.player.maxHp;
       this._current.player.maxMp += 10;

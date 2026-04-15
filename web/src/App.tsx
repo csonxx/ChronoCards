@@ -65,6 +65,7 @@ function App() {
   const handleCardDraw = useCallback((card: Card) => {
     setCurrentCard(card);
     setShowCardDraw(true);
+    const sfx = new Audio('/assets/audio/card_draw.mp3'); sfx.volume = 0.5; sfx.play().catch(() => {});
     setCardEffectResult(null);
     // 显示卡牌抽取说明
     if (cardDrawGuideTimerRef.current) clearTimeout(cardDrawGuideTimerRef.current);
