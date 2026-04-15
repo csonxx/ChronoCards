@@ -1,0 +1,490 @@
+/* S5 战斗界面 MVP - 水墨风即时战斗验证版 */
+
+/* ========== 战场容器 ========== */
+
+.battle-mvp {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* 战斗开始淡入 */
+.battle-mvp--intro {
+  animation: battleFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes battleFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 无敌帧闪烁 */
+.battle-mvp--invincible {
+  animation: invincibleFlash 0.2s ease-out;
+}
+
+@keyframes invincibleFlash {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(1.4) hue-rotate(20deg); }
+}
+
+/* 战败红色渐变 */
+.battle-mvp--defeat {
+  animation: defeatRed 1.5s ease-out forwards;
+}
+
+@keyframes defeatRed {
+  from { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%); }
+  to { background: linear-gradient(180deg, #2a0a0a 0%, #1a0505 50%, #0f0505 100%); }
+}
+
+/* ========== 战斗开始文字 ========== */
+
+.battle-mvp__intro-text {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 48px;
+  font-weight: bold;
+  color: #FFFFFF;
+  text-shadow: 0 0 20px rgba(201, 162, 39, 0.8), 0 0 40px rgba(201, 162, 39, 0.5);
+  z-index: 100;
+  animation: introTextAnim 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes introTextAnim {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  60% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* ========== 玩家状态区（左上） ========== */
+
+.battle-mvp__player-status {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid #3d3d5c;
+  border-radius: 8px;
+}
+
+.battle-mvp__avatar {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: #1a1a2e;
+  border: 2px solid #c9a227;
+  border-radius: 6px;
+}
+
+.battle-mvp__player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.battle-mvp__player-name {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 14px;
+  color: #c9a227;
+}
+
+.battle-mvp__player-level {
+  font-size: 11px;
+  color: #888;
+}
+
+/* ========== 敌人区域（头顶血条） ========== */
+
+.battle-mvp__enemy {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.battle-mvp__enemy-name {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 16px;
+  color: #FFFFFF;
+  text-shadow: 0 0 8px rgba(0,0,0,0.8);
+}
+
+.battle-mvp__enemy-hp-bar {
+  width: 200px;
+  height: 14px;
+  background: #1a1a2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.battle-mvp__enemy-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c0392b, #ef4444);
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+}
+
+.battle-mvp__enemy-hp-text {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 12px;
+  color: #FFFFFF;
+}
+
+/* ========== 伤害数字 ========== */
+
+.battle-mvp__damage-number {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 24px;
+  font-weight: bold;
+  color: #FFD93D;
+  text-shadow: 0 0 8px #ef4444, 2px 2px 0 #c0392b;
+  animation: damageFloat 0.8s ease-out forwards;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.battle-mvp__damage-number--dodge {
+  color: #3B82F6;
+  text-shadow: 0 0 8px #3B82F6;
+}
+
+@keyframes damageFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+  20% { transform: translateX(-50%) translateY(-10px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
+}
+
+/* ========== 战斗场景 ========== */
+
+.battle-mvp__scene {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.battle-mvp__player-char {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.1s ease-out;
+}
+
+.battle-mvp__player-char--attack {
+  animation: attackLunge 0.3s ease-out;
+}
+
+.battle-mvp__player-char--invincible {
+  animation: invincibleDodge 0.2s ease-out;
+}
+
+@keyframes attackLunge {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(30px) translateY(-10px); }
+}
+
+@keyframes invincibleDodge {
+  0% { opacity: 1; transform: translateX(0); }
+  50% { opacity: 0.4; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.battle-mvp__char-sprite {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  background: #1a1a2e;
+  border: 3px solid #c9a227;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.4);
+}
+
+.battle-mvp__char-shadow {
+  position: absolute;
+  bottom: -8px;
+  width: 48px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  filter: blur(3px);
+}
+
+.battle-mvp__invincible-ring {
+  position: absolute;
+  inset: -12px;
+  border: 3px solid #c9a227;
+  border-radius: 50%;
+  animation: invincibleRing 0.2s ease-out forwards;
+}
+
+@keyframes invincibleRing {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* 玩家受伤飘字 */
+.battle-mvp__player-damage {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 20px;
+  font-weight: bold;
+  color: #ef4444;
+  text-shadow: 0 0 8px #ef4444;
+  animation: damageFloat 0.8s ease-out forwards;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.battle-mvp__player-damage--dodge {
+  color: #3B82F6;
+  text-shadow: 0 0 8px #3B82F6;
+}
+
+/* ========== 体力条 ========== */
+
+.battle-mvp__stamina-bar {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid #3d3d5c;
+  border-radius: 8px;
+}
+
+.battle-mvp__stamina-label {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 13px;
+  color: #F59E0B;
+  min-width: 32px;
+}
+
+.battle-mvp__stamina-track {
+  width: 280px;
+  height: 10px;
+  background: #1a1a2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.battle-mvp__stamina-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B, #fbbf24);
+  border-radius: 3px;
+  transition: width 0.2s ease-out;
+}
+
+.battle-mvp__stamina-value {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 12px;
+  color: #FFFFFF;
+  min-width: 70px;
+}
+
+/* ========== 操作按钮 ========== */
+
+.battle-mvp__controls {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 80px;
+  padding: 16px 32px;
+  background: rgba(26, 26, 46, 0.95);
+  border: 3px solid #3d3d5c;
+  border-radius: 12px;
+}
+
+.battle-mvp__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 56px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+  overflow: hidden;
+  position: relative;
+}
+
+.battle-mvp__btn:active:not(.battle-mvp__btn--disabled) {
+  transform: scale(0.95);
+}
+
+/* 攻击按钮 */
+.battle-mvp__btn--attack {
+  border: 2px solid #c0392b;
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.4);
+}
+
+.battle-mvp__btn--attack:hover:not(.battle-mvp__btn--disabled) {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+.battle-mvp__btn--attack .battle-mvp__btn-icon,
+.battle-mvp__btn--attack .battle-mvp__btn-label {
+  color: #c0392b;
+}
+
+/* 闪避按钮 */
+.battle-mvp__btn--dodge {
+  border: 2px solid #3B82F6;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+.battle-mvp__btn--dodge:hover:not(.battle-mvp__btn--disabled) {
+  border-color: #60A5FA;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
+}
+
+.battle-mvp__btn--dodge .battle-mvp__btn-icon,
+.battle-mvp__btn--dodge .battle-mvp__btn-label {
+  color: #3B82F6;
+}
+
+/* 禁用状态 */
+.battle-mvp__btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #555 !important;
+  box-shadow: none !important;
+}
+
+.battle-mvp__btn--disabled .battle-mvp__btn-icon,
+.battle-mvp__btn--disabled .battle-mvp__btn-label,
+.battle-mvp__btn--disabled .battle-mvp__btn-cost {
+  color: #555 !important;
+}
+
+.battle-mvp__btn-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.battle-mvp__btn-label {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.battle-mvp__btn-cost {
+  font-size: 10px;
+  color: #F59E0B;
+  opacity: 0.8;
+}
+
+/* ========== 结算界面 ========== */
+
+.battle-mvp__result {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 60px;
+  background: rgba(26, 26, 46, 0.95);
+  border: 3px solid #3d3d5c;
+  border-radius: 12px;
+  z-index: 200;
+  animation: resultFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes resultFadeIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.battle-mvp__result--victory {
+  border-color: #c9a227;
+  box-shadow: 0 0 40px rgba(201, 162, 39, 0.4);
+}
+
+.battle-mvp__result--defeat {
+  border-color: #c0392b;
+  box-shadow: 0 0 40px rgba(192, 57, 43, 0.4);
+}
+
+.battle-mvp__result-title {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 42px;
+  font-weight: bold;
+}
+
+.battle-mvp__result--victory .battle-mvp__result-title {
+  color: #c9a227;
+  text-shadow: 0 0 20px rgba(201, 162, 39, 0.6);
+}
+
+.battle-mvp__result--defeat .battle-mvp__result-title {
+  color: #c0392b;
+  text-shadow: 0 0 20px rgba(192, 57, 43, 0.6);
+}
+
+.battle-mvp__result-hp {
+  font-family: 'Noto Serif SC', cursive;
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+/* ========== 血条低血量样式（覆盖InkProgressBar） ========== */
+
+/* 低血量脉动 */
+.battle-mvp .ink-bar__fill--low {
+  animation: lowHpPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes lowHpPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
