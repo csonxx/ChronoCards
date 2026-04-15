@@ -702,3 +702,125 @@
   pointer-events: none;
   overflow: hidden;
 }
+
+/* ========== 元素反应显示 ========== */
+.reaction-display {
+  position: absolute;
+  top: 25%;
+  right: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 20;
+}
+
+.reaction-badge {
+  padding: var(--space-1) var(--space-3);
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-bg);
+  animation: reactionPop 0.3s ease-out;
+}
+
+@keyframes reactionPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.reaction-badge--vaporize { border-color: #ff6b35; color: #ff6b35; }
+.reaction-badge--melt { border-color: #ffd93d; color: #ffd93d; }
+.reaction-badge--freeze { border-color: #6bcbff; color: #6bcbff; }
+.reaction-badge--superconduct { border-color: #b8a9ff; color: #b8a9ff; }
+.reaction-badge--overload { border-color: #ffeb3b; color: #ffeb3b; }
+.reaction-badge--spread { border-color: #81c784; color: #81c784; }
+.reaction-badge--dilute { border-color: #4caf50; color: #4caf50; }
+.reaction-badge--catalyze { border-color: #9c27b0; color: #9c27b0; }
+
+/* ========== 敌人元素状态计时器 ========== */
+.enemy-elemental-status {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.element-timer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.element-duration {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* ========== 反击按钮 ========== */
+.battle-btn--counter {
+  background: linear-gradient(180deg, #ffd700 0%, #ff8c00 50%, #ff6600 100%);
+  border-color: #ffd700;
+  animation: counterReady 0.5s ease-in-out infinite;
+}
+
+@keyframes counterReady {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+}
+
+/* ========== 技能组布局 ========== */
+.battle-controls--light {
+  position: absolute;
+  bottom: 28%;
+  left: var(--space-4);
+}
+
+.battle-controls--attack {
+  position: absolute;
+  bottom: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.battle-controls--inner {
+  position: absolute;
+  bottom: 28%;
+  right: var(--space-4);
+}
+
+.battle-controls--outer {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-wrap: wrap;
+  max-width: 350px;
+  justify-content: center;
+}
+
+.battle-controls--block {
+  position: absolute;
+  bottom: 12%;
+  right: var(--space-4);
+  gap: var(--space-2);
+}
+
+.control-group-label {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-cursive);
+}
+
+/* ========== 连击计数 ========== */
+.combo-count {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: bold;
+  color: var(--color-accent);
+  text-align: center;
+  animation: comboPulse 0.5s ease-in-out infinite;
+}
