@@ -200,7 +200,12 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
   };
 
   return (
-    <div className="open-world" tabIndex={0} onKeyDown={handleKeyDown}>
+    <div className="open-world" tabIndex={0} onKeyDown={handleKeyDown} style={{
+      backgroundImage: `linear-gradient(to bottom, rgba(15,25,45,0.82) 0%, rgba(10,15,30,0.88) 100%), url("/assets/scenes/map_bg_1.png")`,
+      backgroundSize: "cover, cover",
+      backgroundPosition: "center, center",
+      minHeight: "100vh",
+    }}>
       <TopBar title="ChronoCards" subtitle={`${playerName} · ${currentChapter}`} onSettingsClick={onSettings} />
 
       <div className="open-world__container">
