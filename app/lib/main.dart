@@ -6,14 +6,16 @@ import 'presentation/providers/battle_provider.dart';
 import 'presentation/screens/s2_open_world/open_world_screen.dart';
 import 'presentation/screens/s3_card_draw/card_draw_screen.dart';
 import 'presentation/screens/s5_battle/battle_screen.dart';
+import 'presentation/screens/s6_economy/screens/economy_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set preferred orientations - landscape for mobile gaming
+  // Set preferred orientations - landscape for mobile gaming (battle/world screens)
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
+    DeviceOrientation.portrait,
   ]);
 
   // Set system UI overlay style for immersive gaming
@@ -21,12 +23,6 @@ void main() {
     SystemUiMode.immersiveSticky,
     overlays: [],
   );
-
-  // Lock to landscape
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
 
   runApp(const ChronoCardsApp());
 }
@@ -52,6 +48,7 @@ class ChronoCardsApp extends StatelessWidget {
           '/': (context) => const OpenWorldScreen(),
           '/card_draw': (context) => const CardDrawScreen(),
           '/battle': (context) => const BattleScreen(),
+          '/economy': (context) => const EconomyScreen(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/battle') {
