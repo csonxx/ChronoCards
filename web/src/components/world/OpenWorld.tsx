@@ -261,8 +261,10 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
                     alt={dealer.name}
                     className={`location-marker location-marker--${dealer.type}`}
                     style={{ left: `${(dealer.position.x / 600) * 100}%`, top: `${(dealer.position.y / 400) * 100}%` }}
-                    title={dealer.name}
+                    title={`${dealer.name} - ${dealer.dialog ? dealer.dialog[0] : '点击交互'}`}
                     onClick={() => handleInteractWith(dealer)}
+                    onMouseEnter={(e) => { (e.target as HTMLImageElement).style.transform = 'translate(-50%, -50%) scale(1.3)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLImageElement).style.transform = 'translate(-50%, -50%) scale(1)'; }}
                   />
                 ))}
               </div>

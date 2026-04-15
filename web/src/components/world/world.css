@@ -78,7 +78,8 @@
 .location-marker--enemy { background: #FF4444; color: #FF4444; }
 .location-marker--encounter { background: #6ba3ff; color: #6ba3ff; }
 
-.location-marker:hover { transform: translate(-50%, -50%) scale(2); }
+.location-marker:hover { transform: translate(-50%, -50%) scale(2.5); }
+.location-marker { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; border-radius: 50%; }
 
 .player-marker {
   position: absolute;
