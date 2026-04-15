@@ -17,6 +17,7 @@ import (
 	"github.com/csonxx/ChronoCards/server/internal/game/martial_art"
 	"github.com/csonxx/ChronoCards/server/internal/game/narrative"
 	"github.com/csonxx/ChronoCards/server/internal/game/skill"
+	"github.com/csonxx/ChronoCards/server/internal/game/world_generator"
 	"github.com/csonxx/ChronoCards/server/internal/model"
 	"github.com/csonxx/ChronoCards/server/internal/store"
 )
@@ -32,7 +33,8 @@ type Handler struct {
 	inventorySvc  *item.InventoryService
 	equipmentSvc  *equipment.Service
 	martialArtSvc *martial_art.Service
-	shopSvc      *item.Service
+	shopSvc       *item.Service
+	worldGen     *world_generator.Generator
 	auctionSvc   *auction.Service
 	factionSvc   *faction.Service
 }
@@ -48,6 +50,7 @@ func NewHandler(s store.StoreInterface) *Handler {
 		skillSvc:     skill.NewService(s),
 		inventorySvc: item.NewInventoryService(s),
 		shopSvc:      item.NewService(s),
+		worldGen:    world_generator.NewGenerator(),
 		auctionSvc:   auction.NewService(s),
 		factionSvc:   faction.NewService(s),
 	}
@@ -1979,4 +1982,59 @@ func (h *Handler) GetFactionRelation(w http.ResponseWriter, r *http.Request) {
 		"relation":  relation,
 		"is_hostile": relation == "hostile",
 	})
+}
+
+
+// GenerateWorldEvent 生成随机世界事件
+func (h *Handler) GenerateWorldEvent(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+	var req struct {
+		Region string `json:"region"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	if req.Region == "" {
+		req.Region = "suzhou"
+	}
+
+	p, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.json(w, http.StatusNotFound, map[string]string{"error": "player not found"})
+		return
+	}
+
+	rep := map[string]int{"mingjiao": 0, "shaolin": 0, "wudang": 0, "jinyiwei": 0, "wudu": 0, "gaibang": 0}
+	// 从Player获取声望
+	for k, v := range rep {
+		_ = v
+		_ = k
+	}
+
+	event := h.worldGen.GenerateEvent(req.Region, p.Faction, rep)
+	h.json(w, http.StatusOK, event)
+}
+
+// GetWorldGeneratorPrompt 获取LLM叙事Prompt
+func (h *Handler) GetWorldGeneratorPrompt(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+	var req struct {
+		EventID string `json:"event_id"`
+		Title   string `json:"title"`
+		Desc    string `json:"description"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	p, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.json(w, http.StatusNotFound, map[string]string{"error": "player not found"})
+		return
+	}
+
+	event := &world_generator.WorldEvent{
+		ID:          req.EventID,
+		Title:       req.Title,
+		Description: req.Desc,
+		EventType:   "narrative",
+	}
+	prompt := h.worldGen.BuildNarrativePrompt(event, p.Name, p.Faction)
+	h.json(w, http.StatusOK, map[string]string{"prompt": prompt})
 }

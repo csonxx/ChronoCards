@@ -144,6 +144,10 @@ func main() {
 	mux.HandleFunc("GET /api/v1/players/{player_id}/wallet/stats", h.GetWalletStats)
 	mux.HandleFunc("POST /api/v1/players/{player_id}/wallet/reward", h.RewardPlayer)
 
+	// WorldGenerator APIs
+	mux.HandleFunc("POST /api/v1/players/{player_id}/world-event", h.GenerateWorldEvent)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/world-event/prompt", h.GetWorldGeneratorPrompt)
+
 	// Faction APIs
 	mux.HandleFunc("GET /api/v1/factions", h.ListAllFactions)
 	mux.HandleFunc("GET /api/v1/factions/relation", h.GetFactionRelation)
