@@ -43,8 +43,8 @@ type StoreInterface interface {
 	ListActiveAuctions() []*model.AuctionItem
 	ListAuctionsBySeller(sellerID string) []*model.AuctionItem
 	ListAuctionsByBidder(bidderID string) []*model.AuctionItem
-	CreateBid(bid *model.Bid) error
-	GetBidsByAuction(auctionID string) []*model.Bid
+	CreateBid(bid *model.AuctionBid) error
+	GetBidsByAuction(auctionID string) []*model.AuctionBid
 	// Player money operations
 	GetPlayerMoney(playerID string) (int, error)
 	DeductPlayerMoney(playerID string, amount int) error
@@ -63,7 +63,7 @@ type Store struct {
 	equipments       map[string]*model.Equipment
 	playerLocations  map[string]*model.PlayerLocation
 	auctions         map[string]*model.AuctionItem
-	bids             map[string][]*model.Bid
+	bids             map[string][]*model.AuctionBid
 }
 
 // NewStore 创建存储
@@ -76,7 +76,7 @@ func NewStore() *Store {
 		equipments:       make(map[string]*model.Equipment),
 		playerLocations:  make(map[string]*model.PlayerLocation),
 		auctions:         make(map[string]*model.AuctionItem),
-		bids:             make(map[string][]*model.Bid),
+		bids:             make(map[string][]*model.AuctionBid),
 	}
 	// 初始化默认发牌员
 	s.initDefaultDealers()
@@ -357,7 +357,7 @@ func (s *Store) CreateAuction(item *model.AuctionItem) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.auctions[item.ID] = item
-	s.bids[item.ID] = []*model.Bid{}
+	s.bids[item.ID] = []*model.AuctionBid{}
 	return nil
 }
 
@@ -417,7 +417,7 @@ func (s *Store) ListAuctionsByBidder(bidderID string) []*model.AuctionItem {
 }
 
 // CreateBid 创建出价记录
-func (s *Store) CreateBid(bid *model.Bid) error {
+func (s *Store) CreateBid(bid *model.AuctionBid) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.bids[bid.AuctionID] = append(s.bids[bid.AuctionID], bid)
@@ -425,7 +425,7 @@ func (s *Store) CreateBid(bid *model.Bid) error {
 }
 
 // GetBidsByAuction 获取拍卖的所有出价
-func (s *Store) GetBidsByAuction(auctionID string) []*model.Bid {
+func (s *Store) GetBidsByAuction(auctionID string) []*model.AuctionBid {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.bids[auctionID]

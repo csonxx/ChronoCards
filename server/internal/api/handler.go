@@ -12,6 +12,7 @@ import (
 	"github.com/csonxx/ChronoCards/server/internal/game/deck"
 	"github.com/csonxx/ChronoCards/server/internal/game/element"
 	"github.com/csonxx/ChronoCards/server/internal/game/equipment"
+	"github.com/csonxx/ChronoCards/server/internal/game/faction"
 	"github.com/csonxx/ChronoCards/server/internal/game/item"
 	"github.com/csonxx/ChronoCards/server/internal/game/martial_art"
 	"github.com/csonxx/ChronoCards/server/internal/game/narrative"
@@ -33,6 +34,7 @@ type Handler struct {
 	martialArtSvc *martial_art.Service
 	shopSvc      *item.Service
 	auctionSvc   *auction.Service
+	factionSvc   *faction.Service
 }
 
 // NewHandler 创建处理器
@@ -47,6 +49,7 @@ func NewHandler(s store.StoreInterface) *Handler {
 		inventorySvc: item.NewInventoryService(s),
 		shopSvc:      item.NewService(s),
 		auctionSvc:   auction.NewService(s),
+		factionSvc:   faction.NewService(s),
 	}
 }
 
@@ -1595,5 +1598,385 @@ func (h *Handler) GetAuctionDetail(w http.ResponseWriter, r *http.Request) {
 			EndTime:       item.EndTime.Format("2006-01-02T15:04:05Z"),
 		},
 		"bids": bidResp,
+	})
+}
+
+// ---- Cloud Save APIs ----
+
+// GetSave 获取玩家存档（JSON文件）
+func (h *Handler) GetSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	// 检查玩家是否存在
+	if _, ok := h.store.GetPlayer(playerID); !ok {
+		h.notFound(w)
+		return
+	}
+
+	// 先保存到文件（确保文件是最新的）
+	if err := gameplayer.SavePlayer(h.store, playerID); err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 读取存档
+	saveData, err := gameplayer.LoadPlayer(playerID)
+	if err != nil {
+		h.error(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"save":      saveData,
+	})
+}
+
+// PostLoad 从存档文件加载玩家数据到store
+func (h *Handler) PostLoad(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		Force bool `json:"force"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	// 读取存档
+	saveData, err := gameplayer.LoadPlayer(playerID)
+	if err != nil {
+		h.error(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	// 检查是否强制加载
+	if _, exists := h.store.GetPlayer(playerID); exists && !req.Force {
+		h.error(w, http.StatusConflict, "player already exists, use force=true to overwrite")
+		return
+	}
+
+	// 恢复到store
+	if err := gameplayer.LoadAndRestorePlayer(h.store, playerID); err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"loaded":    true,
+		"player":    saveData.Player,
+	})
+}
+
+// PostExport 导出存档为base64字符串
+func (h *Handler) PostExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	// 确保存档是最新的
+	if err := gameplayer.SavePlayer(h.store, playerID); err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 导出
+	exportResp, err := gameplayer.ExportPlayer(playerID)
+	if err != nil {
+		h.error(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, exportResp)
+}
+
+// PostImport 导入存档
+func (h *Handler) PostImport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req gameplayer.ImportPlayerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+	req.PlayerID = playerID
+
+	importResp, err := gameplayer.ImportPlayer(h.store, &req)
+	if err != nil {
+		h.error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, importResp)
+}
+
+// ListSaves 列出所有存档
+func (h *Handler) ListSaves(w http.ResponseWriter, r *http.Request) {
+	saves, err := gameplayer.ListSaves()
+	if err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"saves": saves,
+		"total": len(saves),
+	})
+}
+
+// DeleteSave 删除存档
+func (h *Handler) DeleteSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	if err := gameplayer.DeleteSave(playerID); err != nil {
+		h.error(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"deleted":   true,
+	})
+}
+
+// BackupSave 备份存档
+func (h *Handler) BackupSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	if err := gameplayer.BackupPlayer(playerID); err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"backed_up": true,
+	})
+}
+
+// RestoreBackup 恢复备份
+func (h *Handler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	if err := gameplayer.RestoreBackup(h.store, playerID); err != nil {
+		h.error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id":    playerID,
+		"restored":     true,
+	})
+}
+
+// ---- Faction APIs ----
+
+// GetPlayerFaction 获取玩家阵营信息
+func (h *Handler) GetPlayerFaction(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	info, err := h.factionSvc.GetPlayerFactionInfo(playerID)
+	if err != nil {
+		h.notFound(w)
+		return
+	}
+
+	h.json(w, http.StatusOK, info)
+}
+
+// GetPlayerReputations 获取玩家各阵营声望
+func (h *Handler) GetPlayerReputations(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	reputations, err := h.factionSvc.GetPlayerReputations(playerID)
+	if err != nil {
+		h.notFound(w)
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id":   playerID,
+		"reputations": reputations,
+	})
+}
+
+// UpdatePlayerReputation 更新玩家声望
+func (h *Handler) UpdatePlayerReputation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		FactionID string `json:"faction_id"`
+		Delta     int    `json:"delta"`
+		EventType string `json:"event_type,omitempty"`
+		Reason    string `json:"reason,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.FactionID == "" {
+		h.badRequest(w, "faction_id is required")
+		return
+	}
+
+	factionID := faction.FactionID(req.FactionID)
+	result, err := h.factionSvc.UpdateReputation(playerID, &faction.UpdateReputationRequest{
+		FactionID: factionID,
+		Delta:     req.Delta,
+		EventType: req.EventType,
+		Reason:    req.Reason,
+	})
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, result)
+}
+
+// GetFactionCards 获取阵营卡牌
+func (h *Handler) GetFactionCards(w http.ResponseWriter, r *http.Request) {
+	factionIDStr := r.PathValue("faction_id")
+	factionID := faction.FactionID(factionIDStr)
+
+	// 获取玩家等级（可选参数）
+	playerID := r.URL.Query().Get("player_id")
+	playerLevel := 1
+	if playerID != "" {
+		if player, ok := h.store.GetPlayer(playerID); ok {
+			playerLevel = player.Level
+		}
+	}
+
+	cards := h.factionSvc.GetFactionCards(factionID, playerLevel)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"faction_id": factionID,
+		"cards":      cards,
+		"total":      len(cards),
+	})
+}
+
+// JoinFaction 加入阵营
+func (h *Handler) JoinFaction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		FactionID string `json:"faction_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.FactionID == "" {
+		h.badRequest(w, "faction_id is required")
+		return
+	}
+
+	factionID := faction.FactionID(req.FactionID)
+	info, err := h.factionSvc.JoinFaction(playerID, &faction.JoinFactionRequest{
+		FactionID: factionID,
+	})
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, info)
+}
+
+// UpdateKillIntent 更新杀意值
+func (h *Handler) UpdateKillIntent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+
+	var req struct {
+		FactionID string `json:"faction_id"`
+		Delta     int    `json:"delta"`
+		EventType string `json:"event_type,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.FactionID == "" {
+		h.badRequest(w, "faction_id is required")
+		return
+	}
+
+	factionID := faction.FactionID(req.FactionID)
+	result, err := h.factionSvc.UpdateKillIntent(playerID, &faction.KillIntentRequest{
+		FactionID: factionID,
+		Delta:     req.Delta,
+		EventType: req.EventType,
+	})
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, result)
+}
+
+// ListAllFactions 列出所有阵营
+func (h *Handler) ListAllFactions(w http.ResponseWriter, r *http.Request) {
+	factions := h.factionSvc.ListAllFactions()
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"factions": factions,
+		"total":    len(factions),
+	})
+}
+
+// GetFactionRelation 获取两个阵营的关系
+func (h *Handler) GetFactionRelation(w http.ResponseWriter, r *http.Request) {
+	factionA := faction.FactionID(r.URL.Query().Get("faction_a"))
+	factionB := faction.FactionID(r.URL.Query().Get("faction_b"))
+
+	relation := h.factionSvc.GetRelation(factionA, factionB)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"faction_a": factionA,
+		"faction_b": factionB,
+		"relation":  relation,
+		"is_hostile": relation == "hostile",
 	})
 }

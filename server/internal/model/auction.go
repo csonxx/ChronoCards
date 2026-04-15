@@ -36,7 +36,7 @@ type AuctionItem struct {
 }
 
 // Bid 出价记录
-type Bid struct {
+type AuctionBid struct {
 	ID        string    `json:"id"`
 	AuctionID string    `json:"auction_id"`
 	BidderID  string    `json:"bidder_id"`

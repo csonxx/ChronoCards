@@ -144,8 +144,29 @@ func main() {
 	mux.HandleFunc("GET /api/v1/players/{player_id}/wallet/stats", h.GetWalletStats)
 	mux.HandleFunc("POST /api/v1/players/{player_id}/wallet/reward", h.RewardPlayer)
 
+	// Faction APIs
+	mux.HandleFunc("GET /api/v1/factions", h.ListAllFactions)
+	mux.HandleFunc("GET /api/v1/factions/relation", h.GetFactionRelation)
+	mux.HandleFunc("GET /api/v1/factions/{faction_id}/cards", h.GetFactionCards)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/faction", h.GetPlayerFaction)
+	mux.HandleFunc("GET /api/v1/players/{player_id}/reputation", h.GetPlayerReputations)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/reputation", h.UpdatePlayerReputation)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/faction/join", h.JoinFaction)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/kill-intent", h.UpdateKillIntent)
+
 	// WebSocket for real-time auction notifications
 	mux.HandleFunc("GET /api/v1/ws/auctions", h.HandleAuctionWebSocket)
+
+	// Cloud Save APIs
+	mux.HandleFunc("GET /api/v1/players/{player_id}/save", h.GetSave)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/load", h.PostLoad)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/export", h.PostExport)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/import", h.PostImport)
+	mux.HandleFunc("GET /api/v1/saves", h.ListSaves)
+	mux.HandleFunc("DELETE /api/v1/players/{player_id}/save", h.DeleteSave)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/backup", h.BackupSave)
+	mux.HandleFunc("POST /api/v1/players/{player_id}/restore", h.RestoreBackup)
+
 
 	addr := ":8080"
 	log.Printf("ChronoCards Backend 已启动，监听 %s", addr)

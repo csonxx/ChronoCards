@@ -16,8 +16,8 @@ type StoreInterface interface {
 	ListActiveAuctions() []*model.AuctionItem
 	ListAuctionsBySeller(sellerID string) []*model.AuctionItem
 	ListAuctionsByBidder(bidderID string) []*model.AuctionItem
-	CreateBid(bid *model.Bid) error
-	GetBidsByAuction(auctionID string) []*model.Bid
+	CreateBid(bid *model.AuctionBid) error
+	GetBidsByAuction(auctionID string) []*model.AuctionBid
 	GetPlayerMoney(playerID string) (int, error)
 	DeductPlayerMoney(playerID string, amount int) error
 	AddPlayerMoney(playerID string, amount int) error
@@ -105,7 +105,7 @@ func (s *Service) ListItem(req *ListAuctionRequest) (*model.AuctionItem, error) 
 }
 
 // PlaceBid 出价
-func (s *Service) PlaceBid(auctionID, bidderID string, amount int) (*model.AuctionItem, *model.Bid, error) {
+func (s *Service) PlaceBid(auctionID, bidderID string, amount int) (*model.AuctionItem, *model.AuctionBid, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -150,7 +150,7 @@ func (s *Service) PlaceBid(auctionID, bidderID string, amount int) (*model.Aucti
 		return nil, nil, ErrBidFailed
 	}
 
-	bid := &model.Bid{
+	bid := &model.AuctionBid{
 		ID:        uuid.New().String(),
 		AuctionID: auctionID,
 		BidderID:  bidderID,
@@ -182,7 +182,7 @@ func (s *Service) GetActiveAuctions() []*model.AuctionItem {
 }
 
 // GetAuctionDetail 获取拍卖详情
-func (s *Service) GetAuctionDetail(auctionID string) (*model.AuctionItem, []*model.Bid, error) {
+func (s *Service) GetAuctionDetail(auctionID string) (*model.AuctionItem, []*model.AuctionBid, error) {
 	item, ok := s.store.GetAuction(auctionID)
 	if !ok {
 		return nil, nil, ErrAuctionNotFound
