@@ -8,6 +8,8 @@ import { Battle } from './components/battle/Battle';
 import { TutorialOverlay, shouldShowTutorial } from './components/tutorial/TutorialOverlay';
 import { CardDrawGuide } from './components/tutorial/CardDrawGuide';
 import { LandscapeWarning } from './components/mobile/LandscapeWarning';
+import { NarrativePanel, type NarrativeData } from './components/narrative/NarrativePanel';
+import { narrativeWS } from './services/websocket';
 import type { Card, CardOption, GameScene } from './types';
 import { saveManager } from './services/save-system';
 import { applyCardOptionEffect } from './services/card-effects';
@@ -20,6 +22,7 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(shouldShowTutorial);
   const [cardDrawGuideType, setCardDrawGuideType] = useState<string | null>(null);
   const [cardEffectResult, setCardEffectResult] = useState<ReturnType<typeof applyCardOptionEffect> | null>(null);
+  const [narrativeData, setNarrativeData] = useState<NarrativeData | null>(null);
   const cardDrawGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 初始化存档
@@ -31,9 +34,22 @@ function App() {
     saveManager.startAutoSave(60000);
     // 页面关闭前保存
     window.addEventListener('beforeunload', () => saveManager.save());
+
+    // 连接 WebSocket 监听叙事事件
+    narrativeWS.onNarrative((data) => {
+      console.log('[App] Narrative event:', data);
+      setNarrativeData(data);
+    });
+
+    // 建立连接
+    narrativeWS.connect().catch(err => {
+      console.warn('[App] WS connect failed (running without server):', err);
+    });
+
     return () => {
       saveManager.stopAutoSave();
       saveManager.save();
+      narrativeWS.disconnect();
     };
   }, []);
 
@@ -189,6 +205,12 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* LLM 叙事面板 */}
+      <NarrativePanel
+        data={narrativeData}
+        onDismiss={() => setNarrativeData(null)}
+      />
     </div>
   );
 }
