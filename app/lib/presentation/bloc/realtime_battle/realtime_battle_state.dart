@@ -1,25 +1,29 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import '../../core/constants/battle_constants.dart';
-import '../models/battle_entity.dart';
-import '../models/battle_phase.dart';
+import '../../../core/constants/battle_constants.dart';
+import '../../../game/models/battle_entity.dart';
+import '../../../game/models/battle_phase.dart';
 
 /// 伤害数字数据结构
-class DamageNumberData {
+class DamageNumberData extends Equatable {
   final String id;
   final String text;
   final Color color;
   final Offset position;
 
-  DamageNumberData({
+  const DamageNumberData({
     required this.id,
     required this.text,
     required this.color,
     required this.position,
   });
+
+  @override
+  List<Object?> get props => [id, text, color, position];
 }
 
-/// 战斗状态（不可变数据类）
-class BattleState {
+/// 实时战斗状态
+class RealtimeBattleState extends Equatable {
   final BattleEntity player;
   final BattleEntity enemy;
   final BattlePhase phase;
@@ -35,7 +39,7 @@ class BattleState {
   final List<DamageNumberData> damageNumbers;
   final int battleTimeSeconds;
 
-  const BattleState({
+  const RealtimeBattleState({
     required this.player,
     required this.enemy,
     required this.phase,
@@ -52,16 +56,16 @@ class BattleState {
     this.showBattleTip = false,
   });
 
-  // 工厂方法：初始状态
-  factory BattleState.initial() {
-    return BattleState(
-      player: BattleEntity(
+  /// 初始状态工厂
+  factory RealtimeBattleState.initial() {
+    return RealtimeBattleState(
+      player: BattleEntity.full(
         name: '少侠',
         maxHp: BattleConstants.playerMaxHp,
         attackDamage: BattleConstants.playerAttackDamage,
         level: BattleConstants.playerLevel,
       ),
-      enemy: BattleEntity(
+      enemy: BattleEntity.full(
         name: BattleConstants.enemyName,
         maxHp: BattleConstants.enemyMaxHp,
         attackDamage: BattleConstants.enemyAttackDamage,
@@ -79,10 +83,10 @@ class BattleState {
   }
 
   /// 体力是否足够闪避
-  bool get staminaSufficient =>
-      stamina >= BattleConstants.dodgeStaminaCost;
+  bool get staminaSufficient => stamina >= BattleConstants.dodgeStaminaCost;
 
-  BattleState copyWith({
+  @override
+  RealtimeBattleState copyWith({
     BattleEntity? player,
     BattleEntity? enemy,
     BattlePhase? phase,
@@ -99,7 +103,7 @@ class BattleState {
     int? battleTimeSeconds,
     bool clearResult = false,
   }) {
-    return BattleState(
+    return RealtimeBattleState(
       player: player ?? this.player,
       enemy: enemy ?? this.enemy,
       phase: phase ?? this.phase,
@@ -116,4 +120,22 @@ class BattleState {
       battleTimeSeconds: battleTimeSeconds ?? this.battleTimeSeconds,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        player,
+        enemy,
+        phase,
+        result,
+        stamina,
+        isPlayerHurt,
+        isEnemyHurt,
+        isDodging,
+        isEnemyWindup,
+        canAttack,
+        battleTip,
+        showBattleTip,
+        damageNumbers,
+        battleTimeSeconds,
+      ];
 }
