@@ -488,3 +488,51 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+
+/* ========== 战斗特效 ========== */
+@keyframes screenShake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-8px) translateY(2px); }
+  20% { transform: translateX(8px) translateY(-2px); }
+  30% { transform: translateX(-6px) translateY(1px); }
+  40% { transform: translateX(6px) translateY(-1px); }
+  50% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes criticalFlash {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(2.5) saturate(1.5); }
+  60% { filter: brightness(1.5); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+@keyframes fireGlow {
+  0%, 100% { text-shadow: 0 0 8px #ef4444, 2px 2px 0 #c0392b; }
+  50% { text-shadow: 0 0 20px #ff6b35, 2px 2px 0 #c0392b, 0 0 30px #ff4500; }
+}
+
+.battle-mvp--shake {
+  animation: screenShake 0.4s ease-out;
+}
+
+.battle-mvp--critical-flash {
+  animation: criticalFlash 0.4s ease-out;
+}
+
+.battle-mvp__hp-bar--critical::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  animation: goldPulse 1.5s ease-out infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}

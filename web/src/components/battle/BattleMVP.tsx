@@ -44,6 +44,8 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
   const [isStaggered, setIsStaggered] = useState(false);
   const [playerDamage, setPlayerDamage] = useState<number | null>(null);
   const [enemyDamage, setEnemyDamage] = useState<number | null>(null);
+  const [shake, setShake] = useState(false);
+  const [critFlash, setCritFlash] = useState(false);
   const [battlePhase, setBattlePhase] = useState<'intro' | 'battle' | 'victory' | 'defeat'>('intro');
 
   const lastAttackTime = useRef(0);
@@ -65,6 +67,15 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
     const damage = 50;
     setEnemyCurrentHp(prev => Math.max(0, prev - damage));
     setEnemyDamage(damage);
+    // 屏幕震动
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+    // 暴击30%率
+    const isCrit = Math.random() < 0.3;
+    if (isCrit) {
+      setTimeout(() => setCritFlash(true), 200);
+      setTimeout(() => setCritFlash(false), 600);
+    }
 
     setTimeout(() => {
       setIsAttacking(false);
@@ -177,7 +188,8 @@ export const BattleMVP: React.FC<BattleMVPProps> = ({
       backgroundSize: "cover, cover",
       backgroundPosition: "center, center",
       minHeight: "100vh",
-    }} className={`battle-mvp ${battlePhase === 'intro' ? 'battle-mvp--intro' : ''} ${isInvincible ? 'battle-mvp--invincible' : ''} ${battlePhase === 'defeat' ? 'battle-mvp--defeat' : ''}`}>
+    }}
+    className={`battle-mvp ${shake ? 'battle-mvp--shake ' : ''}${critFlash ? 'battle-mvp--critical-flash ' : ''}${battlePhase === 'intro' ? 'battle-mvp--intro ' : ''}${isInvincible ? 'battle-mvp--invincible ' : ''}${battlePhase === 'defeat' ? 'battle-mvp--defeat' : ''}`}>
 
       {/* 战斗开始提示 */}
       {battlePhase === 'intro' && (
