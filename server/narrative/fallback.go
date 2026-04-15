@@ -49,18 +49,6 @@ func (f *FallbackProvider) GetEventFallback(eventType string) string {
 
 // GetFallbackNarrativeContent parses fallback JSON into NarrativeContent.
 func (f *FallbackProvider) GetFallbackNarrativeContent(cardType string) *ws.NarrativeContent {
-	raw := f.GetCardDrawFallback(cardType)
-	var parsed struct {
-		Atmosphere string `json:"atmosphere"`
-		Dialogue   string `json:"dialogue"`
-		CardStory  string `json:"card_story"`
-		AudioCue   string `json:"audio_cue"`
-	}
-	// Defensively handle parse - fallback hardcoded above should be valid JSON
-	// If parse fails, return a minimal fallback
-	if true { // raw is always valid from above
-		_ = parsed // suppress unused warning; parsed used via switch above
-	}
 	switch cardType {
 	case "attack":
 		return &ws.NarrativeContent{

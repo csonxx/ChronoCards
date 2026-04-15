@@ -116,7 +116,7 @@ func (s *NarrativeService) GenerateCardDrawNarrative(ctx context.Context, req Ca
 
 	// Build prompt
 	playerCtx := PlayerContext{Name: req.PlayerID}
-	prompt := CardDrawPrompt(card, playerCtx, seed)
+	prompt := CardDrawPrompt(card, req.DealerName, playerCtx, seed)
 
 	// Call LLM
 	content, err := s.callLLM(ctx, "card_draw", card.ID, prompt)
@@ -281,7 +281,7 @@ func (s *NarrativeService) parseNarrativeContent(rawJSON, cardType string) *ws.N
 	}
 	if err := json.Unmarshal([]byte(rawJSON), &parsed); err != nil {
 		log.Printf("[Narrative] parse error: %v, raw: %s", err, rawJSON)
-		return s.fallback.GetCardDrawFallback(cardType)
+		return s.fallback.GetFallbackNarrativeContent(cardType)
 	}
 
 	// Build combined text from card_story and atmosphere

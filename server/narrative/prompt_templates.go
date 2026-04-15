@@ -3,13 +3,15 @@ package narrative
 import (
 	"fmt"
 	"strings"
+
+	ws "github.com/csonxx/ChronoCards/server/ws"
 )
 
 // PromptTemplates provides ancient Chinese literary style prompts for narrative generation.
 // All prompts produce 古白话文 (classical vernacular Chinese) style output.
 
 // CardDrawPrompt generates a prompt for card draw narrative.
-func CardDrawPrompt(card CardInfo, player PlayerContext, seed string) string {
+func CardDrawPrompt(card ws.CardInfo, dealerName string, player PlayerContext, seed string) string {
 	styleHints := map[string]string{
 		"attack":  "豪迈激昂，江湖快意，刀光剑影，字里行间透着杀气",
 		"defense": "沉稳内敛，以静制动，旁白如古卷徐徐展开",
@@ -56,7 +58,7 @@ func CardDrawPrompt(card CardInfo, player PlayerContext, seed string) string {
 - 氛围描写需贴合卡牌的元素属性（火系用热烈、土系用厚重）
 - 不要输出任何解释性文字，直接输出 JSON
 
-随机种子：%s（保持变化，每小时不同）`, card.DealerName, card.DealerName,
+随机种子：%s（保持变化，每小时不同）`, dealerName, dealerName,
 		player.Name, card.Title, card.Description, card.Type,
 		card.Element, card.Damage, card.MPCost,
 		effects, style, seed)
@@ -100,7 +102,7 @@ func EventDescPrompt(event EventContext, seed string) string {
 		"random_event": "天有不测风云，江湖中总有意外",
 		"level_up":     "厚积薄发，武功修为突破新境界",
 	}
-	base := templates[event.Type]
+	base := templates[event.EventType]
 	if base == "" {
 		base = "江湖风云，变幻莫测"
 	}
@@ -129,6 +131,6 @@ func EventDescPrompt(event EventContext, seed string) string {
 - 叙事节奏感强，有起承转合
 - 不输出任何解释，直接输出 JSON
 
-随机种子：%s`, event.Type, event.LocationName,
+随机种子：%s`, event.EventType, event.LocationName,
 		event.PlayerName, base, seed)
 }
