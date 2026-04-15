@@ -164,10 +164,10 @@ func (sm *LuzheStateMachine) ShouldTriggerEncounter(
 
 	if hasFirstJiangnan || hasFirstSuzhou || hasFirstGaibang {
 		reason := "first_jiangnan_entry"
-		if hasFirstSuzhou {
-			reason = "first_suzhou_entry"
-		} else if hasFirstGaibang {
+		if hasFirstGaibang {
 			reason = "first_gaibang_entry"
+		} else if hasFirstSuzhou && !hasFirstJiangnan {
+			reason = "first_suzhou_entry"
 		}
 		return true, reason
 	}
