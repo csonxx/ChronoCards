@@ -270,6 +270,13 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
             <div className="open-world__region-info">
               <span className="region-label">当前位置</span>
               <span className="region-value">{regionNames[currentRegion]} · 华山脚下</span>
+              <span className="region-label" style={{marginTop:4}}>剧情线索</span>
+              <span className="region-value" style={{fontSize:11, color:'#f59e0b'}}>
+                {currentRegion === 'suzhou' ? '→ 前往茶馆，听闻江湖轶事' :
+                 currentRegion === 'jiangnan' ? '→ 挑战江湖恶徒，提升实力' :
+                 currentRegion === 'huashan' ? '→ 悬赏公告栏，接任务赚取银两' :
+                 '→ 探索未知，提升与各势力声望'}
+              </span>
             </div>
           </ScrollPanel>
         </aside>
