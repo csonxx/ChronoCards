@@ -111,7 +111,7 @@ export interface FullBattleStats extends ThreeResources {
 }
 
 // ========== 敌人完整数据 ==========
-export interface Faction = 'wudang' | 'shaolin' | 'emei' | 'huashan' | 'kongdong' | 'gaibang' | 'yihua' | 'mingjiao' | 'jinyiwei';
+export type Faction = 'wudang' | 'shaolin' | 'emei' | 'huashan' | 'kongdong' | 'gaibang' | 'yihua' | 'mingjiao' | 'jinyiwei';
 
 export interface FullBattleEnemy {
   id: string;
