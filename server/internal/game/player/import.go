@@ -2,6 +2,7 @@ package player
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -167,12 +168,16 @@ func decodeBase64(s string) ([]byte, error) {
 
 // BackupPlayer 备份玩家存档（创建副本）
 func BackupPlayer(playerID string) error {
+	// 确保目录存在
+	if err := EnsureSaveDir(); err != nil {
+		return err
+	}
 	savePath := getSavePath(playerID)
 	backupPath := savePath + ".backup"
 
 	data, err := os.ReadFile(savePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("存档不存在，请先保存: %w", err)
 	}
 
 	return os.WriteFile(backupPath, data, 0644)

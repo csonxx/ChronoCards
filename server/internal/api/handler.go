@@ -1285,10 +1285,10 @@ func (h *Handler) UnequipItem(w http.ResponseWriter, r *http.Request) {
 		slotType = model.ItemTypeWeapon
 	case "armor":
 		slotType = model.ItemTypeArmor
-	case "accessory":
+	case "accessory", "accessory1", "accessory2":
 		slotType = model.ItemTypeAccessory
 	default:
-		h.badRequest(w, "invalid slot_type: must be weapon, armor, or accessory")
+		h.badRequest(w, "invalid slot_type: must be weapon, armor, accessory, accessory1, or accessory2")
 		return
 	}
 
@@ -1372,11 +1372,7 @@ func (h *Handler) GetShopInventory(w http.ResponseWriter, r *http.Request) {
 	shopType := r.PathValue("shop_type")
 
 	items := h.shopSvc.GetShopInventory(shopType)
-	if len(items) == 0 {
-		h.notFound(w)
-		return
-	}
-
+	// 返回200，即使没有商品也返回空数组而非404
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"shop_type": shopType,
 		"items":     items,
