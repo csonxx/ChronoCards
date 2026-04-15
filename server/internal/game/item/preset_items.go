@@ -1,6 +1,6 @@
 package item
 
-import "github.com/csonxx/ChronoCards/internal/model"
+import "github.com/csonxx/ChronoCards/server/internal/model"
 
 // MVPItems MVP版本预设物品列表
 var MVPItems = []model.Item{

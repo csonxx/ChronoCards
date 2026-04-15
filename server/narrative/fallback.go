@@ -1,7 +1,7 @@
 package narrative
 
 import (
-	ws "github.com/csonxx/ChronoCards/ws"
+	ws "github.com/csonxx/ChronoCards/server/ws"
 )
 
 // FallbackProvider provides static fallback content when LLM fails.

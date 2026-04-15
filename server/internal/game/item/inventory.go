@@ -3,8 +3,8 @@ package item
 import (
 	"errors"
 
-	"github.com/csonxx/ChronoCards/internal/model"
-	"github.com/csonxx/ChronoCards/internal/store"
+	"github.com/csonxx/ChronoCards/server/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/store"
 )
 
 var (

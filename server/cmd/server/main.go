@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/csonxx/ChronoCards/internal/api"
-	"github.com/csonxx/ChronoCards/internal/game/world"
-	"github.com/csonxx/ChronoCards/internal/store"
+	"github.com/csonxx/ChronoCards/server/internal/api"
+	"github.com/csonxx/ChronoCards/server/internal/game/world"
+	"github.com/csonxx/ChronoCards/server/internal/store"
 )
 
 func main() {

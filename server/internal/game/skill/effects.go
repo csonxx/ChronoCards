@@ -3,7 +3,7 @@ package skill
 import (
 	"math/rand"
 
-	"github.com/csonxx/ChronoCards/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/model"
 )
 
 // StatusEffectType 状态效果类型

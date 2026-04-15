@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/csonxx/ChronoCards/internal/game/world"
+	"github.com/csonxx/ChronoCards/server/internal/game/world"
 )
 
 // WorldHandler 世界地图HTTP处理器

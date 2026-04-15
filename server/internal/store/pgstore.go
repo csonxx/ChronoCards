@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/csonxx/ChronoCards/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/model"
 	_ "github.com/lib/pq"
 )
 

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/csonxx/ChronoCards/internal/model"
-	"github.com/csonxx/ChronoCards/internal/store"
+	"github.com/csonxx/ChronoCards/server/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/store"
 )
 
 // Service 技能服务
@@ -82,7 +82,7 @@ func (s *Service) GetSkillCooldownRemaining(playerID, skillID string) int {
 func (s *Service) UseSkill(player *model.Player, skill *model.Skill, targetHP *int) (*SkillResult, error) {
 	canUse, reason := s.CanUseSkill(player.ID, skill)
 	if !canUse {
-		return &SkillResult{Skill: skill, StatusMsg: reason}, fmt.Errorf(reason)
+		return &SkillResult{Skill: skill, StatusMsg: reason}, fmt.Errorf("%s", reason)
 	}
 
 	// 消耗资源

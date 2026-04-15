@@ -1,6 +1,6 @@
 package item
 
-import "github.com/csonxx/ChronoCards/internal/model"
+import "github.com/csonxx/ChronoCards/server/internal/model"
 
 // ShopItem 商店商品
 type ShopItem struct {

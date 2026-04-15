@@ -1,7 +1,7 @@
 package deck
 
 import (
-	"github.com/csonxx/ChronoCards/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/model"
 )
 
 // Service 发牌员逻辑服务

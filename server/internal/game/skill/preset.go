@@ -1,6 +1,6 @@
 package skill
 
-import "github.com/csonxx/ChronoCards/internal/model"
+import "github.com/csonxx/ChronoCards/server/internal/model"
 
 // PresetSkills 预设武侠技能（MVP版本）
 var PresetSkills = []model.Skill{

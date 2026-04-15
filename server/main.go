@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/csonxx/ChronoCards/narrative"
-	"github.com/csonxx/ChronoCards/ws"
+	"github.com/csonxx/ChronoCards/server/narrative"
+	"github.com/csonxx/ChronoCards/server/ws"
 )
 
 func main() {

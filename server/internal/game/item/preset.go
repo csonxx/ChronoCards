@@ -1,6 +1,6 @@
 package item
 
-import "github.com/csonxx/ChronoCards/internal/model"
+import "github.com/csonxx/ChronoCards/server/internal/model"
 
 // PresetItems 预设物品数据
 var PresetItems = []model.Item{

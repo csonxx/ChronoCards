@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	ws "github.com/csonxx/ChronoCards/ws"
+	ws "github.com/csonxx/ChronoCards/server/ws"
 )
 
 // NarrativeService generates narrative content using LLM or fallback.

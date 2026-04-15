@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -35,6 +36,9 @@ type Hub struct {
 	// done signals the Run goroutine to exit
 	done chan struct{}
 
+	// IdleTimeout is the max duration between messages from a client before closing
+	IdleTimeout time.Duration
+
 	mu      sync.RWMutex
 	wg      sync.WaitGroup
 	running atomic.Bool
@@ -43,12 +47,13 @@ type Hub struct {
 // NewHub creates a new Hub instance
 func NewHub(auth *Authenticator) *Hub {
 	return &Hub{
-		Clients:    make(map[string]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Receive:    make(chan *MessagePacket, 512),
-		auth:       auth,
-		done:       make(chan struct{}),
+		Clients:     make(map[string]*Client),
+		Register:    make(chan *Client),
+		Unregister:  make(chan *Client),
+		Receive:     make(chan *MessagePacket, 512),
+		auth:        auth,
+		done:        make(chan struct{}),
+		IdleTimeout: 5 * time.Minute,
 	}
 }
 

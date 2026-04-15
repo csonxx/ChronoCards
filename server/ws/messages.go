@@ -2,7 +2,11 @@
 
 package ws
 
-import "time"
+import (
+	"time"
+
+	"github.com/csonxx/ChronoCards/server/internal/model"
+)
 
 // MessageType represents the type of a WebSocket message
 type MessageType string
@@ -428,7 +432,7 @@ type EventCharacterCardTriggerData struct {
 	State          string             `json:"state"`
 	TrustLevel     int                `json:"trust_level"`
 	Narrative      string             `json:"narrative"`
-	Choices        []ChoiceEntry      `json:"choices,omitempty"`
+	Choices        []model.ChoiceEntry `json:"choices,omitempty"`
 	ChoicesPrompt  string             `json:"choices_prompt"`
 	RewardsPreview string             `json:"rewards_preview,omitempty"`
 }

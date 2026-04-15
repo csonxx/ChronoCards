@@ -1,7 +1,7 @@
 package deck
 
 import (
-	"github.com/csonxx/ChronoCards/internal/model"
+	"github.com/csonxx/ChronoCards/server/internal/model"
 )
 
 // ApplyCardRewards 应用卡牌奖励到玩家
