@@ -24,6 +24,7 @@ function App() {
   const [cardEffectResult, setCardEffectResult] = useState<ReturnType<typeof applyCardOptionEffect> | null>(null);
   const [narrativeData, setNarrativeData] = useState<NarrativeData | null>(null);
   const cardDrawGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   // 初始化存档
   useEffect(() => {
@@ -45,6 +46,13 @@ function App() {
     narrativeWS.connect().catch(err => {
       console.warn('[App] WS connect failed (running without server):', err);
     });
+
+    // 播放背景音乐
+    const bgm = new Audio('/assets/audio/world_bgm.mp3');
+    bgm.loop = true;
+    bgm.volume = 0.25;
+    bgm.play().catch(() => {}); // autoplay may be blocked
+    bgmRef.current = bgm;
 
     return () => {
       saveManager.stopAutoSave();

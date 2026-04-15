@@ -42,12 +42,12 @@ const NPC_PORTRAITS: Record<string, { avatar: string; color: string; accent: str
 
 // 模拟发牌员数据
 const mockDealers: Dealer[] = [
-  { id: 'd1', name: '茶馆说书人', type: 'teahouse', position: { x: 180, y: 160 } },
-  { id: 'd2', name: '悬赏公告栏', type: 'billboard', position: { x: 420, y: 280 } },
-  { id: 'd3', name: '客栈掌柜', type: 'inn', position: { x: 320, y: 400 } },
-  { id: 'd4', name: '神秘商贩', type: 'merchant', position: { x: 540, y: 180 } },
-  { id: 'd5', name: '江湖恶徒', type: 'enemy', position: { x: 120, y: 340 } },
-  { id: 'd6', name: '神秘奇遇', type: 'encounter', position: { x: 480, y: 120 } },
+  { id: 'd1', name: '茶馆说书人', type: 'teahouse', position: { x: 180, y: 160 }, avatar: '/assets/characters/shen_moyuan_1.png' },
+  { id: 'd2', name: '悬赏公告栏', type: 'billboard', position: { x: 420, y: 280 }, avatar: '/assets/scenes/battle_bg_1.png' },
+  { id: 'd3', name: '客栈掌柜', type: 'inn', position: { x: 320, y: 400 }, avatar: '/assets/characters/liao_chen_1.png' },
+  { id: 'd4', name: '神秘商贩', type: 'merchant', position: { x: 540, y: 180 }, avatar: '/assets/characters/mowentian_1.png' },
+  { id: 'd5', name: '江湖恶徒', type: 'enemy', position: { x: 120, y: 340 }, avatar: '/assets/characters/yin_wuhen_1.png' },
+  { id: 'd6', name: '神秘奇遇', type: 'encounter', position: { x: 480, y: 120 }, avatar: '/assets/characters/lan_ruodie_1.png' },
 ];
 
 const mockRecentCards = ['支线', '成长', '主线'];
@@ -219,11 +219,14 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
               </div>
               <div className="mini-map__locations">
                 {mockDealers.map(dealer => (
-                  <div
+                  <img
                     key={dealer.id}
+                    src={dealer.avatar || '/assets/characters/shen_moyuan_1.png'}
+                    alt={dealer.name}
                     className={`location-marker location-marker--${dealer.type}`}
                     style={{ left: `${(dealer.position.x / 600) * 100}%`, top: `${(dealer.position.y / 400) * 100}%` }}
                     title={dealer.name}
+                    onClick={() => handleInteractWith(dealer)}
                   />
                 ))}
               </div>

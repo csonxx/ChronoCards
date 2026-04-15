@@ -73,6 +73,7 @@ export interface Dealer {
   type: DealerType;
   faction?: Faction;
   position: { x: number; y: number };
+  avatar?: string;
   dialog?: string[];
   icon?: string;
 }
@@ -134,6 +135,7 @@ export interface BattleEnemy {
   elements: Element[];
   skills: Skill[];
   position: { x: number; y: number };
+  avatar?: string;
 }
 
 // ========== 角色系统 ==========
