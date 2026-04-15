@@ -33,6 +33,9 @@ dependencies:
   
   # Local Storage
   shared_preferences: ^2.3.2
+  
+  # 3D Model Viewer
+  model_viewer_plus: ^1.8.1
 
 dev_dependencies:
   flutter_test:
@@ -45,3 +48,4 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+    - assets/models/
