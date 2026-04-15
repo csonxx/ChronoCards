@@ -1,0 +1,584 @@
+/* 苏州城事件卡样式 v1.0 */
+/* UI规范：运河水波+苏绣纹样卡背、折扇选项、灯笼触发 */
+
+/* ========== CSS 变量 ========== */
+:root {
+  --sz-canal-primary: #2D5A5A;
+  --sz-gold-accent: #D4A017;
+  --sz-embroider-tl: rgba(212, 160, 23, 0.4);
+  --sz-embroider-br: rgba(45, 90, 90, 0.3);
+}
+
+/* ========== 覆盖层 ========== */
+.suzhou-event-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  overflow: hidden;
+}
+
+.suzhou-event-card-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.suzhou-event-card-overlay--closing {
+  opacity: 0;
+}
+
+.suzhou-card-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 6, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+/* ========== 运河水波背景装饰 ========== */
+.suzhou-canal-waves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.wave-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.wave {
+  animation: wave-float 4s ease-in-out infinite;
+}
+
+.wave-1 { animation-delay: 0s; }
+.wave-2 { animation-delay: 0.5s; }
+.wave-3 { animation-delay: 1s; }
+
+@keyframes wave-float {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-10px); }
+}
+
+/* 苏绣角落装饰 */
+.embroidery-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  opacity: 0.5;
+}
+
+.embroidery-corner--tl {
+  top: 10px; left: 10px;
+  border-top: 2px solid var(--sz-gold-accent);
+  border-left: 2px solid var(--sz-gold-accent);
+  border-top-left-radius: 4px;
+}
+
+.embroidery-corner--tr {
+  top: 10px; right: 10px;
+  border-top: 2px solid var(--sz-gold-accent);
+  border-right: 2px solid var(--sz-gold-accent);
+  border-top-right-radius: 4px;
+}
+
+.embroidery-corner--bl {
+  bottom: 90px; left: 10px;
+  border-bottom: 2px solid var(--sz-canal-primary);
+  border-left: 2px solid var(--sz-canal-primary);
+  border-bottom-left-radius: 4px;
+}
+
+.embroidery-corner--br {
+  bottom: 90px; right: 10px;
+  border-bottom: 2px solid var(--sz-canal-primary);
+  border-right: 2px solid var(--sz-canal-primary);
+  border-bottom-right-radius: 4px;
+}
+
+/* ========== 灯笼触发提示 ========== */
+.suzhou-trigger-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(20, 15, 10, 0.9);
+  border: 1px solid var(--sz-gold-accent);
+  border-radius: 20px;
+  z-index: 10;
+  animation: lantern-glow 2s ease-in-out infinite;
+}
+
+@keyframes lantern-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(212, 160, 23, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(212, 160, 23, 0.6); }
+}
+
+.trigger-icon {
+  font-size: 1.2em;
+  animation: lantern-sway 3s ease-in-out infinite;
+}
+
+@keyframes lantern-sway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.trigger-text {
+  color: var(--sz-gold-accent);
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.trigger-location {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8em;
+}
+
+/* ========== 好感度头像 ========== */
+.suzhou-affection-avatar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.avatar-frame {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--sz-gold-accent);
+  overflow: hidden;
+  background: rgba(45, 90, 90, 0.5);
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  color: var(--sz-gold-accent);
+  background: rgba(20, 15, 10, 0.8);
+}
+
+.avatar-name {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75em;
+}
+
+/* ========== 卡牌主体 ========== */
+.suzhou-event-card {
+  position: relative;
+  z-index: 5;
+  max-width: 520px;
+  width: 90%;
+}
+
+/* ========== 卡牌框架 ========== */
+.suzhou-card-frame {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 16, 10, 0.95) 0%, rgba(10, 8, 6, 0.98) 100%);
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 顶部/底部卷轴装饰 */
+.suzhou-card-scroll-top,
+.suzhou-card-scroll-bottom {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scroll-rod {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.scroll-ornament {
+  font-size: 1em;
+  z-index: 1;
+}
+
+/* 类型角标 */
+.suzhou-card-type-badge {
+  position: absolute;
+  top: 24px;
+  left: -1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px 4px 8px;
+  border: 1px solid;
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+  background: rgba(10, 8, 6, 0.9);
+  z-index: 5;
+}
+
+.type-badge-icon { font-size: 0.9em; }
+.type-badge-label { font-size: 0.75em; font-weight: bold; }
+
+/* 标题栏 */
+.suzhou-card-header {
+  padding: 16px 24px 12px;
+  text-align: center;
+}
+
+.suzhou-card-title {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+
+/* 分隔线 */
+.suzhou-card-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+}
+
+.divider-icon { font-size: 0.8em; }
+
+/* 触发点 */
+.suzhou-card-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  color: rgba(212, 160, 23, 0.8);
+  font-size: 0.8em;
+}
+
+/* 主视觉区 */
+.suzhou-card-artwork {
+  position: relative;
+  height: 140px;
+  margin: 12px 24px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.suzhou-artwork-mist {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+}
+
+.suzhou-water-ink {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(45, 90, 90, 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(212, 160, 23, 0.2) 0%, transparent 30%);
+  animation: ink-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes ink-shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 描述区 */
+.suzhou-card-description-wrapper {
+  padding: 12px 24px;
+}
+
+.suzhou-card-description {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95em;
+  line-height: 1.7;
+  text-align: justify;
+}
+
+/* 效果盒子 */
+.suzhou-card-effects {
+  padding: 0 24px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suzhou-effect-box {
+  padding: 10px 14px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.suzhou-effect-box--positive {
+  border-color: rgba(61, 139, 95, 0.6);
+  background: rgba(61, 139, 95, 0.1);
+}
+
+.suzhou-effect-box--negative {
+  border-color: rgba(194, 58, 43, 0.6);
+  background: rgba(194, 58, 43, 0.1);
+}
+
+.suzhou-effect-box .effect-box__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.suzhou-effect-box--positive .effect-box__header { color: #3D8B5F; }
+.suzhou-effect-box--negative .effect-box__header { color: #C23A2B; }
+
+.suzhou-effect-box .effect-text {
+  margin: 0;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+/* ========== 折扇选项（苏州特色） ========== */
+.suzhou-option-fan {
+  position: relative;
+  margin-top: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transform: scaleY(0);
+  transition: all 0.5s ease;
+}
+
+.suzhou-option-fan--open {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.fan-ribs {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+.fan-rib {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 240px;
+  padding: 12px 20px;
+  background: rgba(20, 15, 10, 0.9);
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.fan-rib:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.fan-rib-marker {
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.fan-rib:first-child .fan-rib-marker { color: #3D8B5F; }
+.fan-rib:last-child .fan-rib-marker { color: #C23A2B; }
+
+.fan-rib-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9em;
+}
+
+.fan-pivot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+
+/* ========== 跳过按钮 ========== */
+.suzhou-card-skip {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 24px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.suzhou-card-skip:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ========== 苏州城区域导航 ========== */
+.suzhou-zone-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(20, 15, 10, 0.95);
+  border: 1px solid var(--sz-gold-accent);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  z-index: 100;
+}
+
+.zone-nav-title {
+  margin: 0 0 10px;
+  color: var(--sz-gold-accent);
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.zone-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zone-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  background: rgba(45, 90, 90, 0.2);
+  border: 1px solid rgba(45, 90, 90, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zone-nav-btn:hover {
+  background: rgba(45, 90, 90, 0.4);
+  border-color: rgba(212, 160, 23, 0.5);
+}
+
+.zone-nav-btn--active {
+  border-color: var(--sz-gold-accent);
+  background: rgba(212, 160, 23, 0.15);
+}
+
+.zone-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.zone-desc {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7em;
+}
+
+/* ========== 灯笼触发器 ========== */
+.suzhou-event-trigger {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px;
+  background: rgba(20, 15, 10, 0.9);
+  border: 1px solid var(--sz-gold-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.suzhou-event-trigger:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px var(--trigger-color, var(--sz-gold-accent));
+}
+
+.suzhou-event-trigger .trigger-lantern {
+  font-size: 1.5em;
+  animation: lantern-sway 3s ease-in-out infinite;
+}
+
+.suzhou-event-trigger .trigger-location-tag {
+  position: absolute;
+  bottom: -24px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7em;
+  background: rgba(20, 15, 10, 0.95);
+  padding: 2px 8px;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.suzhou-event-trigger:hover .trigger-location-tag {
+  opacity: 1;
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 600px) {
+  .suzhou-event-card {
+    max-width: 100%;
+    width: 95%;
+  }
+
+  .fan-rib {
+    width: 200px;
+    padding: 10px 16px;
+  }
+
+  .suzhou-trigger-indicator {
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+  }
+
+  .suzhou-zone-nav {
+    bottom: 10px;
+    left: 10px;
+    min-width: 160px;
+  }
+}
