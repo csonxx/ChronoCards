@@ -10,7 +10,9 @@ import (
 	gameplayer "github.com/csonxx/ChronoCards/server/internal/game/player"
 	"github.com/csonxx/ChronoCards/server/internal/game/deck"
 	"github.com/csonxx/ChronoCards/server/internal/game/element"
+	"github.com/csonxx/ChronoCards/server/internal/game/equipment"
 	"github.com/csonxx/ChronoCards/server/internal/game/item"
+	"github.com/csonxx/ChronoCards/server/internal/game/martial_art"
 	"github.com/csonxx/ChronoCards/server/internal/game/narrative"
 	"github.com/csonxx/ChronoCards/server/internal/game/skill"
 	"github.com/csonxx/ChronoCards/server/internal/model"
@@ -24,8 +26,10 @@ type Handler struct {
 	narrativeSvc *narrative.Service
 	elementCalc  *element.Calculator
 	battleCalc   *battle.BattleCalculator
-	skillSvc     *skill.Service
-	inventorySvc *item.InventoryService
+	skillSvc      *skill.Service
+	inventorySvc  *item.InventoryService
+	equipmentSvc  *equipment.Service
+	martialArtSvc *martial_art.Service
 	shopSvc      *item.Service
 }
 
