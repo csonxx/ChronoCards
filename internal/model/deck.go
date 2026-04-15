@@ -17,18 +17,19 @@ type Card struct {
 	Title             string            `json:"title"`
 	Description       string            `json:"description"`
 	TriggerConditions []string          `json:"trigger_conditions"`
-	Rewards           *CardRewards       `json:"rewards,omitempty"`
+	Rewards           *CardRewards      `json:"rewards,omitempty"`
 	AIPromptHints     []string          `json:"ai_prompt_hints"`
 	Priority          int               `json:"priority"` // 优先级（动态调序用）
+	CharacterID       string            `json:"character_id,omitempty"` // 角色主导卡关联的角色ID
 }
 
 // CardRewards 卡牌奖励
 type CardRewards struct {
-	Exp         int                `json:"exp,omitempty"`
-	HPUP        int                `json:"hp_up,omitempty"`
-	MPUP        int                `json:"mp_up,omitempty"`
-	SkillID     string             `json:"skill_id,omitempty"`
-	Reputation  *Reputation        `json:"reputation,omitempty"`
+	Exp        int        `json:"exp,omitempty"`
+	HPUP       int        `json:"hp_up,omitempty"`
+	MPUP       int        `json:"mp_up,omitempty"`
+	SkillID    string     `json:"skill_id,omitempty"`
+	Reputation *Reputation `json:"reputation,omitempty"`
 }
 
 // Deck 事件卡组
@@ -117,23 +118,46 @@ func (d *Deck) AdjustDeck(cardType CardType) {
 	d.CurrentIndex = 0 // 重新从调整后的卡组开始
 }
 
-// StandardDeck 返回标准初始卡组
+// StandardDeck 返回标准初始卡组（v2.2 十类卡牌）
 func StandardDeck() []*Card {
 	return []*Card{
+		// === 主线剧情卡 ===
 		{ID: uuid.New().String(), Type: CardMainStory, Title: "明教初现", Description: "江湖上出现了明教的身影，引起了正派警觉", Priority: 10, AIPromptHints: []string{"主线", "明教", "天下大势"}},
-		{ID: uuid.New().String(), Type: CardSideStory, Title: "茶馆奇遇", Description: "茶馆中说书人提起一段往事", Priority: 5, AIPromptHints: []string{"支线", "茶馆", "江湖传闻"}},
-		{ID: uuid.New().String(), Type: CardStatUp, Title: "内力精进", Description: "闭关修炼，内力有所突破", Priority: 3, AIPromptHints: []string{"数值提升", "内力", "修炼"}},
-		{ID: uuid.New().String(), Type: CardSkillUnlock, Title: "新武学领悟", Description: "偶得前辈遗留的武学心得", Priority: 4, AIPromptHints: []string{"技能解锁", "武学", "奇遇"}},
-		{ID: uuid.New().String(), Type: CardSideStory, Title: "侠客落难", Description: "路遇受伤侠客，施以援手", Priority: 5, AIPromptHints: []string{"支线", "帮助", "江湖道义"}},
-		{ID: uuid.New().String(), Type: CardEmotion, Title: "孤寂夜色", Description: "匹马江湖，孤身行走在夜色中", Priority: 2, AIPromptHints: []string{"情感", "孤寂", "氛围"}},
-		{ID: uuid.New().String(), Type: CardBlank, Title: "空白时刻", Description: "江湖无事，自由探索", Priority: 1, AIPromptHints: []string{"空白", "自由探索"}},
 		{ID: uuid.New().String(), Type: CardMainStory, Title: "正邪对撞", Description: "明教与正派在某地发生冲突", Priority: 10, AIPromptHints: []string{"主线", "战斗", "正邪对立"}},
-		{ID: uuid.New().String(), Type: CardEconomy, Title: "商贩交易", Description: "遇到流动商贩，可进行交易", Priority: 3, AIPromptHints: []string{"经济", "交易", "商贩"}},
-		{ID: uuid.New().String(), Type: CardStatUp, Title: "生命强化", Description: "体魄增强，最大生命值提升", Priority: 3, AIPromptHints: []string{"数值提升", "生命值", "体魄"}},
-		{ID: uuid.New().String(), Type: CardSideStory, Title: "村民求助", Description: "村民恳请侠士帮助解决困难", Priority: 5, AIPromptHints: []string{"支线", "帮助", "村民"}},
-		{ID: uuid.New().String(), Type: CardSkillUnlock, Title: "轻功要诀", Description: "习得上乘轻功法门", Priority: 4, AIPromptHints: []string{"技能解锁", "轻功", "身法"}},
-		{ID: uuid.New().String(), Type: CardEmotion, Title: "客栈夜话", Description: "客栈中听到各路人士议论纷纷", Priority: 2, AIPromptHints: []string{"情感", "客栈", "江湖"}},
-		{ID: uuid.New().String(), Type: CardBlank, Title: "空白时刻", Description: "无事发生，自由探索", Priority: 1, AIPromptHints: []string{"空白", "自由探索"}},
 		{ID: uuid.New().String(), Type: CardMainStory, Title: "教主现身", Description: "沈墨渊首次现身江湖", Priority: 10, AIPromptHints: []string{"主线", "沈墨渊", "明教教主"}},
+
+		// === 支线故事卡 ===
+		{ID: uuid.New().String(), Type: CardSideStory, Title: "茶馆奇遇", Description: "茶馆中说书人提起一段往事", Priority: 5, AIPromptHints: []string{"支线", "茶馆", "江湖传闻"}},
+		{ID: uuid.New().String(), Type: CardSideStory, Title: "侠客落难", Description: "路遇受伤侠客，施以援手", Priority: 5, AIPromptHints: []string{"支线", "帮助", "江湖道义"}},
+		{ID: uuid.New().String(), Type: CardSideStory, Title: "村民求助", Description: "村民恳请侠士帮助解决困难", Priority: 5, AIPromptHints: []string{"支线", "帮助", "村民"}},
+
+		// === 角色主导卡（#006 陆喆）===
+		{ID: uuid.New().String(), Type: CardCharacter, Title: "丐帮陆喆", Description: "丐帮帮主陆喆出现在你面前", Priority: 8, AIPromptHints: []string{"角色", "陆喆", "丐帮"}, CharacterID: "#006"},
+		{ID: uuid.New().String(), Type: CardCharacter, Title: "江湖引路", Description: "陆喆指点你江湖经验", Priority: 6, AIPromptHints: []string{"角色", "指引", "陆喆"}, CharacterID: "#006"},
+
+		// === 机制体验卡（武学/装备解锁）===
+		{ID: uuid.New().String(), Type: CardSkillUnlock, Title: "新武学领悟", Description: "偶得前辈遗留的武学心得", Priority: 4, AIPromptHints: []string{"技能解锁", "武学", "奇遇"}},
+		{ID: uuid.New().String(), Type: CardSkillUnlock, Title: "轻功要诀", Description: "习得上乘轻功法门", Priority: 4, AIPromptHints: []string{"技能解锁", "轻功", "身法"}},
+		{ID: uuid.New().String(), Type: CardSkillUnlock, Title: "装备升级", Description: "获得更精良的武器装备", Priority: 4, AIPromptHints: []string{"装备", "武器", "升级"}},
+
+		// === 数值提升卡 ===
+		{ID: uuid.New().String(), Type: CardStatUp, Title: "内力精进", Description: "闭关修炼，内力有所突破", Priority: 3, AIPromptHints: []string{"数值提升", "内力", "修炼"}},
+		{ID: uuid.New().String(), Type: CardStatUp, Title: "生命强化", Description: "体魄增强，最大生命值提升", Priority: 3, AIPromptHints: []string{"数值提升", "生命值", "体魄"}},
+
+		// === 情感联结卡 ===
+		{ID: uuid.New().String(), Type: CardEmotion, Title: "孤寂夜色", Description: "匹马江湖，孤身行走在夜色中", Priority: 2, AIPromptHints: []string{"情感", "孤寂", "氛围"}},
+		{ID: uuid.New().String(), Type: CardEmotion, Title: "客栈夜话", Description: "客栈中听到各路人士议论纷纷", Priority: 2, AIPromptHints: []string{"情感", "客栈", "江湖"}},
+
+		// === 经济系统卡 ===
+		{ID: uuid.New().String(), Type: CardEconomy, Title: "商贩交易", Description: "遇到流动商贩，可进行交易", Priority: 3, AIPromptHints: []string{"经济", "交易", "商贩"}},
+		{ID: uuid.New().String(), Type: CardEconomy, Title: "拍卖会", Description: "某处正在举行地下拍卖", Priority: 3, AIPromptHints: []string{"经济", "拍卖", "稀有物品"}},
+
+		// === 世界碎片卡 ===
+		{ID: uuid.New().String(), Type: CardWorldFragment, Title: "废墟遗碑", Description: "荒野中发现一块古旧石碑，上面刻着模糊的文字", Priority: 2, AIPromptHints: []string{"世界碎片", "探索", "遗迹"}},
+		{ID: uuid.New().String(), Type: CardWorldFragment, Title: "江湖传闻", Description: "路人口中流传的只言片语，似乎隐藏着什么", Priority: 2, AIPromptHints: []string{"世界碎片", "传闻", "故事"}},
+
+		// === 空白卡 ===
+		{ID: uuid.New().String(), Type: CardBlank, Title: "空白时刻", Description: "江湖无事，自由探索", Priority: 1, AIPromptHints: []string{"空白", "自由探索"}},
+		{ID: uuid.New().String(), Type: CardBlank, Title: "空白时刻", Description: "无事发生，自由探索", Priority: 1, AIPromptHints: []string{"空白", "自由探索"}},
 	}
 }

@@ -19,17 +19,19 @@ const (
 	ElementPoison  ElementType = "poison"
 )
 
-// CardType 卡牌类型
+// CardType 卡牌类型（v2.2 扩展：十类卡牌）
 type CardType string
 
 const (
-	CardMainStory  CardType = "main_story"
-	CardSideStory  CardType = "side_story"
-	CardSkillUnlock CardType = "skill_unlock"
-	CardStatUp     CardType = "stat_up"
-	CardEmotion    CardType = "emotion"
-	CardEconomy    CardType = "economy"
-	CardBlank      CardType = "blank"
+	CardMainStory     CardType = "main_story"      // 主线剧情卡
+	CardSideStory     CardType = "side_story"      // 支线故事卡
+	CardCharacter     CardType = "character"       // 角色主导卡
+	CardSkillUnlock   CardType = "skill_unlock"    // 机制体验卡（武学/装备解锁）
+	CardStatUp        CardType = "stat_up"        // 数值提升卡
+	CardEmotion       CardType = "emotion"         // 情感联结卡
+	CardEconomy       CardType = "economy"         // 经济系统卡
+	CardWorldFragment CardType = "world_fragment"  // 世界碎片卡
+	CardBlank         CardType = "blank"          // 空白卡
 )
 
 // SkillType 技能类型
