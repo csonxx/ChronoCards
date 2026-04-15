@@ -108,7 +108,9 @@ func TestLuzheStateMachine_ShouldTriggerEncounter_FirstSuzhou(t *testing.T) {
 		t.Error("Expected ShouldTriggerEncounter to return true for first Suzhou entry")
 	}
 	if reason != "first_suzhou_entry" {
-		t.Errorf("Expected reason 'first_gaibang_entry', got '%s'", reason)
+	if reason != "first_suzhou_entry" {
+		t.Errorf("Expected reason first_gaibang_entry, got %q", reason)
+	}
 	}
 }
 
@@ -120,8 +122,8 @@ func TestLuzheStateMachine_ShouldTriggerEncounter_FirstGaibang(t *testing.T) {
 		"player-001",
 		"loc-gaibang",
 		"region-central-plains",
-		[]string{},
-		[]string{"region-central-plains"},
+		[]string{"loc-suzhou"},
+		[]string{"region-central-plains", "region-jiangnan"},
 		nil,
 	)
 	
@@ -133,7 +135,7 @@ func TestLuzheStateMachine_ShouldTriggerEncounter_FirstGaibang(t *testing.T) {
 		t.Error("Expected ShouldTriggerEncounter to return true for first Gaibang entry")
 	}
 	if reason != "first_gaibang_entry" {
-		t.Errorf("Expected reason 'first_gaibang_entry', got '%s'", reason)
+		t.Errorf("Expected reason first_gaibang_entry, got %q", reason)
 	}
 }
 

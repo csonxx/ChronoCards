@@ -162,12 +162,12 @@ func (sm *LuzheStateMachine) ShouldTriggerEncounter(
 	// 检查是否首次进入丐帮总舵
 	hasFirstGaibang := playerLocation.IsFirstVisitToLocation("loc-gaibang")
 
-	if hasFirstJiangnan || hasFirstSuzhou || hasFirstGaibang {
+	if hasFirstSuzhou || hasFirstGaibang || hasFirstJiangnan {
 		reason := "first_jiangnan_entry"
-		if hasFirstGaibang {
-			reason = "first_gaibang_entry"
-		} else if hasFirstSuzhou && !hasFirstJiangnan {
+		if hasFirstSuzhou && hasFirstJiangnan {
 			reason = "first_suzhou_entry"
+		} else if hasFirstGaibang {
+			reason = "first_gaibang_entry"
 		}
 		return true, reason
 	}
