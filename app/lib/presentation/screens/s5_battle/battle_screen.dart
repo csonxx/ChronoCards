@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/game_card.dart';
-import '../../../domain/entities/player.dart';
-import '../../../domain/entities/enemy.dart';
-import '../../bloc/battle_bloc.dart';
-import '../../bloc/battle_event.dart';
-import '../../bloc/battle_state.dart';
+import '../../providers/battle_provider.dart';
 import '../../widgets/battle_card_widget.dart';
 import '../../widgets/battle_player_widget.dart';
 import '../../widgets/battle_enemy_widget.dart';
 
 /// S5 - Battle Screen (ARPG Instant Combat)
 /// Real-time ARPG style battle interface
+/// Migrated from Bloc to Provider architecture
 class BattleScreen extends StatelessWidget {
   final String? enemyId;
 
@@ -21,8 +18,8 @@ class BattleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => BattleBloc()..add(StartBattle(enemyId ?? 'enemy_1')),
+    return ChangeNotifierProvider(
+      create: (context) => BattleProvider()..startBattle(enemyId ?? 'enemy_1'),
       child: const BattleView(),
     );
   }
@@ -43,17 +40,18 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
-      body: BlocConsumer<BattleBloc, BattleState>(
-        listener: (context, state) {
-          if (state is BattleActionInProgress) {
-            _updateBattleLog(state.animationType);
-          } else if (state is BattleVictory) {
-            _showVictoryDialog(context, state);
-          } else if (state is BattleDefeat) {
-            _showDefeatDialog(context, state);
+      body: Consumer<BattleProvider>(
+        listener: (context, provider, child) {
+          if (provider.animationType.isNotEmpty) {
+            _updateBattleLog(provider.animationType);
+          }
+          if (provider.isVictory) {
+            _showVictoryDialog(context, provider);
+          } else if (provider.isDefeat) {
+            _showDefeatDialog(context, provider);
           }
         },
-        builder: (context, state) {
+        builder: (context, provider, child) {
           return Stack(
             children: [
               // Battle background
@@ -64,12 +62,12 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     // Top bar with turn info
-                    _buildTopBar(context, state),
+                    _buildTopBar(context, provider),
 
                     // Enemy area
                     Expanded(
                       flex: 3,
-                      child: _buildEnemyArea(context, state),
+                      child: _buildEnemyArea(context, provider),
                     ),
 
                     // Battle divider
@@ -78,14 +76,14 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
                     // Player area
                     Expanded(
                       flex: 2,
-                      child: _buildPlayerArea(context, state),
+                      child: _buildPlayerArea(context, provider),
                     ),
 
                     // Hand cards
-                    _buildHandArea(context, state),
+                    _buildHandArea(context, provider),
 
                     // Action bar
-                    _buildActionBar(context, state),
+                    _buildActionBar(context, provider),
                   ],
                 ),
               ),
@@ -161,14 +159,9 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTopBar(BuildContext context, BattleState state) {
-    String turnText = 'Turn 1';
-    String phaseText = 'Your Turn';
-
-    if (state is BattleInProgress) {
-      turnText = 'Turn ${state.turn}';
-      phaseText = state.phase == BattlePhase.playerTurn ? 'Your Turn' : 'Enemy Turn';
-    }
+  Widget _buildTopBar(BuildContext context, BattleProvider provider) {
+    String turnText = 'Turn ${provider.turn}';
+    String phaseText = provider.isPlayerTurn ? 'Your Turn' : 'Enemy Turn';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -225,19 +218,8 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEnemyArea(BuildContext context, BattleState state) {
-    Enemy? enemy;
-    if (state is BattleInProgress) {
-      enemy = state.enemy;
-    } else if (state is BattleActionInProgress) {
-      enemy = state.enemy;
-    }
-
-    if (enemy == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return BattleEnemyWidget(enemy: enemy);
+  Widget _buildEnemyArea(BuildContext context, BattleProvider provider) {
+    return BattleEnemyWidget(enemy: provider.enemy);
   }
 
   Widget _buildBattleDivider() {
@@ -256,31 +238,14 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPlayerArea(BuildContext context, BattleState state) {
-    Player? player;
-    if (state is BattleInProgress) {
-      player = state.player;
-    } else if (state is BattleActionInProgress) {
-      player = state.player;
-    }
-
-    if (player == null) {
-      return const SizedBox.shrink();
-    }
-
-    return BattlePlayerWidget(player: player);
+  Widget _buildPlayerArea(BuildContext context, BattleProvider provider) {
+    return BattlePlayerWidget(player: provider.player);
   }
 
-  Widget _buildHandArea(BuildContext context, BattleState state) {
-    List<GameCard> hand = [];
-    List<GameCard> selectedCards = [];
-    bool isPlayerTurn = true;
-
-    if (state is BattleInProgress) {
-      hand = state.hand;
-      selectedCards = state.selectedCards;
-      isPlayerTurn = state.phase == BattlePhase.playerTurn;
-    }
+  Widget _buildHandArea(BuildContext context, BattleProvider provider) {
+    final hand = provider.hand;
+    final selectedCards = provider.selectedCards;
+    final isPlayerTurn = provider.isPlayerTurn;
 
     if (hand.isEmpty) {
       return Container(
@@ -313,9 +278,9 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
               onTap: isPlayerTurn
                   ? () {
                       if (isSelected) {
-                        context.read<BattleBloc>().add(DeselectCard(card.id));
+                        provider.deselectCard(card.id);
                       } else {
-                        context.read<BattleBloc>().add(SelectCardForAttack(card));
+                        provider.selectCard(card);
                       }
                     }
                   : null,
@@ -326,14 +291,9 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildActionBar(BuildContext context, BattleState state) {
-    List<GameCard> selectedCards = [];
-    bool isPlayerTurn = true;
-
-    if (state is BattleInProgress) {
-      selectedCards = state.selectedCards;
-      isPlayerTurn = state.phase == BattlePhase.playerTurn;
-    }
+  Widget _buildActionBar(BuildContext context, BattleProvider provider) {
+    final selectedCards = provider.selectedCards;
+    final isPlayerTurn = provider.isPlayerTurn;
 
     return Container(
       padding: EdgeInsets.only(
@@ -348,11 +308,7 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
           Expanded(
             child: OutlinedButton(
               onPressed: selectedCards.isNotEmpty && isPlayerTurn
-                  ? () {
-                      for (final card in selectedCards) {
-                        context.read<BattleBloc>().add(DeselectCard(card.id));
-                      }
-                    }
+                  ? () => provider.clearSelectedCards()
                   : null,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -379,9 +335,7 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
             flex: 2,
             child: ElevatedButton(
               onPressed: selectedCards.isNotEmpty && isPlayerTurn
-                  ? () {
-                      context.read<BattleBloc>().add(ExecuteAttack());
-                    }
+                  ? () => provider.executeAttack()
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accentGold,
@@ -412,9 +366,7 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
           Expanded(
             child: ElevatedButton(
               onPressed: isPlayerTurn
-                  ? () {
-                      context.read<BattleBloc>().add(EndPlayerTurn());
-                    }
+                  ? () => provider.endPlayerTurn()
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.manaBlue,
@@ -470,11 +422,11 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  void _showVictoryDialog(BuildContext context, BattleVictory state) {
+  void _showVictoryDialog(BuildContext context, BattleProvider provider) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.primaryDark,
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -487,11 +439,11 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Rewards: ${state.rewards} coins'),
+            const Text('Rewards: 50 coins'),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 Navigator.pop(context);
               },
               child: const Text('Continue'),
@@ -502,11 +454,11 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  void _showDefeatDialog(BuildContext context, BattleDefeat state) {
+  void _showDefeatDialog(BuildContext context, BattleProvider provider) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.primaryDark,
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -523,14 +475,14 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                context.read<BattleBloc>().add(StartBattle('enemy_1'));
+                Navigator.pop(dialogContext);
+                provider.startBattle('enemy_1');
               },
               child: const Text('Retry'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 Navigator.pop(context);
               },
               child: const Text('Return'),

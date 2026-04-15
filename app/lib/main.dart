@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'presentation/providers/battle_provider.dart';
 import 'presentation/screens/s2_open_world/open_world_screen.dart';
 import 'presentation/screens/s3_card_draw/card_draw_screen.dart';
 import 'presentation/screens/s5_battle/battle_screen.dart';
@@ -34,25 +36,33 @@ class ChronoCardsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ChronoCards',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const OpenWorldScreen(),
-        '/card_draw': (context) => const CardDrawScreen(),
-        '/battle': (context) => const BattleScreen(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/battle') {
-          final enemyId = settings.arguments as String?;
-          return MaterialPageRoute(
-            builder: (context) => BattleScreen(enemyId: enemyId),
-          );
-        }
-        return null;
-      },
+    return MultiProvider(
+      providers: [
+        // BattleProvider - lazily created when needed
+        ChangeNotifierProvider<BattleProvider>(
+          create: (_) => BattleProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'ChronoCards',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const OpenWorldScreen(),
+          '/card_draw': (context) => const CardDrawScreen(),
+          '/battle': (context) => const BattleScreen(),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/battle') {
+            final enemyId = settings.arguments as String?;
+            return MaterialPageRoute(
+              builder: (context) => BattleScreen(enemyId: enemyId),
+            );
+          }
+          return null;
+        },
+      ),
     );
   }
 }

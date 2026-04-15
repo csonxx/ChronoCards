@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # State Management
-  flutter_bloc: ^8.1.6
+  provider: ^6.1.2
   equatable: ^2.0.5
   
   # Dependency Injection
