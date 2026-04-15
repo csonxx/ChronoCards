@@ -36,6 +36,21 @@ type StoreInterface interface {
 	SetPlayerLocation(playerID, locationID string) error
 	GetPlayerLocation(playerID string) (*model.PlayerLocation, error)
 	AddVisited(playerID, locationID string)
+	// Auction 操作
+	CreateAuction(item *model.AuctionItem) error
+	GetAuction(id string) (*model.AuctionItem, bool)
+	UpdateAuction(item *model.AuctionItem) error
+	ListActiveAuctions() []*model.AuctionItem
+	ListAuctionsBySeller(sellerID string) []*model.AuctionItem
+	ListAuctionsByBidder(bidderID string) []*model.AuctionItem
+	CreateBid(bid *model.Bid) error
+	GetBidsByAuction(auctionID string) []*model.Bid
+	// Player money operations
+	GetPlayerMoney(playerID string) (int, error)
+	DeductPlayerMoney(playerID string, amount int) error
+	AddPlayerMoney(playerID string, amount int) error
+	// Item operations for auction settlement
+	TransferItem(sellerID, buyerID, itemID string) error
 }
 
 // Store 内存数据存储
@@ -47,6 +62,8 @@ type Store struct {
 	inventories      map[string]*model.PlayerInventory
 	equipments       map[string]*model.Equipment
 	playerLocations  map[string]*model.PlayerLocation
+	auctions         map[string]*model.AuctionItem
+	bids             map[string][]*model.Bid
 }
 
 // NewStore 创建存储
@@ -58,6 +75,8 @@ func NewStore() *Store {
 		inventories:      make(map[string]*model.PlayerInventory),
 		equipments:       make(map[string]*model.Equipment),
 		playerLocations:  make(map[string]*model.PlayerLocation),
+		auctions:         make(map[string]*model.AuctionItem),
+		bids:             make(map[string][]*model.Bid),
 	}
 	// 初始化默认发牌员
 	s.initDefaultDealers()
@@ -330,3 +349,175 @@ func (s *Store) AddVisited(playerID, locationID string) {
 		s.playerLocations[playerID] = newLoc
 	}
 }
+
+// ---- Auction 操作 ----
+
+// CreateAuction 创建拍卖
+func (s *Store) CreateAuction(item *model.AuctionItem) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.auctions[item.ID] = item
+	s.bids[item.ID] = []*model.Bid{}
+	return nil
+}
+
+// GetAuction 获取拍卖
+func (s *Store) GetAuction(id string) (*model.AuctionItem, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	a, ok := s.auctions[id]
+	return a, ok
+}
+
+// UpdateAuction 更新拍卖
+func (s *Store) UpdateAuction(item *model.AuctionItem) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.auctions[item.ID] = item
+	return nil
+}
+
+// ListActiveAuctions 列出所有进行中的拍卖
+func (s *Store) ListActiveAuctions() []*model.AuctionItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]*model.AuctionItem, 0, len(s.auctions))
+	for _, a := range s.auctions {
+		if a.State == model.AuctionStateActive {
+			result = append(result, a)
+		}
+	}
+	return result
+}
+
+// ListAuctionsBySeller 列出卖家所有拍卖
+func (s *Store) ListAuctionsBySeller(sellerID string) []*model.AuctionItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]*model.AuctionItem, 0)
+	for _, a := range s.auctions {
+		if a.SellerID == sellerID {
+			result = append(result, a)
+		}
+	}
+	return result
+}
+
+// ListAuctionsByBidder 列出竞拍者参与的所有拍卖
+func (s *Store) ListAuctionsByBidder(bidderID string) []*model.AuctionItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]*model.AuctionItem, 0)
+	for _, a := range s.auctions {
+		if a.CurrentBidder == bidderID {
+			result = append(result, a)
+		}
+	}
+	return result
+}
+
+// CreateBid 创建出价记录
+func (s *Store) CreateBid(bid *model.Bid) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.bids[bid.AuctionID] = append(s.bids[bid.AuctionID], bid)
+	return nil
+}
+
+// GetBidsByAuction 获取拍卖的所有出价
+func (s *Store) GetBidsByAuction(auctionID string) []*model.Bid {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.bids[auctionID]
+}
+
+// ---- Player Money 操作 ----
+
+// GetPlayerMoney 获取玩家金钱
+func (s *Store) GetPlayerMoney(playerID string) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	p, ok := s.players[playerID]
+	if !ok {
+		return 0, ErrPlayerLocationNotFound
+	}
+	return p.Money, nil
+}
+
+// DeductPlayerMoney 扣除玩家金钱
+func (s *Store) DeductPlayerMoney(playerID string, amount int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.players[playerID]
+	if !ok {
+		return ErrPlayerLocationNotFound
+	}
+	if p.Money < amount {
+		return ErrPlayerLocationNotFound
+	}
+	p.Money -= amount
+	s.players[playerID] = p
+	return nil
+}
+
+// AddPlayerMoney 增加玩家金钱
+func (s *Store) AddPlayerMoney(playerID string, amount int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.players[playerID]
+	if !ok {
+		return ErrPlayerLocationNotFound
+	}
+	p.Money += amount
+	s.players[playerID] = p
+	return nil
+}
+
+// TransferItem 转移物品（拍卖结算用）
+func (s *Store) TransferItem(sellerID, buyerID, itemID string) error {
+	// 简化实现：从卖家背包移除，加入买家背包
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// 卖家背包移除
+	sellerInv, sellerOk := s.inventories[sellerID]
+	if !sellerOk {
+		return ErrPlayerLocationNotFound
+	}
+	newSlots := make([]model.InventorySlot, 0)
+	for _, slot := range sellerInv.Slots {
+		if slot.Item == nil || slot.Item.ID != itemID {
+			newSlots = append(newSlots, slot)
+		}
+	}
+	sellerInv.Slots = newSlots
+
+	// 买家背包添加
+	buyerInv, buyerOk := s.inventories[buyerID]
+	if !buyerOk {
+		buyerInv = &model.PlayerInventory{
+			PlayerID: buyerID,
+			Slots:    make([]model.InventorySlot, 0, 30),
+			Capacity: 30,
+			Coins:    0,
+		}
+	}
+	// 查找空位
+	emptyIdx := -1
+	for i, slot := range buyerInv.Slots {
+		if slot.Item == nil {
+			emptyIdx = i
+			break
+		}
+	}
+	if emptyIdx >= 0 {
+		buyerInv.Slots[emptyIdx] = model.InventorySlot{Item: &model.Item{ID: itemID}, Count: 1}
+	} else if len(buyerInv.Slots) < buyerInv.Capacity {
+		buyerInv.Slots = append(buyerInv.Slots, model.InventorySlot{Item: &model.Item{ID: itemID}, Count: 1})
+	}
+
+	s.inventories[sellerID] = sellerInv
+	s.inventories[buyerID] = buyerInv
+	return nil
+}
+

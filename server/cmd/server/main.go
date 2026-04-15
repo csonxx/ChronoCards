@@ -100,6 +100,12 @@ func main() {
 	// Shop APIs
 	mux.HandleFunc("GET /api/v1/shops/{shop_type}", h.GetShopInventory)
 
+	// Auction APIs
+	mux.HandleFunc("POST /api/v1/auction/list", h.ListAuction)
+	mux.HandleFunc("GET /api/v1/auction/active", h.GetActiveAuctions)
+	mux.HandleFunc("POST /api/v1/auction/{id}/bid", h.BidOnAuction)
+	mux.HandleFunc("GET /api/v1/auction/{id}", h.GetAuctionDetail)
+
 	// Inventory APIs
 	mux.HandleFunc("GET /api/v1/players/{player_id}/inventory", h.GetInventory)
 	mux.HandleFunc("POST /api/v1/players/{player_id}/inventory/equip", h.EquipItem)

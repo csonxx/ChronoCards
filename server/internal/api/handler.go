@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/csonxx/ChronoCards/server/internal/game/auction"
 	"github.com/csonxx/ChronoCards/server/internal/game/battle"
 	gameplayer "github.com/csonxx/ChronoCards/server/internal/game/player"
 	"github.com/csonxx/ChronoCards/server/internal/game/deck"
@@ -31,6 +32,7 @@ type Handler struct {
 	equipmentSvc  *equipment.Service
 	martialArtSvc *martial_art.Service
 	shopSvc      *item.Service
+	auctionSvc   *auction.Service
 }
 
 // NewHandler 创建处理器
@@ -44,6 +46,7 @@ func NewHandler(s store.StoreInterface) *Handler {
 		skillSvc:     skill.NewService(s),
 		inventorySvc: item.NewInventoryService(s),
 		shopSvc:      item.NewService(s),
+		auctionSvc:   auction.NewService(s),
 	}
 }
 
@@ -1425,5 +1428,172 @@ func (h *Handler) ListPresetItems(w http.ResponseWriter, r *http.Request) {
 	items := item.MVPItems
 	h.json(w, http.StatusOK, map[string]interface{}{
 		"items": items,
+	})
+}
+
+// ---- Auction APIs ----
+
+// ListAuction 挂售物品
+func (h *Handler) ListAuction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID     string `json:"player_id"`
+		ItemID       string `json:"item_id"`
+		ItemName     string `json:"item_name"`
+		ItemRarity   int    `json:"item_rarity"`
+		StartingBid  int    `json:"starting_bid"`
+		DurationMins int    `json:"duration_mins"`
+		Location     string `json:"location"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.PlayerID == "" {
+		h.badRequest(w, "player_id is required")
+		return
+	}
+	if req.ItemID == "" {
+		h.badRequest(w, "item_id is required")
+		return
+	}
+	if req.StartingBid <= 0 {
+		h.badRequest(w, "starting_bid must be greater than 0")
+		return
+	}
+
+	listReq := &auction.ListAuctionRequest{
+		PlayerID:     req.PlayerID,
+		ItemID:       req.ItemID,
+		ItemName:     req.ItemName,
+		ItemRarity:   req.ItemRarity,
+		StartingBid:  req.StartingBid,
+		DurationMins: req.DurationMins,
+		Location:     req.Location,
+	}
+
+	item, err := h.auctionSvc.ListItem(listReq)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "挂售成功",
+		"auction": item,
+	})
+}
+
+// GetActiveAuctions 获取当前进行中的拍卖
+func (h *Handler) GetActiveAuctions(w http.ResponseWriter, r *http.Request) {
+	auctions := h.auctionSvc.GetActiveAuctions()
+
+	// 转换为响应格式
+	resp := make([]*auction.AuctionItemResponse, 0, len(auctions))
+	for _, a := range auctions {
+		resp = append(resp, &auction.AuctionItemResponse{
+			ID:            a.ID,
+			SellerID:      a.SellerID,
+			ItemID:        a.ItemID,
+			ItemName:      a.ItemName,
+			ItemRarity:    a.ItemRarity,
+			StartingBid:   a.StartingBid,
+			CurrentBid:    a.CurrentBid,
+			CurrentBidder: a.CurrentBidder,
+			BidCount:      a.BidCount,
+			State:         string(a.State),
+			Location:      a.Location,
+			EndTime:       a.EndTime.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"auctions": resp,
+		"total":    len(resp),
+	})
+}
+
+// BidOnAuction 出价
+func (h *Handler) BidOnAuction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	auctionID := r.PathValue("id")
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		Amount   int    `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request body")
+		return
+	}
+
+	if req.PlayerID == "" {
+		h.badRequest(w, "player_id is required")
+		return
+	}
+	if req.Amount <= 0 {
+		h.badRequest(w, "amount must be greater than 0")
+		return
+	}
+
+	item, bid, err := h.auctionSvc.PlaceBid(auctionID, req.PlayerID, req.Amount)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "出价成功",
+		"auction": item,
+		"bid":     bid,
+	})
+}
+
+// GetAuctionDetail 获取拍卖详情
+func (h *Handler) GetAuctionDetail(w http.ResponseWriter, r *http.Request) {
+	auctionID := r.PathValue("id")
+
+	item, bids, err := h.auctionSvc.GetAuctionDetail(auctionID)
+	if err != nil {
+		h.badRequest(w, err.Error())
+		return
+	}
+
+	// 转换出价记录
+	bidResp := make([]*auction.BidResponse, 0, len(bids))
+	for _, b := range bids {
+		bidResp = append(bidResp, &auction.BidResponse{
+			ID:        b.ID,
+			BidderID:  b.BidderID,
+			Amount:    b.Amount,
+			Timestamp: b.Timestamp.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"auction": &auction.AuctionItemResponse{
+			ID:            item.ID,
+			SellerID:      item.SellerID,
+			ItemID:        item.ItemID,
+			ItemName:      item.ItemName,
+			ItemRarity:    item.ItemRarity,
+			StartingBid:   item.StartingBid,
+			CurrentBid:    item.CurrentBid,
+			CurrentBidder: item.CurrentBidder,
+			BidCount:      item.BidCount,
+			State:         string(item.State),
+			Location:      item.Location,
+			EndTime:       item.EndTime.Format("2006-01-02T15:04:05Z"),
+		},
+		"bids": bidResp,
 	})
 }

@@ -95,6 +95,7 @@ type Player struct {
 	SwordIntent      int              `json:"sword_intent"` // 0-100
 	Stamina          int              `json:"stamina"`
 	MaxStamina       int              `json:"max_stamina"`
+	Money            int              `json:"money"`         // 金币
 	ElementMastery   ElementMastery   `json:"element_mastery"`
 	Faction          string           `json:"faction"`
 	Reputation       Reputation       `json:"reputation"`
@@ -119,6 +120,7 @@ func NewPlayer(name, faction string) *Player {
 		SwordIntent: 0,
 		Stamina:    100,
 		MaxStamina: 100,
+		Money:      1000, // 初始金币
 		ElementMastery: ElementMastery{
 			Wind: 0, Fire: 0, Water: 0, Thunder: 0, Ice: 0, Poison: 0,
 		},
