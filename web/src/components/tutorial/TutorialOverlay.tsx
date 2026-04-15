@@ -1,4 +1,4 @@
-// 新手引导 - 首次进入弹窗
+// 新手引导 - 水墨武侠卷轴风
 import React, { useState, useCallback } from 'react';
 import './tutorial.css';
 
@@ -6,39 +6,39 @@ interface TutorialStep {
   id: string;
   title: string;
   content: string;
-  highlight?: string; // CSS selector or region
+  highlight?: string;
   action?: string;
 }
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
-    title: '欢迎来到 ChronoCards！',
-    content: '你将扮演一位江湖游侠，在武林中冒险、抽卡、战斗。准备好开始了吗？',
+    title: '欢迎来到 ChronoCards',
+    content: '你将扮演一位江湖游侠，在武林中冒险、抽卡、战斗。\n准备好开始了吗？',
     action: 'next',
   },
   {
     id: 'move',
     title: '移动操作',
-    content: '🎮 使用 WASD 或方向键在地图上移动。靠近NPC或发牌员时，按 E 键与其交互。',
+    content: '使用 WASD 或方向键在地图上移动。\n靠近NPC或发牌员时，按 E 键与其交互。',
     action: 'next',
   },
   {
     id: 'dealers',
     title: '地图上的交互点',
-    content: '🍵 地图上散布着各种NPC：说书人、悬赏栏、掌柜、商贩… 靠近后按 E 与他们对话获取卡牌！',
+    content: '地图上散布着各种NPC：说书人、悬赏栏、掌柜、商贩…\n靠近后按 E 与他们对话获取卡牌！',
     action: 'next',
   },
   {
     id: 'cards',
     title: '卡牌选择',
-    content: '📜 与NPC对话后会获得卡牌。选择卡牌上的选项将影响你的故事走向。谨慎选择！',
+    content: '与NPC对话后会获得卡牌。\n选择卡牌上的选项将影响你的故事走向。谨慎选择！',
     action: 'next',
   },
   {
     id: 'mobile',
     title: '移动端操作',
-    content: '📱 移动端可在左下角使用虚拟摇杆移动，右下角出现交互按钮时点击即可交互。请保持横屏体验最佳！',
+    content: '移动端可在左下角使用虚拟摇杆移动，\n右下角出现交互按钮时点击即可交互。请保持横屏体验最佳！',
     action: 'done',
   },
 ];
@@ -60,7 +60,6 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
     if (currentStep < TUTORIAL_STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // 完成教程，标记已看过
       try {
         localStorage.setItem(TUTORIAL_KEY, 'true');
       } catch (_e) {}
@@ -89,7 +88,10 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
     <div className={`tutorial-overlay ${isClosing ? 'tutorial-overlay--closing' : ''}`}>
       <div className="tutorial-backdrop" />
       <div className="tutorial-modal">
-        {/* 顶部装饰 */}
+        {/* 卷轴顶部装饰 */}
+        <div className="tutorial-modal__scroll-rod tutorial-modal__scroll-rod--top" />
+        
+        {/* 顶部区域 */}
         <div className="tutorial-modal__header">
           <div className="tutorial-modal__step-badge">
             {currentStep + 1} / {TUTORIAL_STEPS.length}
@@ -99,17 +101,17 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
           </button>
         </div>
 
-        {/* 标题 */}
+        {/* 标题 - 毛笔书法 */}
         <h2 className="tutorial-modal__title">{step.title}</h2>
 
-        {/* 分隔线 */}
+        {/* 水墨分隔线 */}
         <div className="tutorial-divider">
           <span className="tutorial-divider__line" />
-          <span className="tutorial-divider__icon">☙</span>
+          <span className="tutorial-divider__icon">❧</span>
           <span className="tutorial-divider__line" />
         </div>
 
-        {/* 内容 */}
+        {/* 内容 - 宣纸风格 */}
         <p className="tutorial-modal__content">{step.content}</p>
 
         {/* 步骤指示器 */}
@@ -122,7 +124,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
           ))}
         </div>
 
-        {/* 按钮 */}
+        {/* 按钮 - 古风木质 */}
         <div className="tutorial-modal__actions">
           {step.action === 'done' ? (
             <button className="scroll-button scroll-button--lg tutorial-btn tutorial-btn--primary" onClick={handleNext}>
@@ -130,10 +132,13 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) 
             </button>
           ) : (
             <button className="scroll-button scroll-button--lg tutorial-btn tutorial-btn--primary" onClick={handleNext}>
-              下一条 ☙
+              下一条 ❧
             </button>
           )}
         </div>
+
+        {/* 卷轴底部装饰 */}
+        <div className="tutorial-modal__scroll-rod tutorial-modal__scroll-rod--bottom" />
       </div>
     </div>
   );
@@ -148,7 +153,7 @@ export const shouldShowTutorial = (): boolean => {
   }
 };
 
-// 重置教程（可由设置中调用）
+// 重置教程
 export const resetTutorial = (): void => {
   try {
     localStorage.removeItem(TUTORIAL_KEY);

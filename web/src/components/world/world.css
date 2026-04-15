@@ -784,3 +784,205 @@ kbd {
   color: rgba(201,162,39,0.8);
   font-family: inherit;
 }
+
+/* ========== 水墨武侠古风扩展 - NPC头像边框 ========== */
+
+/* NPC头像徽章 - 古风金色/铜色边框 */
+.dealer-badge__portrait {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(20,15,10,0.9) 0%, rgba(30,22,12,0.9) 100%);
+  /* 古风金色/铜色渐变边框 */
+  border: 4px solid;
+  border-color: #D4AF37 #B8860B #8B6914 #D4AF37;
+  box-shadow: 
+    0 4px 16px rgba(0,0,0,0.5),
+    inset 0 0 20px rgba(0,0,0,0.4),
+    0 0 0 2px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease-out;
+}
+
+/* 边框光泽流动效果 */
+.dealer-badge__portrait::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255,255,255,0.15) 50%,
+    transparent 60%
+  );
+  animation: borderShine 3s ease-in-out infinite;
+}
+
+@keyframes borderShine {
+  0%, 100% { transform: translateX(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) rotate(45deg); }
+}
+
+.dealer-badge__emoji {
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  position: relative;
+  z-index: 1;
+}
+
+.dealer-badge__info {
+  background: 
+    linear-gradient(135deg, rgba(20,15,10,0.92) 0%, rgba(25,20,12,0.92) 100%);
+  border: 2px solid rgba(139,105,20,0.5);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.4),
+    inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+.dealer-badge__name {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  color: #e8d5a3;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+.dealer-badge__title {
+  font-family: 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.05em;
+}
+
+/* NPC靠近状态 - 古风光环 */
+.dealer--nearby .dealer-badge__portrait {
+  border-color: #FFD700 #FFA500 #D4AF37 #FFD700;
+  box-shadow: 
+    0 0 30px rgba(255,215,0,0.6),
+    0 4px 24px rgba(0,0,0,0.5),
+    inset 0 0 20px rgba(0,0,0,0.4);
+  transform: scale(1.1);
+}
+
+.dealer--nearby .dealer-badge__name {
+  color: var(--color-accent);
+  text-shadow: 
+    0 1px 3px rgba(0,0,0,0.9),
+    0 0 10px rgba(201,162,39,0.5);
+}
+
+.dealer:hover .dealer-badge__portrait {
+  box-shadow: 
+    0 0 20px rgba(201,162,39,0.4),
+    0 4px 20px rgba(0,0,0,0.5),
+    inset 0 0 20px rgba(0,0,0,0.4);
+}
+
+/* 玩家头像框 - 古风金框 */
+.player-avatar-inner {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(20,15,10,0.9) 0%, rgba(30,22,12,0.9) 100%);
+  border: 4px solid;
+  border-color: #FFD700 #D4AF37 #B8860B #FFD700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 0 24px rgba(255,215,0,0.5),
+    0 4px 16px rgba(0,0,0,0.6),
+    inset 0 0 15px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+.player-avatar-ring {
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--color-accent);
+  border-right-color: rgba(255,215,0,0.6);
+  box-shadow: 0 0 8px rgba(255,215,0,0.3);
+}
+
+.player-name-tag {
+  background: linear-gradient(135deg, rgba(20,15,10,0.9) 0%, rgba(25,20,12,0.9) 100%);
+  border: 1px solid rgba(139,105,20,0.5);
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  color: var(--color-accent);
+  text-shadow: 
+    0 1px 3px rgba(0,0,0,0.9),
+    0 0 8px rgba(201,162,39,0.3);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.4),
+    inset 0 0 8px rgba(0,0,0,0.3);
+}
+
+/* 古风交互横幅 */
+.interaction-banner__scroll {
+  background: linear-gradient(135deg, rgba(25,20,12,0.95) 0%, rgba(20,16,10,0.95) 100%);
+  border: 3px solid var(--color-accent);
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.7),
+    0 0 30px rgba(201,162,39,0.2),
+    inset 0 0 20px rgba(0,0,0,0.4);
+  position: relative;
+}
+
+.interaction-banner__scroll::before,
+.interaction-banner__scroll::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 80%;
+  background: linear-gradient(180deg, #e8d5a3 0%, #a08060 100%);
+  border-radius: 7px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.interaction-banner__scroll::before {
+  left: -7px;
+}
+
+.interaction-banner__scroll::after {
+  right: -7px;
+}
+
+.scroll-title {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  color: #e8d5a3;
+  text-shadow: 
+    0 2px 4px rgba(0,0,0,0.9),
+    0 0 12px rgba(201,162,39,0.3);
+}
+
+.scroll-key {
+  background: linear-gradient(180deg, #e8d5a3 0%, #c4a870 100%);
+  color: #1a1510;
+  font-family: 'Ma Shan Zheng', cursive;
+  box-shadow: 
+    0 3px 8px rgba(0,0,0,0.5),
+    0 0 10px rgba(201,162,39,0.3);
+  border: 1px solid var(--color-accent);
+}
+
+/* 玩家外层光环 - 古风金色 */
+.player-aura {
+  background: radial-gradient(circle, rgba(255,215,0,0.25) 0%, rgba(212,175,55,0.15) 50%, transparent 70%);
+  box-shadow: 0 0 30px rgba(255,215,0,0.2);
+}
+
+/* 古风底部边框 */
+.world-scene {
+  border: 3px solid var(--color-accent);
+  box-shadow: 
+    inset 0 0 40px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(201, 162, 39, 0.2),
+    0 8px 32px rgba(0,0,0,0.6);
+}

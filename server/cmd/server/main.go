@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/csonxx/ChronoCards/server/internal/api"
 	"github.com/csonxx/ChronoCards/server/internal/game/world"
@@ -50,6 +51,21 @@ func main() {
 
 	// 健康检查
 	mux.HandleFunc("GET /api/v1/health", h.Health)
+	
+	// Static file serving for frontend
+	fs := http.FileServer(http.Dir("/root/.openclaw/workspace-server/ChronoCards/web/dist"))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// API routes first
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			return // let API handlers deal with it
+		}
+		// SPA fallback - serve index.html for non-file paths
+		if _, err := os.Stat("." + r.URL.Path); os.IsNotExist(err) && !strings.Contains(r.URL.Path, ".") {
+			http.ServeFile(w, r, "../web/dist/index.html")
+			return
+		}
+		fs.ServeHTTP(w, r)
+	})
 
 	// Player APIs
 	mux.HandleFunc("POST /api/v1/players", h.CreatePlayer)
@@ -172,7 +188,7 @@ func main() {
 	mux.HandleFunc("POST /api/v1/players/{player_id}/restore", h.RestoreBackup)
 
 
-	addr := ":8080"
+	addr := ":8081"
 	log.Printf("ChronoCards Backend 已启动，监听 %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
