@@ -4,6 +4,8 @@ import '../models/combat/combat_entity.dart';
 import '../models/combat/skill.dart';
 import '../models/combat/elemental_system.dart';
 import '../models/combat/enemy_ai.dart';
+import '../../domain/combat/combat_system.dart';
+import '../../domain/combat/enemy_behavior.dart';
 
 /// ARPG战斗阶段
 enum ARPGBattlePhase {
@@ -23,6 +25,7 @@ class DamageInfo {
   final bool isBlocked;
   final bool isPerfectBlock;
   final bool isDodged;
+  final int shieldBroken; // 护盾被击碎时>0
   final ElementalReactionType? reaction;
   final String? reactionName;
 
@@ -32,17 +35,21 @@ class DamageInfo {
     this.isBlocked = false,
     this.isPerfectBlock = false,
     this.isDodged = false,
+    this.shieldBroken = 0,
     this.reaction,
     this.reactionName,
   });
 }
 
 /// ARPG战斗Provider - 基于Provider/ChangeNotifier架构（非BLoC）
-/// 全功能Phase 1: 三资源系统 + 连击 + 技能 + 闪避无敌帧 + 格挡反击 + 复杂AI
+/// 全功能Phase 1.1: 三资源系统 + 连击 + 技能 + 闪避无敌帧(可叠加) + 格挡反击 + 敌人行为系统 + 仇恨系统
 class ARPGBattleProvider extends ChangeNotifier {
   // 战斗阶段
   ARPGBattlePhase _phase = ARPGBattlePhase.intro;
   ARPGBattlePhase get phase => _phase;
+
+  // ===== 核心战斗系统 =====
+  final CombatSystem _combatSystem = CombatSystem();
 
   // 玩家数据
   CombatEntity _player = CombatEntity.full(
@@ -72,8 +79,13 @@ class ARPGBattleProvider extends ChangeNotifier {
   );
   CombatEntity get enemy => _enemy;
 
-  // 敌人AI
+  // 玩家硬直状态
+  StaggerState _playerStagger = const StaggerState();
+  StaggerState get playerStagger => _playerStagger;
+
+  // ===== 敌人行为系统 =====
   EnemyAI? _enemyAI;
+  EnemyBehavior? _enemyBehavior;
 
   // 玩家技能
   List<Skill> _playerSkills = [
@@ -107,13 +119,12 @@ class ARPGBattleProvider extends ChangeNotifier {
   // 时间管理
   Timer? _gameTimer;
   double _elapsedTime = 0;
-  double _lastUpdateTime = 0;
+  int _currentTimeMs = 0;
 
   // 伤害数字显示定时器
   Timer? _damageDisplayTimer;
 
   // 常量
-  static const double _invincibleDuration = 0.4; // 闪避无敌帧秒数
   static const double _staminaRecoveryPerSec = 8.0;
   static const double _qiRecoveryPerSec = 5.0;
 
@@ -121,15 +132,22 @@ class ARPGBattleProvider extends ChangeNotifier {
   void startBattle({String enemyType = 'mingjiao_disciple', int enemyLevel = 12}) {
     _phase = ARPGBattlePhase.intro;
     _elapsedTime = 0;
-    _lastUpdateTime = 0;
+    _currentTimeMs = DateTime.now().millisecondsSinceEpoch;
     _comboStage = 1;
     _isAttacking = false;
     _lastPlayerDamage = null;
     _lastEnemyDamage = null;
     _battleLog.clear();
+    _playerStagger = const StaggerState();
 
-    // 初始化敌人AI
+    // 初始化敌人AI（旧版，保留兼容性）
     _enemyAI = EnemyAIConfig.create(enemyType, level: enemyLevel);
+
+    // 初始化敌人行为系统（新版）
+    _enemyBehavior = _createEnemyBehavior(enemyType);
+    if (_enemyBehavior != null) {
+      _log('敌人行为系统初始化: ${enemyType}');
+    }
 
     // 重置玩家状态
     _player = CombatEntity.full(
@@ -159,6 +177,34 @@ class ARPGBattleProvider extends ChangeNotifier {
       _startGameLoop();
       notifyListeners();
     });
+  }
+
+  EnemyBehavior? _createEnemyBehavior(String type) {
+    switch (type) {
+      case 'boss_tianmo':
+        return EnemyBehaviorConfig.tianmoBoss.create();
+      case 'shaolin_monk':
+        return EnemyBehaviorConfig.shaolinMonk.create();
+      case 'wudang_sword':
+        return EnemyBehaviorConfig.wudangSword.create();
+      case 'mingjiao_disciple':
+      default:
+        return EnemyBehaviorConfig.mingjiaoDisciple.create();
+    }
+  }
+
+  EnemyAttackMode _getEnemyAttackMode(String type) {
+    switch (type) {
+      case 'boss_tianmo':
+        return EnemyAttackMode.rush;
+      case 'shaolin_monk':
+        return EnemyAttackMode.heavy;
+      case 'wudang_sword':
+        return EnemyAttackMode.area;
+      case 'mingjiao_disciple':
+      default:
+        return EnemyAttackMode.rush;
+    }
   }
 
   CombatEntity _createEnemy(String type, int level) {
@@ -218,6 +264,7 @@ class ARPGBattleProvider extends ChangeNotifier {
     if (_phase != ARPGBattlePhase.combat) return;
 
     _elapsedTime += deltaTime;
+    _currentTimeMs = DateTime.now().millisecondsSinceEpoch;
 
     // 更新技能冷却
     _playerSkills = _playerSkills.map((s) => s.tickCooldown(deltaTime)).toList();
@@ -228,11 +275,14 @@ class ARPGBattleProvider extends ChangeNotifier {
     // 更新元素状态持续时间
     _updateElementalStatuses(deltaTime);
 
-    // 更新敌人AI
-    _enemyAI?.update(deltaTime, _enemy, _player);
+    // 更新玩家硬直状态
+    _playerStagger = _playerStagger.update(_currentTimeMs);
 
-    // 敌人自动攻击
-    _processEnemyAttack(deltaTime);
+    // 更新敌人行为系统
+    _updateEnemyBehavior();
+
+    // 更新敌人AI（旧版，保留）
+    _enemyAI?.update(deltaTime, _enemy, _player);
 
     // 检查战斗结束
     _checkBattleEnd();
@@ -240,8 +290,40 @@ class ARPGBattleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _updateEnemyBehavior() {
+    if (_enemyBehavior == null) return;
+
+    final enemyType = _enemy.name == '天魔'
+        ? 'boss_tianmo'
+        : (_enemy.name == '少林武僧' ? 'shaolin_monk' : 'mingjiao_disciple');
+    final preferredMode = _getEnemyAttackMode(enemyType);
+
+    final event = _enemyBehavior!.update(
+      _currentTimeMs,
+      _enemy,
+      _player,
+      preferredMode,
+    );
+
+    if (event != null) {
+      switch (event.type) {
+        case AttackEventType.attackStart:
+          _log('${_enemy.name} 准备使用 ${event.action?.name}！');
+          break;
+        case AttackEventType.attackHit:
+          if (event.damage != null) {
+            _dealDamageToPlayer(event.damage!);
+          }
+          break;
+        case AttackEventType.attackEnd:
+          _log('${_enemy.name} 攻击结束');
+          break;
+      }
+    }
+  }
+
   void _recoverResources(double deltaTime) {
-    // 恢复体力
+    // 恢复体力（非格挡时）
     if (!_player.isBlocking && _player.currentStamina < _player.maxStamina) {
       _player = _player.copyWith(
         currentStamina: (_player.currentStamina + _staminaRecoveryPerSec * deltaTime)
@@ -278,11 +360,6 @@ class ARPGBattleProvider extends ChangeNotifier {
     }
   }
 
-  void _processEnemyAttack(double deltaTime) {
-    // 敌人AI决定攻击（简化版）
-    // 实际项目中敌人攻击会通过事件触发
-  }
-
   void _checkBattleEnd() {
     if (_enemy.isDead) {
       _phase = ARPGBattlePhase.victory;
@@ -301,13 +378,19 @@ class ARPGBattleProvider extends ChangeNotifier {
   void lightAttack() {
     if (_phase != ARPGBattlePhase.combat || _isAttacking) return;
     if (_player.isStunned || _player.isFrozen) return;
+    if (_playerStagger.isStaggered) return;
 
     _isAttacking = true;
-    
+
     // 计算伤害
-    final baseDamage = _player.attack;
-    final multiplier = 0.4; // 轻攻击倍率
-    final damage = (baseDamage * multiplier).round();
+    final damage = _combatSystem.calculateAttackDamage(
+      attackerAttack: _player.attack,
+      damageMultiplier: 0.4,
+      baseDamage: 0,
+      targetDefense: _enemy.defense,
+      isCrit: _randomCrit(),
+      elementBonus: _getPlayerElementBonus(),
+    );
     final isCrit = _randomCrit();
 
     // 造成伤害
@@ -315,6 +398,13 @@ class ARPGBattleProvider extends ChangeNotifier {
 
     // 消耗精力
     _player = _player.consumeStamina(5);
+
+    // 对敌人造成硬直
+    _enemyBehavior?.applyStagger(
+      CombatSystem.lightAttackStaggerMs ~/ 10, // 轻攻击产生少量硬直
+      _currentTimeMs,
+      _combatSystem,
+    );
 
     // 积累剑意
     _player = _player.addSwordIntent(3);
@@ -336,18 +426,31 @@ class ARPGBattleProvider extends ChangeNotifier {
   void heavyAttack() {
     if (_phase != ARPGBattlePhase.combat || _isAttacking) return;
     if (_player.isStunned || _player.isFrozen) return;
+    if (_playerStagger.isStaggered) return;
 
     _isAttacking = true;
-    
-    final baseDamage = _player.attack;
-    final multiplier = 1.0; // 重攻击倍率
-    final damage = (baseDamage * multiplier).round();
+
+    final damage = _combatSystem.calculateAttackDamage(
+      attackerAttack: _player.attack,
+      damageMultiplier: 1.0,
+      baseDamage: 0,
+      targetDefense: _enemy.defense,
+      isCrit: _randomCrit(),
+      elementBonus: _getPlayerElementBonus(),
+    );
     final isCrit = _randomCrit();
 
     _dealDamageToEnemy(damage, isCrit);
 
     // 重攻击消耗更多体力
     _player = _player.consumeStamina(12);
+
+    // 对敌人造成较大硬直
+    _enemyBehavior?.applyStagger(
+      CombatSystem.heavyAttackStaggerMs ~/ 10,
+      _currentTimeMs,
+      _combatSystem,
+    );
 
     // 大量剑意
     _player = _player.addSwordIntent(8);
@@ -365,22 +468,30 @@ class ARPGBattleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 闪避
+  /// 闪避 - 使用新的CombatSystem的无敌帧机制（可叠加）
   void dodge() {
     if (_phase != ARPGBattlePhase.combat) return;
-    if (_player.currentStamina < 15) return;
-    if (_player.isInvincible) return;
 
-    _player = _player.consumeStamina(15);
-    _player = _player.copyWith(isInvincible: true);
+    // 使用CombatSystem的闪避判定
+    final dodgeResult = _combatSystem.tryDodge(
+      _getPlayerResources(),
+      _currentTimeMs,
+    );
 
-    // 闪避中无敌
-    _log('${_player.name} 闪避！');
+    if (!dodgeResult.success) {
+      _log('闪避失败：体力不足或已在无敌中');
+      return;
+    }
 
-    Future.delayed(const Duration(milliseconds: (_invincibleDuration * 1000).round()), () {
-      _player = _player.copyWith(isInvincible: false);
-      notifyListeners();
-    });
+    // 消耗体力
+    _player = _player.consumeStamina(CombatSystem.dodgeStaminaCost);
+
+    // 更新无敌帧
+    if (dodgeResult.iFramesExtended) {
+      _log('闪避！无敌帧延长${CombatSystem.baseInvincibleDurationMs}ms');
+    } else {
+      _log('闪避！激活${CombatSystem.baseInvincibleDurationMs}ms无敌帧');
+    }
 
     // 闪避增加少量剑意
     _player = _player.addSwordIntent(2);
@@ -388,12 +499,13 @@ class ARPGBattleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 开始格挡（长按）
+  /// 开始格挡（长按）- 使用新的完美格挡机制
   void startBlock() {
     if (_phase != ARPGBattlePhase.combat) return;
-    if (_player.currentStamina < 15) return;
+    if (_player.currentStamina < CombatSystem.blockStaminaCost) return;
 
     _player = _player.copyWith(isBlocking: true);
+    _log('格挡姿态...');
     notifyListeners();
   }
 
@@ -409,9 +521,10 @@ class ARPGBattleProvider extends ChangeNotifier {
   void useSkill(int skillIndex) {
     if (_phase != ARPGBattlePhase.combat) return;
     if (skillIndex >= _playerSkills.length) return;
+    if (_playerStagger.isStaggered) return;
 
     final skill = _playerSkills[skillIndex];
-    
+
     // 检查冷却和资源
     if (!skill.isReady) return;
     if (_player.currentQi < skill.qiCost) return;
@@ -426,8 +539,14 @@ class ARPGBattleProvider extends ChangeNotifier {
     _playerSkills[skillIndex] = skill.resetCooldown();
 
     // 计算伤害
-    final baseDamage = _player.attack;
-    final damage = (baseDamage * skill.damageMultiplier + skill.baseDamage).round();
+    final damage = _combatSystem.calculateAttackDamage(
+      attackerAttack: _player.attack,
+      damageMultiplier: skill.damageMultiplier,
+      baseDamage: skill.baseDamage,
+      targetDefense: _enemy.defense,
+      isCrit: _randomCrit(),
+      elementBonus: _getPlayerElementBonus(),
+    );
     final isCrit = _randomCrit();
 
     // 造成伤害
@@ -449,11 +568,13 @@ class ARPGBattleProvider extends ChangeNotifier {
 
     // 如果技能有无敌效果
     if (skill.isInvincible) {
+      final invincibleUntil = _currentTimeMs + 300;
       _player = _player.copyWith(isInvincible: true);
       Future.delayed(const Duration(milliseconds: 300), () {
         _player = _player.copyWith(isInvincible: false);
         notifyListeners();
       });
+      (void)invincibleUntil;
     }
 
     // 剑意积累
@@ -465,78 +586,135 @@ class ARPGBattleProvider extends ChangeNotifier {
   }
 
   void _dealDamageToEnemy(int damage, bool isCrit) {
-    // 计算元素加成
-    int elementalBonus = 0;
-    for (final status in _player.elementalStatuses) {
-      elementalBonus += status.stacks * 10;
-    }
+    // 伤害已由CombatSystem计算，这里直接应用
+    _enemy = _enemy.takeDamage(damage);
+    _lastEnemyDamage = DamageInfo(value: damage, isCrit: isCrit);
 
-    final finalDamage = damage + elementalBonus;
-
-    // 应用防御
-    int actualDamage = (finalDamage - _enemy.defense * 0.3).round();
-    actualDamage = actualDamage.clamp(1, finalDamage * 2);
-
-    _enemy = _enemy.takeDamage(actualDamage);
-    _lastEnemyDamage = DamageInfo(value: actualDamage, isCrit: isCrit);
+    // 对敌人产生仇恨
+    _enemyBehavior?.generateThreat('player', 50, _currentTimeMs);
 
     // 显示伤害数字
     _showDamageNumber(_lastEnemyDamage!, true);
 
-    // 检查元素反应
+    // 消耗敌人身上的元素附着
     for (final status in _enemy.elementalStatuses) {
       if (status.duration > 0) {
-        // 先清除旧状态
         _enemy = _enemy.clearElementalStatus(status.element);
         break;
       }
     }
   }
 
+  /// 使用CombatSystem处理玩家受击（护盾优先消耗）
   void _dealDamageToPlayer(int damage, {bool ignoreDefense = false}) {
+    // 无敌帧直接免疫
     if (_player.isInvincible) {
       _lastPlayerDamage = const DamageInfo(value: 0, isDodged: true);
       _showDamageNumber(_lastPlayerDamage!, false);
+      _log('闪避成功！');
       return;
     }
 
-    int actualDamage = damage;
-
-    if (_player.isBlocking) {
-      // 格挡减伤
-      actualDamage = (actualDamage * 0.3).round();
-      
-      // 完美格挡判定
-      if (_player.isPerfectBlock || _random.nextDouble() < 0.3) {
-        actualDamage = 0;
-        _player = _player.copyWith(isPerfectBlock: true);
-        _player = _player.addSwordIntent(15);
-        _log('完美格挡！');
-      } else {
-        _player = _player.consumeStamina(10);
-      }
-    }
-
-    _player = _player.takeDamage(actualDamage);
-    _lastPlayerDamage = DamageInfo(
-      value: actualDamage,
-      isBlocked: _player.isBlocking,
-      isPerfectBlock: _player.isPerfectBlock,
+    // 格挡判定（使用CombatSystem的完美格挡机制）
+    final blockResult = _combatSystem.evaluateBlock(
+      resources: _getPlayerResources(),
+      incomingDamage: damage,
+      currentTimeMs: _currentTimeMs,
+      attackerIsStaggered: _enemyBehavior?.staggerState.isStaggered ?? false,
     );
 
-    _showDamageNumber(_lastPlayerDamage!, false);
+    if (blockResult.success) {
+      if (blockResult.isPerfectBlock) {
+        // 完美格挡
+        _player = _player.copyWith(isPerfectBlock: true);
+        _player = _player.addSwordIntent(15);
+        _log('完美格挡！反击伤害 ${blockResult.damageReflected}');
+        _enemy = _enemy.takeDamage(blockResult.damageReflected);
 
-    // 清除完美格挡状态
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (_player.isPerfectBlock) {
+        // 完美格挡打断敌人攻击
+        if (blockResult.brokeAttacker'sStagger) {
+          _log('${_enemy.name} 攻击被打断！');
+        }
+
+        _lastPlayerDamage = DamageInfo(
+          value: 0,
+          isBlocked: true,
+          isPerfectBlock: true,
+        );
+      } else {
+        // 普通格挡
+        _player = _player.consumeStamina(10);
+        _player = _player.takeDamage(blockResult.damageReduced);
+        _lastPlayerDamage = DamageInfo(
+          value: blockResult.damageReduced,
+          isBlocked: true,
+        );
+      }
+
+      _showDamageNumber(_lastPlayerDamage!, false);
+
+      // 清除完美格挡状态
+      Future.delayed(const Duration(milliseconds: 200), () {
         _player = _player.copyWith(isPerfectBlock: false);
         notifyListeners();
-      }
-    });
+      });
+
+      notifyListeners();
+      return;
+    }
+
+    // 无格挡：使用CombatSystem的护盾优先伤害计算
+    final dmgResult = _combatSystem.applyDamageToEntity(
+      resources: _getPlayerResources(),
+      rawDamage: damage,
+      ignoreDefense: ignoreDefense,
+      defense: _player.defense,
+      isFrozen: _player.isFrozen,
+    );
+
+    _player = _player.copyWith(
+      currentHp: dmgResult.finalHp,
+    );
+
+    _lastPlayerDamage = DamageInfo(
+      value: dmgResult.hpLost,
+      shieldBroken: dmgResult.wasShieldBroken ? dmgResult.shieldConsumed : 0,
+    );
+
+    if (dmgResult.wasShieldBroken) {
+      _log('护盾被击碎！');
+    }
+
+    _showDamageNumber(_lastPlayerDamage!, false);
+    notifyListeners();
+  }
+
+  StaminaResources _getPlayerResources() {
+    return StaminaResources(
+      hp: _player.currentHp,
+      maxHp: _player.maxHp,
+      stamina: _player.currentStamina,
+      maxStamina: _player.maxStamina,
+      qi: _player.currentQi,
+      maxQi: _player.maxQi,
+      shield: 0, // CombatEntity没有shield字段，这里简化
+      maxShield: 0,
+      isInvincible: _player.isInvincible,
+      invincibleUntilMs: _player.isInvincible ? _currentTimeMs + 300 : 0,
+      isBlocking: _player.isBlocking,
+      lastBlockTimeMs: _currentTimeMs,
+    );
+  }
+
+  int _getPlayerElementBonus() {
+    int bonus = 0;
+    for (final status in _player.elementalStatuses) {
+      bonus += status.stacks * 10;
+    }
+    return bonus;
   }
 
   void _checkElementalReaction(ElementType newElement) {
-    // 检查敌人身上是否有可以反应的元素
     for (final existingStatus in _enemy.elementalStatuses) {
       final result = ElementalReactionCalculator.calculateReaction(
         ElementalStatus(element: newElement, stacks: 1),
@@ -544,14 +722,11 @@ class ARPGBattleProvider extends ChangeNotifier {
       );
 
       if (result.$1 != null) {
-        // 触发反应，造成额外伤害
         final extraDamage = result.$2.round();
         if (extraDamage > 0) {
           _enemy = _enemy.takeDamage(extraDamage, ignoreDefense: true);
           _log('触发${result.$3}反应！额外伤害 $extraDamage');
         }
-
-        // 清除被反应的元素
         _enemy = _enemy.clearElementalStatus(existingStatus.element);
         break;
       }
@@ -579,9 +754,9 @@ class ARPGBattleProvider extends ChangeNotifier {
     }
   }
 
-  // ==================== 敌人攻击（由AI或定时触发）====================
+  // ==================== 敌人攻击（由行为系统触发）====================
 
-  /// 敌人攻击玩家（外部调用）
+  /// 敌人攻击玩家（外部调用/旧版兼容）
   void enemyAttack(int damage) {
     if (_phase != ARPGBattlePhase.combat) return;
     _dealDamageToPlayer(damage);
@@ -631,6 +806,7 @@ class ARPGBattleProvider extends ChangeNotifier {
   void dispose() {
     _stopGameLoop();
     _damageDisplayTimer?.cancel();
+    _enemyBehavior?.reset();
     super.dispose();
   }
 }
