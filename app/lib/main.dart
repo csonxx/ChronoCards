@@ -110,7 +110,7 @@ class ChronoCardsApp extends StatelessWidget {
         theme: AppTheme.darkTheme,
         initialRoute: '/',
         routes: {
-          '/': (context) => const OpenWorldScreen(),
+          '/': (context) => const ArpgGameScreen(),
           '/card_draw': (context) => const CardDrawScreenEntry(),
           '/battle': (context) => const BattleScreen(),
           '/economy': (context) => const EconomyScreen(),
