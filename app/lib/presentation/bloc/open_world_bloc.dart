@@ -394,5 +394,3 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
     ];
   }
 }
-}
-}
