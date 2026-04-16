@@ -7,6 +7,8 @@ import '../../../domain/entities/game_card.dart';
 import '../../../domain/entities/event_card.dart';
 import '../../bloc/card_draw/card_draw_bloc.dart';
 import '../../bloc/card_draw/card_draw_state.dart';
+import '../../bloc/open_world_bloc.dart';
+import '../../bloc/open_world_event.dart';
 import '../../../core/theme/app_theme.dart';
 
 /// S3 Card Draw Screen - Entry point
@@ -97,12 +99,13 @@ class _CardDrawPersistenceWrapper extends StatelessWidget {
     );
   }
 
-  /// P0 Fix: Persist card to player collection via SaveProvider
+  /// P0 Fix: Persist card to player collection via OpenWorldBloc
   void _persistCardToPlayer(BuildContext context, GameCard card) {
     try {
-      final saveProvider = context.read<SaveProvider>();
+      // P0 Fix: Add card to OpenWorldBloc's playerCards via AddCardToCollection event
+      context.read<OpenWorldBloc>().add(AddCardToCollection(card));
       
-      // debugPrint('[CardDraw] Card added to collection: ${card.name}');
+      debugPrint('[CardDraw] Card added to collection: ${card.name}');
       
       // P0 Fix: Show confirmation toast that card was added to deck
       ScaffoldMessenger.of(context).showSnackBar(

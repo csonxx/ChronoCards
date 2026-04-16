@@ -56,3 +56,6 @@ class AddCardToCollection extends OpenWorldEvent {
   @override
   List<Object?> get props => [card];
 }
+
+/// Save game state to backend
+class SaveGameData extends OpenWorldEvent {}

@@ -157,6 +157,11 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
         setState(() {
           _nearbyLocation = nearest;
         });
+      } else if (nearest == null && _nearbyLocation != null) {
+        // 玩家走远了，重置
+        setState(() {
+          _nearbyLocation = null;
+        });
       }
     }
   }
@@ -429,6 +434,13 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
         _handleBattleResult(location.id, result);
       }
     } else if (location.type == WorldLocationType.cardShop) {
+      Navigator.pushNamed(context, '/card_draw');
+    } else {
+      // 未知location类型，显示"暂未开放"
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('暂未开放'),
+          backgroundColor: AppTheme.primaryDark, if (location.type == WorldLocationType.cardShop) {
       Navigator.pushNamed(context, '/card_draw');
     }
   }

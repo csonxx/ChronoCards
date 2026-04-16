@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/network/network.dart';
 import '../../../domain/entities/game_card.dart';
 import '../../providers/battle_provider.dart';
+import '../../providers/battle_provider.dart' show BattlePhase;
 import '../../widgets/battle_card_widget.dart';
 import '../../widgets/battle_player_widget.dart';
 import '../../widgets/battle_enemy_widget.dart';
@@ -286,6 +287,7 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     final hand = provider.hand;
     final selectedCards = provider.selectedCards;
     final isPlayerTurn = provider.isPlayerTurn;
+    final isGameOver = provider.phase == BattlePhase.gameOver;
 
     if (hand.isEmpty) {
       return Container(
@@ -314,8 +316,8 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
             child: BattleCardWidget(
               card: card,
               isSelected: isSelected,
-              isPlayable: isPlayerTurn,
-              onTap: isPlayerTurn
+              isPlayable: isPlayerTurn && !isGameOver,
+              onTap: isPlayerTurn && !isGameOver
                   ? () {
                       if (isSelected) {
                         provider.deselectCard(card.id);

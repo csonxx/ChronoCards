@@ -71,4 +71,39 @@ class GameCard extends Equatable {
         imageAsset,
         isFlipped,
       ];
+
+  /// Convert to JSON for API storage
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type.name,
+      'rarity': rarity.name,
+      'cost': cost,
+      'attack': attack,
+      'defense': defense,
+    };
+  }
+
+  /// Create from JSON
+  factory GameCard.fromJson(Map<String, dynamic> json) {
+    return GameCard(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      type: CardType.values.firstWhere(
+        (t) => t.name == json['type'],
+        orElse: () => CardType.special,
+      ),
+      rarity: CardRarity.values.firstWhere(
+        (r) => r.name == json['rarity'],
+        orElse: () => CardRarity.common,
+      ),
+      cost: json['cost'] ?? 0,
+      attack: json['attack'] ?? 0,
+      defense: json['defense'] ?? 0,
+      imageAsset: json['image_asset'] ?? '',
+    );
+  }
 }
