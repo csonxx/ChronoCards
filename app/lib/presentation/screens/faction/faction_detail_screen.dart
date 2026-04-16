@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/entities/game_card.dart';
+import '../../../../domain/entities/game_card.dart';
 import '../../widgets/faction/reputation_bar.dart';
 import '../../widgets/faction/faction_card_widget.dart';
 import 'faction_list_screen.dart';

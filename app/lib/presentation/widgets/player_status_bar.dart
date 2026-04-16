@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/player.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/player.dart';
 
 /// Player status bar widget showing health, mana, energy
 class PlayerStatusBar extends StatelessWidget {

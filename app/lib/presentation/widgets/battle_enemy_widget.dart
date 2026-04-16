@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/enemy.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/enemy.dart';
 
 /// Enemy widget for battle screen
 class BattleEnemyWidget extends StatelessWidget {

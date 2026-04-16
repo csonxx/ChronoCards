@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/game_card.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../domain/entities/game_card.dart';
 
 /// 阵营专属卡牌组件
 /// 根据阵营主题色显示不同风格的卡牌

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/equipment_provider.dart';
-import '../../../domain/combat/martial_arts_system.dart';
+import '../../../../domain/combat/martial_arts_system.dart';
 
 /// 装备面板 - 显示和管理角色装备
 class EquipmentScreen extends StatelessWidget {

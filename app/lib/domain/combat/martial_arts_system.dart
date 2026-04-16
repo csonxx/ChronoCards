@@ -60,6 +60,7 @@ class MartialSkill extends Equatable {
   final bool canPerfectBlock; // 可被完美格挡
   final bool breaksArmor;   // 破甲
   final bool isAoe;         // AOE
+  final int levelRequired;  // 所需玩家等级
 
   const MartialSkill({
     required this.id,
@@ -81,6 +82,7 @@ class MartialSkill extends Equatable {
     this.canPerfectBlock = true,
     this.breaksArmor = false,
     this.isAoe = false,
+    this.levelRequired = 1,
   });
 
   bool get isReady => currentCooldownMs <= 0;
@@ -124,6 +126,7 @@ class MartialSkill extends Equatable {
     bool? canPerfectBlock,
     bool? breaksArmor,
     bool? isAoe,
+    int? levelRequired,
   }) {
     return MartialSkill(
       id: id ?? this.id,
@@ -145,6 +148,7 @@ class MartialSkill extends Equatable {
       canPerfectBlock: canPerfectBlock ?? this.canPerfectBlock,
       breaksArmor: breaksArmor ?? this.breaksArmor,
       isAoe: isAoe ?? this.isAoe,
+      levelRequired: levelRequired ?? this.levelRequired,
     );
   }
 
@@ -153,7 +157,7 @@ class MartialSkill extends Equatable {
         id, name, description, type, target,
         qiCost, staminaCost, damage, shieldValue, healValue, staggerValue,
         element, cooldownMs, currentCooldownMs,
-        isEskill, isQskill, canPerfectBlock, breaksArmor, isAoe,
+        isEskill, isQskill, canPerfectBlock, breaksArmor, isAoe, levelRequired,
       ];
 }
 
@@ -226,7 +230,7 @@ class MartialArtsSystem {
   bool canUseSkill(String skillId, int currentQi, int currentStamina) {
     final skill = skills.firstWhere(
       (s) => s.id == skillId,
-      orElse: () => const MartialSkill(id: ''),
+      orElse: () => const MartialSkill(id: '', name: 'Unknown', description: '', type: MartialArtType.innerGong),
     );
     if (skill.id.isEmpty) return false;
     if (!skill.isReady) return false;

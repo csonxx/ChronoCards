@@ -62,7 +62,7 @@ class CardStackWidget extends StatelessWidget {
                             BoxShadow(
                               color: Colors.black.withOpacity(0.3 - (i * 0.05)),
                               blurRadius: 10 - (i * 2),
-                              offset: Offset(2 + i, 4 + i),
+                              offset: Offset((2 + i).toDouble(), (4 + i).toDouble()),
                             ),
                           ],
                         ),

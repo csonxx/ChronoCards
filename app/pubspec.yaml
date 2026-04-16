@@ -12,8 +12,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # State Management
-  flutter_bloc: ^8.1.6
+  provider: ^6.1.2
   equatable: ^2.0.5
+  flutter_bloc: ^8.1.6
   
   # Dependency Injection
   get_it: ^7.7.0
@@ -31,14 +32,19 @@ dependencies:
   # HTTP (for API calls)
   http: ^1.2.0
   
+  # Date formatting
+  intl: ^0.19.0
+  
   # Local Storage
   shared_preferences: ^2.3.2
+  
+  # 3D Model Viewer
+  model_viewer_plus: ^1.8.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  url_launcher: ^6.3.0
 
 flutter:
   uses-material-design: true
@@ -46,3 +52,4 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+    - assets/models/

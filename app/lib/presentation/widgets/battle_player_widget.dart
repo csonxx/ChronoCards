@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/player.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/player.dart';
 
 /// Player widget for battle screen
 class BattlePlayerWidget extends StatelessWidget {

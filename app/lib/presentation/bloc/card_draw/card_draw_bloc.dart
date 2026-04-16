@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chrono_cards/domain/entities/event_card.dart';
+import 'package:chrono_cards/core/network/network.dart';
 import 'card_draw_event.dart';
 import 'card_draw_state.dart';
 
@@ -11,6 +12,7 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
   int _maxTurns = 10;
   int _totalDrawn = 0;
   EventCard? _lastDrawnCard;
+  String _currentDeckId = 'default_deck';
 
   CardDrawBloc() : super(const CardDrawInitial()) {
     on<InitializeCardDrawScene>(_onInitialize);
@@ -29,7 +31,24 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
   ) async {
     emit(const CardDrawLoading());
 
-    _deck = _generateEventDeck();
+    // Try to get deck from backend API
+    bool useBackendDeck = false;
+    try {
+      final response = await apiClient.drawCard(_currentDeckId, count: 20);
+      if (response.success && response.data != null) {
+        _deck = _convertApiCardsToEventCards(response.data!.cards);
+        useBackendDeck = true;
+
+      }
+    } catch (e) {
+
+    }
+
+    // Fallback to local deck if backend failed
+    if (!useBackendDeck) {
+      _deck = _generateEventDeck();
+    }
+
     _deck.shuffle();
     _discardPile.clear();
     _drawnHistory.clear();
@@ -49,6 +68,44 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
         totalCount: 3,
       ),
     ));
+  }
+
+  List<EventCard> _convertApiCardsToEventCards(List<DrawCardData> apiCards) {
+    return apiCards.map((card) {
+      return EventCard(
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        type: _parseEventCardType(card.type),
+        triggerCondition: '',
+        options: const [],
+      );
+    }).toList();
+  }
+
+  EventCardType _parseEventCardType(String type) {
+    switch (type.toLowerCase()) {
+      case 'mainline':
+        return EventCardType.mainline;
+      case 'emotion':
+        return EventCardType.emotion;
+      case 'fate':
+        return EventCardType.fate;
+      case 'era':
+        return EventCardType.era;
+      case 'branch':
+        return EventCardType.branch;
+      case 'numeric':
+        return EventCardType.numeric;
+      case 'economic':
+        return EventCardType.economic;
+      case 'blank':
+        return EventCardType.blank;
+      case 'mechanism':
+        return EventCardType.mechanism;
+      default:
+        return EventCardType.mainline;
+    }
   }
 
   Future<void> _onDrawCard(

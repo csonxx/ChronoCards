@@ -311,7 +311,7 @@ class _SaveCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.primaryDark,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.3)),
+                  border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
                 ),
                 child: save.thumbnailBase64 != null
                     ? ClipRRect(

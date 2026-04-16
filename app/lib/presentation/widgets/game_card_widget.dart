@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/game_card.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/game_card.dart';
 
 /// Game card widget for displaying cards
 class GameCardWidget extends StatelessWidget {

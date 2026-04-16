@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/martial_arts_provider.dart';
-import '../../../domain/combat/martial_arts_system.dart';
+import '../../../../domain/combat/martial_arts_system.dart';
 
 /// 武学面板 - 显示和管理角色武学技能
 class MartialArtsScreen extends StatelessWidget {

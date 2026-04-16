@@ -58,7 +58,7 @@ class MartialArtsProvider extends ChangeNotifier {
     if (_activeInnerGongId == null) return null;
     return _learnedSkills.firstWhere(
       (s) => s.id == _activeInnerGongId,
-      orElse: () => const MartialSkill(id: ''),
+      orElse: () => const MartialSkill(id: '', name: 'Unknown', description: '', type: MartialArtType.innerGong),
     );
   }
 
@@ -67,7 +67,7 @@ class MartialArtsProvider extends ChangeNotifier {
     if (_activeOuterGongId == null) return null;
     return _learnedSkills.firstWhere(
       (s) => s.id == _activeOuterGongId,
-      orElse: () => const MartialSkill(id: ''),
+      orElse: () => const MartialSkill(id: '', name: 'Unknown', description: '', type: MartialArtType.innerGong),
     );
   }
 
@@ -76,7 +76,7 @@ class MartialArtsProvider extends ChangeNotifier {
     if (_activeLightSkillId == null) return null;
     return _learnedSkills.firstWhere(
       (s) => s.id == _activeLightSkillId,
-      orElse: () => const MartialSkill(id: ''),
+      orElse: () => const MartialSkill(id: '', name: 'Unknown', description: '', type: MartialArtType.innerGong),
     );
   }
 

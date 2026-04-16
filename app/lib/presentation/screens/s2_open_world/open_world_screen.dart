@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/entities/world_position.dart';
+import '../../../../domain/entities/world_position.dart';
 import '../../bloc/open_world_bloc.dart';
 import '../../bloc/open_world_event.dart';
 import '../../bloc/open_world_state.dart';

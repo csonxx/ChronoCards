@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/game_card.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/game_card.dart';
 
 /// Battle card widget - compact version for battle hand
 class BattleCardWidget extends StatelessWidget {

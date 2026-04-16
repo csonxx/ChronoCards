@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/theme/battle_colors.dart';
-import '../../../domain/entities/economy_models.dart';
-import '../../providers/economy_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/battle_colors.dart';
+import '../../../../domain/entities/economy_models.dart';
+import '../../../providers/economy_provider.dart';
 import '../widgets/economy_widgets.dart';
 
 /// 经济系统主界面 - 拍卖行/黑市/钱包
@@ -386,11 +386,9 @@ class _EconomyViewState extends State<EconomyView> with SingleTickerProviderStat
         return AuctionItemCard(
           name: item.name,
           description: item.description,
-          category: item.category,
           rarity: item.rarity,
           currentPrice: item.currentPrice,
           buyoutPrice: item.buyoutPrice,
-          sellerName: item.sellerName ?? '',
           timeRemaining: provider.formatDuration(item.timeRemaining),
           bidCount: item.bidCount,
           isHighestBidder: item.highestBidderId == 'player_1',

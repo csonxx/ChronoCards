@@ -56,7 +56,7 @@ class SaveDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.3)),
+        border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -363,7 +363,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withValues(alpha: 0.15),
+      color: color.withOpacity(0.15),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: isLoading ? null : onPressed,
@@ -372,7 +372,7 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
+            border: Border.all(color: color.withOpacity(0.5)),
           ),
           child: Row(
             children: [
@@ -419,7 +419,7 @@ class _ActionButton extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: color.withValues(alpha: 0.5),
+                color: color.withOpacity(0.5),
               ),
             ],
           ),

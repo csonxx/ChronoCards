@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../domain/entities/character.dart';
+import '../../../../domain/entities/character.dart';
 import '../../widgets/character_model_viewer.dart';
 
 /// Character detail screen — shows character portrait, 3D model, and stats.

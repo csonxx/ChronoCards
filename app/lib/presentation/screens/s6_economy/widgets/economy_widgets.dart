@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/theme/battle_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/battle_colors.dart';
 
 /// 水墨风稀有度颜色
 class RarityColors {

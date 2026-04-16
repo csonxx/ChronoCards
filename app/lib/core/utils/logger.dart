@@ -9,20 +9,18 @@ class GameLogger {
   }
 
   static void info(String message) {
-    debugPrint('[ChronoCards INFO] $message');
+    if (kDebugMode) debugPrint('[ChronoCards INFO] $message');
   }
 
   static void warning(String message) {
-    debugPrint('[ChronoCards WARN] $message');
+    if (kDebugMode) debugPrint('[ChronoCards WARN] $message');
   }
 
   static void error(String message, [dynamic error, StackTrace? stackTrace]) {
-    debugPrint('[ChronoCards ERROR] $message');
-    if (error != null) {
-      debugPrint('Error: $error');
-    }
-    if (stackTrace != null && kDebugMode) {
-      debugPrint('StackTrace: $stackTrace');
+    if (kDebugMode) {
+      debugPrint('[ChronoCards ERROR] $message');
+      if (error != null) debugPrint('Error: $error');
+      if (stackTrace != null) debugPrint('StackTrace: $stackTrace');
     }
   }
 }

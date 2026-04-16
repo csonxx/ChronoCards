@@ -119,9 +119,9 @@ class _ExportImportScreenState extends State<ExportImportScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.15),
+              color: Colors.blue.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
             child: const Row(
               children: [
@@ -144,7 +144,7 @@ class _ExportImportScreenState extends State<ExportImportScreen>
             decoration: BoxDecoration(
               color: AppTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.3)),
+              border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,9 +254,9 @@ class _ExportImportScreenState extends State<ExportImportScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.15),
+              color: Colors.orange.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
             ),
             child: const Row(
               children: [
@@ -279,7 +279,7 @@ class _ExportImportScreenState extends State<ExportImportScreen>
             decoration: BoxDecoration(
               color: AppTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.3)),
+              border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,7 +337,7 @@ class _ExportImportScreenState extends State<ExportImportScreen>
             decoration: BoxDecoration(
               color: AppTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.3)),
+              border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +393,7 @@ class _ExportImportScreenState extends State<ExportImportScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.green.withValues(alpha: 0.5),
+              disabledBackgroundColor: Colors.green.withOpacity(0.5),
               padding: const EdgeInsets.symmetric(vertical: 16),
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
@@ -405,9 +405,9 @@ class _ExportImportScreenState extends State<ExportImportScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.15),
+                color: Colors.red.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
@@ -428,7 +428,7 @@ class _ExportImportScreenState extends State<ExportImportScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Column(
