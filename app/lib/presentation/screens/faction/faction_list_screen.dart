@@ -96,7 +96,7 @@ class _FactionListScreenState extends State<FactionListScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: 从API获取玩家阵营信息
+    // Placeholder: faction data loaded from backend // _loadPlayerFaction();
     // _loadPlayerFaction();
   }
 
@@ -121,7 +121,7 @@ class _FactionListScreenState extends State<FactionListScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.textSecondary),
             onPressed: () {
-              // TODO: 刷新阵营数据
+              // Placeholder: refresh faction data
             },
           ),
         ],

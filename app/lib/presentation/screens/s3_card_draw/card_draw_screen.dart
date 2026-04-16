@@ -102,7 +102,7 @@ class _CardDrawPersistenceWrapper extends StatelessWidget {
     try {
       final saveProvider = context.read<SaveProvider>();
       
-      debugPrint('[CardDraw] Card added to collection: ${card.name}');
+      // debugPrint('[CardDraw] Card added to collection: ${card.name}');
       
       // P0 Fix: Show confirmation toast that card was added to deck
       ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +148,7 @@ class _CardDrawPersistenceWrapper extends StatelessWidget {
         ),
       );
     } catch (e) {
-      debugPrint('[CardDraw] Could not persist card: $e');
+      // debugPrint('[CardDraw] Could not persist card: $e');
     }
   }
 }

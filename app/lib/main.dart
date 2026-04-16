@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/network/network.dart';
+import 'core/network/api_config.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/battle_provider.dart';
 import 'presentation/providers/save_provider.dart';
@@ -14,7 +17,48 @@ import 'presentation/screens/save/export_import_screen.dart';
 import 'presentation/screens/faction/faction_list_screen.dart';
 import 'presentation/screens/faction/faction_detail_screen.dart';
 
-void main() {
+/// Player ID storage key
+const String _playerIdKey = 'player_id';
+const String _deviceIdKey = 'device_id';
+
+/// Initialize app - register device and get playerId
+Future<void> _initializeApp() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  // Get or create device ID
+  String? deviceId = prefs.getString(_deviceIdKey);
+  if (deviceId == null) {
+    deviceId = 'device_${DateTime.now().millisecondsSinceEpoch}';
+    await prefs.setString(_deviceIdKey, deviceId);
+  }
+
+  // Check if playerId already exists
+  String? playerId = prefs.getString(_playerIdKey);
+
+  // Initialize global API client
+  initializeApiClient(baseUrl: ApiConfig.apiBaseUrl);
+
+  // If no playerId, register device
+  if (playerId == null) {
+    // debugPrint('[AppInit] Registering new device: $deviceId');
+    final response = await apiClient.registerPlayer(deviceId);
+
+    if (response.success && response.data != null) {
+      playerId = response.data!.playerId;
+      await prefs.setString(_playerIdKey, playerId);
+      // debugPrint('[AppInit] Registered playerId: $playerId');
+    } else {
+      // Fallback: use device ID as player ID for offline play
+      // debugPrint('[AppInit] Registration failed, using deviceId as fallback');
+      playerId = deviceId;
+      await prefs.setString(_playerIdKey, playerId);
+    }
+  } else {
+    // debugPrint('[AppInit] Using existing playerId: $playerId');
+  }
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set preferred orientations - landscape for mobile gaming (battle/world screens)
@@ -29,6 +73,9 @@ void main() {
     SystemUiMode.immersiveSticky,
     overlays: [],
   );
+
+  // Initialize app - register device and get playerId
+  await _initializeApp();
 
   runApp(const ChronoCardsApp());
 }
@@ -46,7 +93,12 @@ class ChronoCardsApp extends StatelessWidget {
         ),
         // SaveProvider - 云存档系统
         ChangeNotifierProvider<SaveProvider>(
-          create: (_) => SaveProvider(),
+          create: (_) {
+            final provider = SaveProvider();
+            // Configure SaveProvider with backend URL
+            provider.setApiBaseUrl(ApiConfig.apiBaseUrl);
+            return provider;
+          },
         ),
       ],
       child: MaterialApp(

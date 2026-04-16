@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/network/network.dart';
 import '../../../domain/entities/game_card.dart';
 import '../../providers/battle_provider.dart';
 import '../../widgets/battle_card_widget.dart';
@@ -843,14 +845,19 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
 
   Widget _buildContinueButton() {
     return ElevatedButton(
-      onPressed: () {
-        // P0 Fix: Return battle result to OpenWorldScreen for map progress update
-        Navigator.pop(context, {
-          'result': 'victory',
-          'exp': _expReward,
-          'gold': _goldReward,
-          'equipment': _equipmentRewards,
-        });
+      onPressed: () async {
+        // P0 Fix: Report battle result to backend
+        await _reportBattleResult();
+
+        // Return battle result to OpenWorldScreen for map progress update
+        if (mounted) {
+          Navigator.pop(context, {
+            'result': 'victory',
+            'exp': _expReward,
+            'gold': _goldReward,
+            'equipment': _equipmentRewards,
+          });
+        }
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppTheme.accentGold,
@@ -875,6 +882,40 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3, delay: 200.ms);
+  }
+
+  /// P0 Fix: Report battle result to backend
+  Future<void> _reportBattleResult() async {
+    try {
+      // Get player ID from storage
+      final prefs = await SharedPreferences.getInstance();
+      final playerId = prefs.getString('player_id') ?? 'unknown';
+
+      // Prepare equipment rewards data
+      final equipmentData = <String, dynamic>{};
+      for (final equip in _equipmentRewards) {
+        equipmentData[equip['name'] as String] = {
+          'rarity': (equip['rarity'] as CardRarity).name,
+        };
+      }
+
+      final response = await apiClient.reportBattleResult(
+        playerId: playerId,
+        enemyId: enemyId ?? 'enemy_1',
+        result: 'victory',
+        expGained: _expReward,
+        goldGained: _goldReward,
+        equipmentRewards: equipmentData.isNotEmpty ? equipmentData : null,
+      );
+
+      if (response.success) {
+        // debugPrint('[BattleScreen] Battle result reported successfully');
+      } else {
+        // debugPrint('[BattleScreen] Battle result report failed: ${response.error}');
+      }
+    } catch (e) {
+      // debugPrint('[BattleScreen] Error reporting battle result: $e');
+    }
   }
 
   void _showDefeatDialog(BuildContext context, BattleProvider provider) {
