@@ -38,10 +38,10 @@ class CardDrawBloc extends Bloc<CardDrawEvent, CardDrawState> {
       if (response.success && response.data != null) {
         _deck = _convertApiCardsToEventCards(response.data!.cards);
         useBackendDeck = true;
-        // debugPrint('[CardDrawBloc] Loaded ${_deck.length} cards from backend');
+
       }
     } catch (e) {
-      // debugPrint('[CardDrawBloc] Could not load from backend: $e');
+
     }
 
     // Fallback to local deck if backend failed

@@ -10,6 +10,8 @@ import '../../providers/battle_provider.dart' show BattlePhase;
 import '../../widgets/battle_card_widget.dart';
 import '../../widgets/battle_player_widget.dart';
 import '../../widgets/battle_enemy_widget.dart';
+import '../../bloc/open_world_bloc.dart';
+import '../../bloc/open_world_event.dart';
 
 /// S5 - Battle Screen (ARPG Instant Combat)
 /// Real-time ARPG style battle interface
@@ -136,6 +138,15 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
         setState(() => _showContinueButton = true);
       }
     });
+
+    // P0 Fix: Dispatch BattleCompleted event to OpenWorldBloc to persist rewards
+    // Get locationId from provider if available, otherwise use enemyId
+    final locationId = provider.enemy.id ?? enemyId ?? 'unknown';
+    context.read<OpenWorldBloc>().add(BattleCompleted(
+      locationId: locationId,
+      experienceGained: _expReward,
+      goldGained: _goldReward,
+    ));
   }
 
   void _updateBattleLog(String action) {
@@ -911,12 +922,12 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
       );
 
       if (response.success) {
-        // debugPrint('[BattleScreen] Battle result reported successfully');
+
       } else {
-        // debugPrint('[BattleScreen] Battle result report failed: ${response.error}');
+
       }
     } catch (e) {
-      // debugPrint('[BattleScreen] Error reporting battle result: $e');
+
     }
   }
 

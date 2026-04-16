@@ -105,7 +105,6 @@ class _CardDrawPersistenceWrapper extends StatelessWidget {
       // P0 Fix: Add card to OpenWorldBloc's playerCards via AddCardToCollection event
       context.read<OpenWorldBloc>().add(AddCardToCollection(card));
       
-      debugPrint('[CardDraw] Card added to collection: ${card.name}');
       
       // P0 Fix: Show confirmation toast that card was added to deck
       ScaffoldMessenger.of(context).showSnackBar(
@@ -151,7 +150,7 @@ class _CardDrawPersistenceWrapper extends StatelessWidget {
         ),
       );
     } catch (e) {
-      // debugPrint('[CardDraw] Could not persist card: $e');
+
     }
   }
 }

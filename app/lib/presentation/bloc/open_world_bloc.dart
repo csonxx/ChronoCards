@@ -36,13 +36,13 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
         final gameState = saveResponse.data!['game_state'];
         if (gameState != null) {
           player = _parsePlayerFromGameState(gameState, playerId);
-          // debugPrint('[OpenWorldBloc] Loaded player from backend: $playerId');
+  
         } else {
           player = _createDefaultPlayer(playerId);
         }
       } else {
         // Fallback to default player (offline mode)
-        // debugPrint('[OpenWorldBloc] Could not load from backend, using default');
+
         player = _createDefaultPlayer(playerId);
       }
 
@@ -54,7 +54,7 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
         currentLocation: locations.firstWhere((l) => l.type == WorldLocationType.town),
       ));
     } catch (e) {
-      // debugPrint('[OpenWorldBloc] Error loading: $e');
+
       // Fallback to default on any error
       final prefs = await _getSharedPreferences();
       final playerId = prefs.getString('player_id') ?? 'player_1';
@@ -267,12 +267,12 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
       );
 
       if (response.success) {
-        // debugPrint('[OpenWorldBloc] Battle result reported successfully');
+
       } else {
-        // debugPrint('[OpenWorldBloc] Battle result report failed: ${response.error}');
+
       }
     } catch (e) {
-      // debugPrint('[OpenWorldBloc] Error reporting battle result: $e');
+
     }
   }
 
@@ -315,12 +315,12 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
       );
 
       if (response.success) {
-        // debugPrint('[OpenWorldBloc] Game saved to backend');
+
       } else {
-        // debugPrint('[OpenWorldBloc] Save failed: ${response.error}');
+
       }
     } catch (e) {
-      // debugPrint('[OpenWorldBloc] Error saving game: $e');
+
     }
   }
 
@@ -393,4 +393,6 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
       ),
     ];
   }
+}
+}
 }

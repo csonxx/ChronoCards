@@ -40,21 +40,21 @@ Future<void> _initializeApp() async {
 
   // If no playerId, register device
   if (playerId == null) {
-    // debugPrint('[AppInit] Registering new device: $deviceId');
+
     final response = await apiClient.registerPlayer(deviceId);
 
     if (response.success && response.data != null) {
       playerId = response.data!.playerId;
       await prefs.setString(_playerIdKey, playerId);
-      // debugPrint('[AppInit] Registered playerId: $playerId');
+  
     } else {
       // Fallback: use device ID as player ID for offline play
-      // debugPrint('[AppInit] Registration failed, using deviceId as fallback');
+  
       playerId = deviceId;
       await prefs.setString(_playerIdKey, playerId);
     }
   } else {
-    // debugPrint('[AppInit] Using existing playerId: $playerId');
+
   }
 }
 
@@ -108,7 +108,7 @@ class ChronoCardsApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           '/': (context) => const OpenWorldScreen(),
-          '/card_draw': (context) => const CardDrawScreen(),
+          '/card_draw': (context) => const CardDrawScreenEntry(),
           '/battle': (context) => const BattleScreen(),
           '/economy': (context) => const EconomyScreen(),
           '/faction_list': (context) => const FactionListScreen(),
@@ -152,3 +152,4 @@ class ChronoCardsApp extends StatelessWidget {
     );
   }
 }
+
