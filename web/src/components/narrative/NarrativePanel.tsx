@@ -39,7 +39,10 @@ export const NarrativePanel: React.FC<NarrativePanelProps> = ({ data, onDismiss 
       // 文字逐字显示效果
       const fullText = data.content.text;
       let index = 0;
-      const speed = Math.max(20, Math.min(80, fullText.length / (data.display_duration_ms / 1000) * 1000));
+      // TODO(QA-P1): display_duration_ms为0时除零导致speed=Infinity，默认给50ms
+      const speed = data.display_duration_ms > 0
+        ? Math.max(20, Math.min(80, fullText.length / (data.display_duration_ms / 1000) * 1000))
+        : 50;
 
       const interval = setInterval(() => {
         if (index < fullText.length) {
