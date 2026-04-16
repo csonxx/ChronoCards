@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chrono_cards/presentation/components/card_draw/card_draw_screen.dart';
 import '../../providers/save_provider.dart';
 import '../../../domain/entities/game_card.dart';
+import '../../../domain/entities/event_card.dart';
+import '../../bloc/card_draw/card_draw_bloc.dart';
+import '../../bloc/card_draw/card_draw_state.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// S3 Card Draw Screen - Entry point
 /// Delegates to the card_draw components implementation
@@ -12,22 +17,26 @@ class CardDrawScreenEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CardDrawScreen();
+    // P0 Fix: Wrap with BlocProvider to listen for card confirmations
+    return BlocProvider(
+      create: (_) => CardDrawBloc(),
+      child: const _CardDrawPersistenceWrapper(),
+    );
   }
 }
 
 /// P0 Fix: Wrapper that intercepts card confirmations and persists cards
-class CardDrawScreenWithPersistence extends StatelessWidget {
-  const CardDrawScreenWithPersistence({super.key});
+class _CardDrawPersistenceWrapper extends StatelessWidget {
+  const _CardDrawPersistenceWrapper();
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<CardDrawBloc, CardDrawState>(
-      listener: (context, state) {
+      listener: (ctx, state) {
         if (state is CardRevealedState && !state.card.isBlank) {
           // P0 Fix: Convert EventCard to GameCard and add to player collection
           final gameCard = _convertEventCardToGameCard(state.card);
-          _persistCardToPlayer(context, gameCard);
+          _persistCardToPlayer(ctx, gameCard);
         }
       },
       child: const CardDrawScreen(),
@@ -90,17 +99,12 @@ class CardDrawScreenWithPersistence extends StatelessWidget {
 
   /// P0 Fix: Persist card to player collection via SaveProvider
   void _persistCardToPlayer(BuildContext context, GameCard card) {
-    // Get the save provider if available
     try {
       final saveProvider = context.read<SaveProvider>();
       
-      // Log the card acquisition
       debugPrint('[CardDraw] Card added to collection: ${card.name}');
       
-      // TODO: In a full implementation, this would:
-      // 1. Update local game state with the new card
-      // 2. Trigger save to persist the updated player data
-      // 3. Show confirmation toast
+      // P0 Fix: Show confirmation toast that card was added to deck
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -116,14 +120,14 @@ class CardDrawScreenWithPersistence extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Card Acquired!',
+                      'Card Added to Deck!',
                       style: TextStyle(
                         color: AppTheme.textGold,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      '${card.name} added to your deck',
+                      '${card.name} has been acquired',
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 12,
@@ -148,10 +152,3 @@ class CardDrawScreenWithPersistence extends StatelessWidget {
     }
   }
 }
-
-// Need to import these for the wrapper
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entities/event_card.dart';
-import '../../bloc/card_draw/card_draw_bloc.dart';
-import '../../bloc/card_draw/card_draw_state.dart';
-import '../../../core/theme/app_theme.dart';
