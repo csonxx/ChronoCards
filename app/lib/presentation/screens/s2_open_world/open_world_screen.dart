@@ -79,6 +79,7 @@ class _OpenWorldScreenState extends State<OpenWorldScreen>
             });
           },
           hasSeenTutorial: _hasSeenTutorial,
+          isPlayerMoving: _isPlayerMoving,
           onTutorialComplete: _markTutorialSeen,
         ),
       ),
@@ -92,6 +93,7 @@ class _OpenWorldView extends StatefulWidget {
   final VoidCallback onPlayerStop;
   final bool hasSeenTutorial;
   final VoidCallback onTutorialComplete;
+  final bool isPlayerMoving;
 
   const _OpenWorldView({
     required this.playerPosition,
@@ -99,6 +101,7 @@ class _OpenWorldView extends StatefulWidget {
     required this.onPlayerStop,
     required this.hasSeenTutorial,
     required this.onTutorialComplete,
+    required this.isPlayerMoving,
   });
 
   @override
@@ -157,20 +160,13 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
         setState(() {
           _nearbyLocation = nearest;
         });
-      } else if (nearest == null && _nearbyLocation != null) {
-        // 玩家走远了，重置
-        setState(() {
-          _nearbyLocation = null;
-        });
       }
     }
   }
 
   void _handleInteraction() {
     if (_nearbyLocation != null) {
-      if (_nearbyLocation!.isCompleted) {
-        _showCompletedLocationDialog(_nearbyLocation!);
-      } else if (_nearbyLocation!.isUnlocked) {
+      if (_nearbyLocation!.isUnlocked) {
         context.read<OpenWorldBloc>().add(MoveToLocation(_nearbyLocation!));
         _showLocationActionSheet(_nearbyLocation!);
       } else {
@@ -191,69 +187,14 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
     }
   }
 
-  /// P0 Fix: Check if player can challenge this location based on type and conditions
-  bool _canChallengeLocation(WorldLocation location, int playerLevel, int battlesWon) {
-    switch (location.type) {
-      case WorldLocationType.battle:
-        // Regular battle - just needs to be unlocked (level requirement met)
-        return playerLevel >= location.recommendedLevel;
-      case WorldLocationType.boss:
-        // P0 Fix: Boss requires level AND defeating at least 2 other battles first
-        return playerLevel >= location.recommendedLevel && battlesWon >= 2;
-      case WorldLocationType.dungeon:
-        // Dungeon requires player level >= recommended - 1
-        return playerLevel >= location.recommendedLevel - 1;
-      default:
-        return true;
-    }
-  }
-
-  /// P0 Fix: Get challenge requirement message for location
-  String _getChallengeRequirement(WorldLocation location, int playerLevel, int battlesWon) {
-    switch (location.type) {
-      case WorldLocationType.battle:
-        if (playerLevel < location.recommendedLevel) {
-          return 'Requires Level ${location.recommendedLevel} (Current: Level $playerLevel)';
-        }
-        return '';
-      case WorldLocationType.boss:
-        if (playerLevel < location.recommendedLevel) {
-          return 'Requires Level ${location.recommendedLevel} (Current: Level $playerLevel)';
-        }
-        if (battlesWon < 2) {
-          return 'Defeat ${2 - battlesWon} more battles before facing the Boss';
-        }
-        return '';
-      case WorldLocationType.dungeon:
-        if (playerLevel < location.recommendedLevel - 1) {
-          return 'Requires Level ${location.recommendedLevel - 1} (Current: Level $playerLevel)';
-        }
-        return '';
-      default:
-        return '';
-    }
-  }
-
   void _showLocationActionSheet(WorldLocation location) {
-    final state = context.read<OpenWorldBloc>().state;
-    int playerLevel = 1;
-    int battlesWon = 0;
-    
-    if (state is OpenWorldLoaded) {
-      playerLevel = state.player.level;
-      battlesWon = state.battlesWon;
-    }
-    
-    final canChallenge = _canChallengeLocation(location, playerLevel, battlesWon);
-    final requirement = _getChallengeRequirement(location, playerLevel, battlesWon);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.primaryDark,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Container(
+      builder: (context) => Container(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -286,35 +227,13 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            location.name,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (location.type == WorldLocationType.boss) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.healthRed.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'BOSS',
-                                style: TextStyle(
-                                  color: AppTheme.healthRed,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        location.name,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         location.description,
@@ -323,26 +242,6 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
                           fontSize: 14,
                         ),
                       ),
-                      // P0 Fix: Show challenge requirement if can't challenge
-                      if (!canChallenge && requirement.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.warning_amber, 
-                              color: AppTheme.healthRed, size: 14),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                requirement,
-                                style: const TextStyle(
-                                  color: AppTheme.healthRed,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -352,48 +251,10 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: canChallenge
-                    ? () {
-                        Navigator.pop(ctx);
-                        _enterLocation(location);
-                      }
-                    : null,  // P0 Fix: Disabled if can't challenge
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: canChallenge 
-                      ? AppTheme.accentGold 
-                      : AppTheme.cardBorder,
-                  foregroundColor: canChallenge 
-                      ? AppTheme.primaryDark 
-                      : AppTheme.textSecondary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  canChallenge 
-                      ? 'Enter ${_getLocationActionVerb(location.type)}'
-                      : 'Requirements Not Met',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AppTheme.textSecondary),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                onPressed: () {
+                  Navigator.pop(context);
+                  _enterLocation(location);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentGold,
                   foregroundColor: AppTheme.primaryDark,
@@ -425,92 +286,12 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
     );
   }
 
-  /// P0 Fix: Enter location and handle battle results
-  Future<void> _enterLocation(WorldLocation location) async {
+  void _enterLocation(WorldLocation location) {
     if (location.type == WorldLocationType.battle) {
-      // P0 Fix: Handle battle result when returning from victory
-      final result = await Navigator.pushNamed(context, '/battle');
-      if (result != null && result is Map) {
-        _handleBattleResult(location.id, result);
-      }
+      Navigator.pushNamed(context, '/battle');
     } else if (location.type == WorldLocationType.cardShop) {
       Navigator.pushNamed(context, '/card_draw');
-    } else {
-      // 未知location类型，显示"暂未开放"
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('暂未开放'),
-          backgroundColor: AppTheme.primaryDark, if (location.type == WorldLocationType.cardShop) {
-      Navigator.pushNamed(context, '/card_draw');
     }
-  }
-
-  /// P0 Fix: Process battle result - update map progress and show rewards
-  void _handleBattleResult(String locationId, Map result) {
-    if (result['result'] == 'victory') {
-      final expGained = result['exp'] ?? 0;
-      final goldGained = result['gold'] ?? 0;
-      final cardDrop = result['cardDrop'];
-      
-      // Dispatch battle completed event to bloc
-      context.read<OpenWorldBloc>().add(BattleCompleted(
-        locationId: locationId,
-        experienceGained: expGained,
-        goldGained: goldGained,
-        cardDrop: cardDrop,
-      ));
-      
-      // If card drop, add to player collection
-      if (cardDrop != null) {
-        context.read<OpenWorldBloc>().add(AddCardToCollection(cardDrop));
-      }
-      
-      // Show victory feedback
-      _showVictoryToast(expGained, goldGained, cardDrop != null);
-    }
-  }
-
-  /// P0 Fix: Show toast notification for battle rewards
-  void _showVictoryToast(int exp, int gold, bool hasCard) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: AppTheme.textGold),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Battle Won!',
-                    style: TextStyle(
-                      color: AppTheme.textGold,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '+$exp XP  |  +$gold Gold${hasCard ? '  |  Card Acquired!' : ''}',
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.cardBackground,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: AppTheme.textGold, width: 1),
-        ),
-      ),
-    );
   }
 
   String _getLocationActionVerb(WorldLocationType type) {
@@ -864,8 +645,8 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.accentGold.withOpacity(0.5),
-                    blurRadius: _isPlayerMoving ? 15 : 8,
-                    spreadRadius: _isPlayerMoving ? 3 : 1,
+                    blurRadius: widget.isPlayerMoving ? 15 : 8,
+                    spreadRadius: widget.isPlayerMoving ? 3 : 1,
                   ),
                 ],
               ),
@@ -923,10 +704,7 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
         child: WorldLocationMarker(
           location: location,
           onTap: () {
-            // P0 Fix: Completed locations show exploration complete, not action sheet
-            if (location.isCompleted) {
-              _showCompletedLocationDialog(location);
-            } else if (location.isUnlocked) {
+            if (location.isUnlocked) {
               context.read<OpenWorldBloc>().add(MoveToLocation(location));
               _showLocationActionSheet(location);
             } else {
@@ -936,56 +714,6 @@ class _OpenWorldViewState extends State<_OpenWorldView> {
         ),
       );
     }).toList();
-  }
-
-  /// P0 Fix: Show dialog for completed locations
-  void _showCompletedLocationDialog(WorldLocation location) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.primaryDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Colors.green, width: 2),
-        ),
-        title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Text(
-              'Explored',
-              style: TextStyle(color: Colors.green),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              location.name,
-              style: const TextStyle(
-                color: AppTheme.textGold,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'You have already cleared this location.',
-              style: TextStyle(color: AppTheme.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   Color _getLocationColor(WorldLocationType type) {
