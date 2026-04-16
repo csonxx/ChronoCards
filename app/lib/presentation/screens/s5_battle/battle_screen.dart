@@ -36,6 +36,19 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
   String _battleLog = 'Battle Start!';
   bool _showLog = false;
 
+  // Victory overlay state
+  bool _showVictoryOverlay = false;
+  bool _showRewards = false;
+  bool _showContinueButton = false;
+
+  // Mock rewards data
+  int _expReward = 150;
+  int _goldReward = 80;
+  final List<Map<String, dynamic>> _equipmentRewards = [
+    {'name': '玄铁剑', 'rarity': CardRarity.legendary, 'icon': Icons.bolt},
+    {'name': '金丝甲', 'rarity': CardRarity.epic, 'icon': Icons.shield},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +59,7 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
             _updateBattleLog(provider.animationType);
           }
           if (provider.isVictory) {
-            _showVictoryDialog(context, provider);
+            _triggerVictorySequence(context, provider);
           } else if (provider.isDefeat) {
             _showDefeatDialog(context, provider);
           }
@@ -90,6 +103,9 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
 
               // Battle log
               if (_showLog) _buildBattleLogOverlay(),
+
+              // Victory overlay
+              if (_showVictoryOverlay) _buildVictoryOverlay(),
             ],
           );
         },
@@ -97,17 +113,39 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
+  void _triggerVictorySequence(BuildContext context, BattleProvider provider) {
+    setState(() {
+      _showVictoryOverlay = true;
+      _showRewards = false;
+      _showContinueButton = false;
+    });
+
+    // Show rewards after VICTORY text fades in
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() => _showRewards = true);
+      }
+    });
+
+    // Show continue button last
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() => _showContinueButton = true);
+      }
+    });
+  }
+
   void _updateBattleLog(String action) {
     setState(() {
       switch (action) {
         case 'attack':
-          _battleLog = '⚔️ Player attacks!';
+          _battleLog = 'Player attacks!';
           break;
         case 'skill':
-          _battleLog = '✨ Skill used!';
+          _battleLog = 'Skill used!';
           break;
         case 'enemy_attack':
-          _battleLog = '👹 Enemy attacks!';
+          _battleLog = 'Enemy attacks!';
           break;
         default:
           _battleLog = '...';
@@ -422,250 +460,421 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
     );
   }
 
-  /// P0 Fix: Show victory dialog with actual loot panel
-  void _showVictoryDialog(BuildContext context, BattleProvider provider) {
-    // Calculate rewards
-    final int expGained = 50;
-    final int goldGained = 25;
-    
-    // Random card drop (30% chance)
-    final bool hasCardDrop = DateTime.now().millisecondsSinceEpoch % 10 < 3;
-    GameCard? cardDrop;
-    if (hasCardDrop) {
-      final possibleCards = [
-        const GameCard(
-          id: 'drop_1',
-          name: 'Shadow Strike',
-          description: 'A mysterious card dropped by the enemy',
-          type: CardType.attack,
-          rarity: CardRarity.uncommon,
-          cost: 2,
-          attack: 12,
-          defense: 0,
-        ),
-        const GameCard(
-          id: 'drop_2',
-          name: 'Iron Guard',
-          description: 'Defensive technique card',
-          type: CardType.defense,
-          rarity: CardRarity.common,
-          cost: 1,
-          attack: 0,
-          defense: 8,
-        ),
-      ];
-      cardDrop = possibleCards[DateTime.now().millisecondsSinceEpoch % possibleCards.length];
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.primaryDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.textGold, width: 2),
-        ),
-        title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+  /// Victory overlay with full-screen effects
+  Widget _buildVictoryOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.85),
+        child: Stack(
           children: [
-            Icon(Icons.emoji_events, color: AppTheme.textGold, size: 32),
-            SizedBox(width: 8),
-            Text('VICTORY!', style: TextStyle(color: AppTheme.textGold)),
+            // Decorative background particles
+            ...List.generate(30, (i) {
+              return Positioned(
+                left: (i * 37) % MediaQuery.of(context).size.width,
+                top: (i * 59) % MediaQuery.of(context).size.height,
+                child: Icon(
+                  Icons.star,
+                  size: 6 + (i % 4) * 2,
+                  color: AppTheme.accentGold.withOpacity(0.3 + (i % 3) * 0.2),
+                )
+                    .animate(onPlay: (c) => c.repeat())
+                    .fadeIn(duration: (500 + i * 100).ms)
+                    .then()
+                    .fadeOut(duration: (500 + i * 100).ms)
+                    .scale(begin: const Offset(0.5, 0.5), end: const Offset(1.5, 1.5)),
+              );
+            }),
+
+            // Main content centered
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // VICTORY text with glow
+                  Text(
+                    'VICTORY',
+                    style: TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.accentGold,
+                      letterSpacing: 16,
+                      shadows: [
+                        Shadow(
+                          color: AppTheme.accentGold.withOpacity(0.8),
+                          blurRadius: 30,
+                        ),
+                        Shadow(
+                          color: AppTheme.accentGold.withOpacity(0.5),
+                          blurRadius: 60,
+                        ),
+                      ],
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .scale(begin: const Offset(0.5, 0.5), end: const Offset(1.0, 1.0), duration: 400.ms)
+                      .then()
+                      .fadeOut(delay: 1200.ms, duration: 300.ms),
+
+                  const SizedBox(height: 40),
+
+                  // Rewards section (slides in from bottom)
+                  if (_showRewards) ...[
+                    _buildRewardsSection(),
+                  ],
+                ],
+              ),
+            ),
+
+            // Continue button
+            if (_showContinueButton)
+              Positioned(
+                bottom: MediaQuery.of(context).padding.bottom + 40,
+                left: 40,
+                right: 40,
+                child: _buildContinueButton(),
+              ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Loot panel header
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.cardBackground,
-                borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  Widget _buildRewardsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.accentGold.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentGold.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Title
+          const Text(
+            '战利品',
+            style: TextStyle(
+              color: AppTheme.accentGold,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Floating rewards
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // EXP reward
+              _buildFloatingReward(
+                icon: Icons.trending_up,
+                value: '+$expReward',
+                label: '经验',
+                color: const Color(0xFF32CD32),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(width: 24),
+              // Gold reward
+              _buildFloatingReward(
+                icon: Icons.monetization_on,
+                value: '+$goldReward',
+                label: '金币',
+                color: const Color(0xFFFFD700),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Equipment rewards
+          if (_equipmentRewards.isNotEmpty) ...[
+            const Divider(color: AppTheme.cardBorder),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: _equipmentRewards.map((equip) {
+                return _buildEquipmentReward(
+                  name: equip['name'],
+                  rarity: equip['rarity'],
+                  icon: equip['icon'],
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.5, end: 0, duration: 400.ms, curve: Curves.easeOutCubic);
+  }
+
+  Widget _buildFloatingReward({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 2),
+          ),
+          child: Icon(icon, color: color, size: 32),
+        )
+            .animate(onPlay: (c) => c.repeat())
+            .fadeIn()
+            .then()
+            .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 800.ms)
+            .then()
+            .scale(begin: const Offset(1.1, 1.1), end: const Offset(1, 1), duration: 800.ms),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEquipmentReward({
+    required String name,
+    required CardRarity rarity,
+    required IconData icon,
+  }) {
+    Color borderColor;
+    Color glowColor;
+
+    switch (rarity) {
+      case CardRarity.legendary:
+        borderColor = const Color(0xFFFF8C00); // Orange
+        glowColor = const Color(0xFFFF8C00);
+        break;
+      case CardRarity.epic:
+        borderColor = const Color(0xFF9932CC); // Purple
+        glowColor = const Color(0xFF9932CC);
+        break;
+      case CardRarity.rare:
+        borderColor = const Color(0xFF4169E1); // Blue
+        glowColor = const Color(0xFF4169E1);
+        break;
+      default:
+        borderColor = AppTheme.cardBorder;
+        glowColor = AppTheme.cardBorder;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Show equipment detail
+        _showEquipmentDetail(name, rarity);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryDark,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: glowColor.withOpacity(0.5),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Icon(Icons.card_giftcard, color: AppTheme.textGold, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Battle Rewards',
-                    style: TextStyle(
-                      color: AppTheme.textGold,
-                      fontWeight: FontWeight.bold,
+                  Icon(icon, color: borderColor, size: 36),
+                  // Rarity indicator
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: borderColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            
-            // Experience reward
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.manaBlue.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.star, color: AppTheme.manaBlue, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Experience',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                    Text(
-                      '+$expGained XP',
-                      style: const TextStyle(
-                        color: AppTheme.manaBlue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // Gold reward
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.textGold.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.monetization_on, color: AppTheme.textGold, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Gold',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                    Text(
-                      '+$goldGained',
-                      style: const TextStyle(
-                        color: AppTheme.textGold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            // Card drop (if any)
-            if (cardDrop != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentCosmic.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.accentCosmic),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      cardDrop.type == CardType.attack ? Icons.flash_on : Icons.shield,
-                      color: cardDrop.rarity == CardRarity.uncommon 
-                          ? AppTheme.accentMystic 
-                          : AppTheme.textPrimary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cardDrop.name,
-                            style: TextStyle(
-                              color: cardDrop.rarity == CardRarity.uncommon 
-                                  ? AppTheme.accentMystic 
-                                  : AppTheme.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${cardDrop.type.name.toUpperCase()} Card',
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentMystic.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'NEW',
-                        style: TextStyle(
-                          color: AppTheme.accentMystic,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  // P0 Fix: Return battle result to OpenWorldScreen
-                  Navigator.pop(context, {
-                    'result': 'victory',
-                    'exp': expGained,
-                    'gold': goldGained,
-                    'cardDrop': cardDrop,
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.textGold,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              width: 80,
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: borderColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: const Text(
-                  'Continue',
-                  style: TextStyle(
-                    color: AppTheme.primaryDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
       ),
+    ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.8, 0.8), delay: 200.ms);
+  }
+
+  void _showEquipmentDetail(String name, CardRarity rarity) {
+    Color borderColor;
+    String rarityText;
+
+    switch (rarity) {
+      case CardRarity.legendary:
+        borderColor = const Color(0xFFFF8C00);
+        rarityText = '传说';
+        break;
+      case CardRarity.epic:
+        borderColor = const Color(0xFF9932CC);
+        rarityText = '史诗';
+        break;
+      default:
+        borderColor = AppTheme.cardBorder;
+        rarityText = '稀有';
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.primaryMid,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor, width: 2),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: borderColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: borderColor),
+              ),
+              child: Icon(
+                Icons.bolt,
+                color: borderColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: borderColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    rarityText,
+                    style: TextStyle(
+                      color: borderColor.withOpacity(0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Divider(color: AppTheme.cardBorder),
+            const SizedBox(height: 8),
+            Text(
+              '点击查看详情',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildContinueButton() {
+    return ElevatedButton(
+      onPressed: () {
+        // P0 Fix: Return battle result to OpenWorldScreen for map progress update
+        Navigator.pop(context, {
+          'result': 'victory',
+          'exp': _expReward,
+          'gold': _goldReward,
+          'equipment': _equipmentRewards,
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.accentGold,
+        foregroundColor: AppTheme.primaryDark,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.explore),
+          SizedBox(width: 8),
+          Text(
+            '继续探索',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3, delay: 200.ms);
   }
 
   void _showDefeatDialog(BuildContext context, BattleProvider provider) {
@@ -682,27 +891,29 @@ class _BattleViewState extends State<BattleView> with TickerProviderStateMixin {
             Text('DEFEAT', style: TextStyle(color: AppTheme.healthRed)),
           ],
         ),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Try again?'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                provider.startBattle('enemy_1');
-              },
-              child: const Text('Retry'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                Navigator.pop(context);
-              },
-              child: const Text('Return'),
-            ),
+            Text('Try again?'),
+            SizedBox(height: 16),
           ],
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              provider.startBattle('enemy_1');
+            },
+            child: const Text('Retry'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.pop(context);
+            },
+            child: const Text('Return'),
+          ),
+        ],
       ),
     );
   }

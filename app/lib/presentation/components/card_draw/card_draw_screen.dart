@@ -47,6 +47,11 @@ class _CardDrawViewState extends State<_CardDrawView>
   bool _isFlying = false;
   String _blankCardText = '';
 
+  // Card result overlay state
+  bool _showCardResultOverlay = false;
+  EventCard? _resultCard;
+  bool _isCardResultConfirmed = false;
+
   // Animation controller for flying card
   AnimationController? _flyingAnimationController;
   Animation<Offset>? _flyingAnimation;
@@ -108,6 +113,9 @@ class _CardDrawViewState extends State<_CardDrawView>
               _flyingCard = null;
               _isFlying = false;
               _selectedOptionId = null;
+              _showCardResultOverlay = true;
+              _resultCard = state.card;
+              _isCardResultConfirmed = false;
             });
           } else if (state is ExitTriggeredState) {
             // Show exit dialog
@@ -163,6 +171,10 @@ class _CardDrawViewState extends State<_CardDrawView>
                     ),
                   ),
                 ),
+
+              // Card result overlay (full-screen card reveal with glow effects)
+              if (_showCardResultOverlay && _resultCard != null)
+                _buildCardResultOverlay(),
             ],
           );
         },
@@ -446,6 +458,349 @@ class _CardDrawViewState extends State<_CardDrawView>
             child: const Text('返回'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Full-screen card result overlay with glow effects and "加入卡组" button
+  Widget _buildCardResultOverlay() {
+    if (_resultCard == null) return const SizedBox.shrink();
+
+    final cardType = _resultCard!.type;
+    final glowColor = cardType.glowColor;
+    final primaryColor = cardType.primaryColor;
+
+    // Determine rarity tier based on card type (for visual distinction)
+    final isHighRarity = cardType == EventCardType.fate ||
+        cardType == EventCardType.mainline;
+    final isEpic = cardType == EventCardType.mechanism ||
+        cardType == EventCardType.numeric;
+    final isLegendary = cardType == EventCardType.era &&
+        _resultCard!.triggerCondition.isNotEmpty;
+
+    Color borderColor;
+    Color glowEffectColor;
+    double glowIntensity;
+    String rarityLabel;
+
+    if (isLegendary) {
+      borderColor = const Color(0xFFFF8C00); // Orange
+      glowEffectColor = const Color(0xFFFF8C00);
+      glowIntensity = 0.8;
+      rarityLabel = '传说';
+    } else if (isEpic) {
+      borderColor = const Color(0xFF9932CC); // Purple
+      glowEffectColor = const Color(0xFF9932CC);
+      glowIntensity = 0.6;
+      rarityLabel = '史诗';
+    } else if (isHighRarity) {
+      borderColor = const Color(0xFF4169E1); // Blue
+      glowEffectColor = const Color(0xFF4169E1);
+      glowIntensity = 0.4;
+      rarityLabel = '稀有';
+    } else {
+      borderColor = const Color(0xFF808080); // Gray
+      glowEffectColor = const Color(0xFF808080);
+      glowIntensity = 0.2;
+      rarityLabel = '普通';
+    }
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.9),
+        child: Stack(
+          children: [
+            // Background particles
+            ...List.generate(20, (i) {
+              return Positioned(
+                left: (i * 53) % MediaQuery.of(context).size.width,
+                top: (i * 67) % MediaQuery.of(context).size.height,
+                child: Icon(
+                  Icons.star,
+                  size: 4 + (i % 3) * 2,
+                  color: glowEffectColor.withOpacity(0.3 + (i % 3) * 0.1),
+                )
+                    .animate(onPlay: (c) => c.repeat())
+                    .fadeIn(duration: (400 + i * 100).ms)
+                    .then()
+                    .fadeOut(duration: (400 + i * 100).ms)
+                    .scale(begin: const Offset(0.5, 0.5), end: const Offset(1.2, 1.2)),
+              );
+            }),
+
+            // Main content centered
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Card frame with glow effect
+                  Container(
+                    width: 320,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: glowEffectColor.withOpacity(glowIntensity),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
+                        if (isLegendary || isEpic)
+                          BoxShadow(
+                            color: glowEffectColor.withOpacity(0.3),
+                            blurRadius: 80,
+                            spreadRadius: 20,
+                          ),
+                      ],
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: borderColor, width: 3),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(17),
+                        child: Container(
+                          color: const Color(0xFFF5E6C8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Top bar with type and rarity
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(14),
+                                    topRight: Radius.circular(14),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Rarity badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: borderColor,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        rarityLabel,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    // Type label
+                                    Text(
+                                      cardType.label,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      cardType.icon,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Card name
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _resultCard!.name,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: primaryColor,
+                                        fontSize: 28,
+                                        fontFamily: 'serif',
+                                        fontWeight: FontWeight.bold,
+                                        shadows: const [
+                                          Shadow(
+                                            color: Color(0x303D2B1F),
+                                            blurRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Decorative line
+                                    Container(
+                                      height: 2,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 40),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            const Color(0x003D2B1F),
+                                            borderColor.withOpacity(0.4),
+                                            const Color(0x003D2B1F),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Illustration area (placeholder for character art)
+                              Container(
+                                height: 180,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: primaryColor.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        cardType.icon,
+                                        size: 64,
+                                        color: primaryColor,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '角色立绘',
+                                        style: TextStyle(
+                                          color: primaryColor.withOpacity(0.6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              // Description
+                              Container(
+                                margin: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5E6C8).withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: primaryColor.withOpacity(0.2)),
+                                ),
+                                child: Text(
+                                  _resultCard!.description,
+                                  style: const TextStyle(
+                                    color: Color(0xFF3D2B1F),
+                                    fontSize: 15,
+                                    height: 1.6,
+                                    fontFamily: 'serif',
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 500.ms)
+                      .scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1.0, 1.0),
+                        duration: 500.ms,
+                        curve: Curves.easeOutBack,
+                      ),
+
+                  const SizedBox(height: 24),
+
+                  // "加入卡组" button
+                  if (!_isCardResultConfirmed)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _isCardResultConfirmed = true;
+                        });
+                        // Dismiss overlay after confirmation
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            setState(() {
+                              _showCardResultOverlay = false;
+                              _resultCard = null;
+                            });
+                            // Continue with normal flow
+                            context.read<CardDrawBloc>().add(
+                                  ConfirmCard(selectedOptionId: _selectedOptionId),
+                                );
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.add_to_photos),
+                      label: const Text(
+                        '加入卡组',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: glowEffectColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 400.ms, duration: 300.ms)
+                        .slideY(begin: 0.3, delay: 400.ms),
+                ],
+              ),
+            ),
+
+            // Close button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _showCardResultOverlay = false;
+                    _resultCard = null;
+                  });
+                },
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBackground.withOpacity(0.8),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.cardBorder),
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: AppTheme.textPrimary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

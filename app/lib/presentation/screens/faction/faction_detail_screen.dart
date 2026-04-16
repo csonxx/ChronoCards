@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/game_card.dart';
-import '../../presentation/widgets/faction/reputation_bar.dart';
-import '../../presentation/widgets/faction/faction_card_widget.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/game_card.dart';
+import '../../widgets/faction/reputation_bar.dart';
+import '../../widgets/faction/faction_card_widget.dart';
 import 'faction_list_screen.dart';
 
 /// 5级声望系统：友善→熟悉→信赖→亲密→莫逆
