@@ -1,10 +1,10 @@
 import 'dart:ui';
-import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../arpg_game.dart';
-import '../../domain/combat/combat_system.dart';
-import '../../domain/combat/stamina_system.dart';
+import '../../../domain/combat/combat_system.dart';
+import '../../../domain/combat/stamina_system.dart';
+import '../../../game/models/combat/combat_entity.dart';
 
 /// 攻击类型
 enum AttackType {
@@ -131,6 +131,15 @@ class PlayerCharacter extends PositionComponent {
       _dodgeCooldownTimer -= dt;
     }
     
+    // 更新闪避状态
+    if (_isDodging) {
+      _dodgeTimer -= dt;
+      if (_dodgeTimer <= 0) {
+        _isDodging = false;
+        _currentAnimation = 'idle';
+      }
+    }
+    
     // 更新动画
     _updateAnimation(dt);
   }
@@ -185,7 +194,6 @@ class PlayerCharacter extends PositionComponent {
     
     // 检查连击窗口
     if (_comboTimer > 0 && _comboCount >= 3) {
-      // 连击已满，等待重置
       return;
     }
     
@@ -438,6 +446,23 @@ class PlayerCharacter extends PositionComponent {
     _currentAnimation = 'idle';
   }
   
+  // 转换为CombatEntity（供EnemyBehavior使用）
+  CombatEntity _toCombatEntity() {
+    return CombatEntity(
+      id: 'player',
+      name: '玩家',
+      level: 1,
+      maxHp: resources.maxHp,
+      currentHp: resources.hp,
+      maxStamina: resources.maxStamina,
+      currentStamina: resources.stamina,
+      maxQi: resources.maxQi,
+      currentQi: resources.qi,
+      attack: 100,
+      defense: 20,
+    );
+  }
+  
   @override
   void render(Canvas canvas) {
     // 渲染角色（后续替换为sprite动画）
@@ -453,6 +478,33 @@ class PlayerCharacter extends PositionComponent {
     // 基础圆形表示角色
     paint.color = const Color(0xFF4A90D9);
     canvas.drawCircle(Offset.zero, size.x / 2, paint);
+    
+    // 绘制血条
+    final hpRatio = resources.hp / resources.maxHp;
+    final hpBarWidth = size.x;
+    final hpBarHeight = 6.0;
+    
+    // 血条背景
+    final bgPaint = Paint()..color = const Color(0xFF333333);
+    canvas.drawRect(
+      Rect.fromLTWH(-hpBarWidth / 2, -size.y / 2 - 15, hpBarWidth, hpBarHeight),
+      bgPaint,
+    );
+    
+    // 血条前景
+    final hpPaint = Paint()..color = const Color(0xFF44FF44);
+    canvas.drawRect(
+      Rect.fromLTWH(-hpBarWidth / 2, -size.y / 2 - 15, hpBarWidth * hpRatio, hpBarHeight),
+      hpPaint,
+    );
+    
+    // 气力条
+    final qiRatio = resources.qi / resources.maxQi;
+    final qiPaint = Paint()..color = const Color(0xFF4488FF);
+    canvas.drawRect(
+      Rect.fromLTWH(-hpBarWidth / 2, -size.y / 2 - 8, hpBarWidth * qiRatio, hpBarHeight - 2),
+      qiPaint,
+    );
     
     // 方向指示器
     final dirPaint = Paint()
@@ -474,5 +526,3 @@ class PlayerCharacter extends PositionComponent {
     textPainter.paint(canvas, Offset(-30, -50));
   }
 }
-
-// 导入

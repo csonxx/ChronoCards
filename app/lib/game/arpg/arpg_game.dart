@@ -1,18 +1,18 @@
 import 'dart:ui';
-import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
-import 'package:flame/input.dart';
-import '../entities/player_character.dart';
-import '../entities/enemy_entity.dart';
-import '../scenes/arpg_battle_scene.dart';
-import '../components/virtual_joystick.dart';
-import '../systems/camera_system.dart';
+import 'package:flame/events.dart';
+import 'entities/player_character.dart';
+import 'entities/enemy_entity.dart';
+import 'scenes/arpg_battle_scene.dart';
+import 'components/virtual_joystick.dart';
+import 'systems/camera_system.dart';
+import 'dart:math' as math;
 
 /// ARPG游戏主类 - FlameGame
 /// 负责游戏循环、输入处理、实体管理
-class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollisionDetection {
+class ArpgGame extends FlameGame with HasKeyboardHandlerComponents {
   
   // 游戏场景
   late ArpgBattleScene battleScene;
@@ -28,7 +28,6 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
   
   // 键盘输入状态
   final Set<LogicalKeyboardKey> _pressedKeys = {};
-  Vector2 _moveDirection = Vector2.zero();
   
   // Camera越肩配置
   final Vector2 shoulderOffset = Vector2(0, 150); // 角色在屏幕下方1/3
@@ -39,11 +38,9 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
   
   // 游戏状态
   bool isGameOver = false;
-  bool isPaused = false;
-  
-  // 帧率控制
-  static const double targetFps = 60;
-  static const double dt = 1.0 / targetFps;
+  bool _isPaused = false;
+  bool get isPaused => _isPaused;
+  set isPaused(bool v) => _isPaused = v;
   
   @override
   Future<void> onLoad() async {
@@ -76,15 +73,15 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
     // 添加敌人（测试用）
     _spawnTestEnemies();
     
-    // 设置碰撞检测
-    // collisionDetection被HasCollisionDetection提供
+    // 添加键盘监听
+    addKeyboardListener(this);
     
     print('[ArpgGame] 游戏加载完成');
   }
   
   void _setupJoystick() {
     joystick = VirtualJoystickComponent(
-      gameRef: this,
+      initialY: size.y - 180,
       radius: 50,
       color: const Color(0x44FFFFFF),
       knobColor: const Color(0xCCFFFFFF),
@@ -170,7 +167,7 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
   }
   
   @override
-  void onKeyboardEvent(KeyEvent event) {
+  bool onKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
       _pressedKeys.add(event.logicalKey);
       
@@ -206,6 +203,16 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
           event.logicalKey == LogicalKeyboardKey.shiftRight) {
         player.startBlock();
       }
+      
+      // 暂停 - ESC
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        isPaused = !isPaused;
+        if (isPaused) {
+          overlays.add('pause');
+        } else {
+          overlays.remove('pause');
+        }
+      }
     }
     
     if (event is KeyUpEvent) {
@@ -217,24 +224,23 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
         player.endBlock();
       }
     }
+    
+    return false;
   }
   
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    // 调试渲染（后续移除）
-    // _renderDebugInfo(canvas);
   }
   
   void triggerGameOver() {
     isGameOver = true;
-    // 显示游戏结束界面
     overlays.add('gameOver');
   }
   
   void restartGame() {
     isGameOver = false;
-    isPaused = false;
+    _isPaused = false;
     // 重置玩家
     player.reset();
     // 重置敌人
@@ -242,6 +248,7 @@ class ArpgGame extends FlameGame with PanicsGameCount, KeyboardEvents, HasCollis
       enemy.reset();
     }
     overlays.remove('gameOver');
+    overlays.remove('pause');
   }
 }
 
@@ -261,15 +268,9 @@ class BackdropBridge extends Component {
     
     for (int i = 0; i < 20; i++) {
       final x = i * 100.0;
-      canvas.drawLine(
-        Vector2(x, 0).toOffset(),
-        Vector2(x + 20, -300).toOffset(),
-        bambooPaint,
-      );
+      final startPt = Offset(x, 0);
+      final endPt = Offset(x + 20, -300);
+      canvas.drawLine(startPt, endPt, bambooPaint);
     }
   }
-}
-
-extension Vector2Offset on Vector2 {
-  Offset toOffset() => Offset(x, y);
 }

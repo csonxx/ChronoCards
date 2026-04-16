@@ -1,11 +1,9 @@
 import 'dart:ui';
-import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../arpg_game.dart';
-import '../../domain/combat/combat_system.dart';
-import '../../domain/combat/enemy_behavior.dart';
-import '../../domain/combat/stamina_system.dart';
+import '../../../domain/combat/combat_system.dart';
+import '../../../game/models/combat/combat_entity.dart';
 
 /// 敌人类型
 enum EnemyType {
@@ -13,39 +11,33 @@ enum EnemyType {
   banditLeader, // 山贼头目
 }
 
+/// 敌人AI状态
+enum EnemyAIState {
+  idle,
+  approaching,
+  attacking,
+  stunned,
+}
+
 /// 敌人实体
 class EnemyEntity extends PositionComponent {
   final ArpgGame gameRef;
   final EnemyType enemyType;
   
-  // ============ 属性 ============
-  int hp = 300;
-  int maxHp = 300;
-  int attack = 30;
-  int defense = 10;
-  
-  // ============ 战斗资源 ============
-  StaminaResources resources = const StaminaResources(
-    hp: 300,
-    maxHp: 300,
-    stamina: 50,
-    maxStamina: 50,
-    qi: 30,
-    maxQi: 30,
-  );
-  
-  // ============ AI行为系统 ============
-  EnemyBehavior? behaviorController;
+  // ============ 战斗实体数据 ============
+  late CombatEntity combatData;
   
   // ============ 状态 ============
   bool isDead = false;
+  EnemyAIState _aiState = EnemyAIState.idle;
   bool _isAttacking = false;
   double _attackTimer = 0;
+  double _attackCooldown = 0;
   Vector2 _facingDirection = Vector2(-1, 0);
-  String _currentAnimation = 'idle';
   
-  // ============ 仇恨目标 ============
-  String? currentTargetId;
+  // ============ 攻击配置 ============
+  static const double banditAttackInterval = 2.0; // 秒
+  static const double bossAttackInterval = 1.5; // 秒
   
   EnemyEntity({
     required this.gameRef,
@@ -62,35 +54,37 @@ class EnemyEntity extends PositionComponent {
   void _initByType() {
     switch (enemyType) {
       case EnemyType.bandit:
-        hp = maxHp = 300;
-        attack = 30;
-        defense = 10;
-        resources = const StaminaResources(
-          hp: 300,
-          maxHp: 300,
-          stamina: 50,
-          maxStamina: 50,
-        );
-        behaviorController = EnemyBehavior(
+        combatData = CombatEntity(
           id: 'bandit_${DateTime.now().millisecondsSinceEpoch}',
-          attackIntervalMs: 3000,
+          name: '山贼杂兵',
+          level: 1,
+          maxHp: 300,
+          currentHp: 300,
+          maxStamina: 50,
+          currentStamina: 50,
+          maxQi: 30,
+          currentQi: 30,
+          attack: 30,
+          defense: 10,
         );
+        _attackCooldown = banditAttackInterval;
         break;
         
       case EnemyType.banditLeader:
-        hp = maxHp = 1200;
-        attack = 60;
-        defense = 20;
-        resources = const StaminaResources(
-          hp: 1200,
-          maxHp: 1200,
-          stamina: 80,
-          maxStamina: 80,
-        );
-        behaviorController = EnemyBehavior(
+        combatData = CombatEntity(
           id: 'boss_${DateTime.now().millisecondsSinceEpoch}',
-          attackIntervalMs: 2000,
+          name: '山贼头目',
+          level: 5,
+          maxHp: 1200,
+          currentHp: 1200,
+          maxStamina: 80,
+          currentStamina: 80,
+          maxQi: 60,
+          currentQi: 60,
+          attack: 60,
+          defense: 20,
         );
+        _attackCooldown = bossAttackInterval;
         break;
     }
   }
@@ -101,7 +95,7 @@ class EnemyEntity extends PositionComponent {
     
     if (isDead) return;
     
-    // 更新AI行为
+    // 更新AI
     _updateAI(dt);
     
     // 更新攻击状态
@@ -109,60 +103,45 @@ class EnemyEntity extends PositionComponent {
   }
   
   void _updateAI(double dt) {
-    if (behaviorController == null) return;
-    
     final player = gameRef.player;
     final distToPlayer = (player.position - position).length;
     
-    // AI状态机
-    final currentTimeMs = DateTime.now().millisecondsSinceEpoch;
-    
-    // 生成仇恨
-    behaviorController!.generateThreat('player', 10, currentTimeMs);
-    
-    // 更新行为
-    final event = behaviorController!.update(
-      currentTimeMs,
-      _toCombatEntity(),
-      player._toCombatEntity(),
-      enemyType == EnemyType.banditLeader 
-          ? EnemyAttackMode.rush 
-          : EnemyAttackMode.rush,
-    );
-    
-    if (event != null) {
-      _handleAIEvent(event, player);
+    // 眩晕状态
+    if (_aiState == EnemyAIState.stunned) {
+      _attackTimer -= dt;
+      if (_attackTimer <= 0) {
+        _aiState = EnemyAIState.idle;
+      }
+      return;
     }
     
-    // 简单跟随玩家
-    if (distToPlayer > 80) {
+    // 攻击冷却
+    _attackCooldown -= dt;
+    
+    // 攻击逻辑
+    if (distToPlayer < 80 && _attackCooldown <= 0) {
+      _startAttack(player);
+    } else if (distToPlayer > 100 && !_isAttacking) {
+      // 跟随玩家
+      _aiState = EnemyAIState.approaching;
       final dirToPlayer = (player.position - position)..normalize();
       _facingDirection = dirToPlayer;
-      position += dirToPlayer * 1.5 * dt * 60; // 敌人移动速度
-      _currentAnimation = 'walk';
+      position += dirToPlayer * 1.5 * dt * 60;
     } else {
-      _currentAnimation = 'idle';
+      _aiState = EnemyAIState.idle;
     }
   }
   
-  void _handleAIEvent(AttackEvent event, PlayerCharacter player) {
-    switch (event.type) {
-      case AttackEventType.attackStart:
-        _isAttacking = true;
-        _attackTimer = 0.5;
-        _currentAnimation = 'attack';
-        break;
-        
-      case AttackEventType.attackHit:
-        if (event.damage != null) {
-          player.takeDamage(event.damage!, _facingDirection);
-        }
-        break;
-        
-      case AttackEventType.attackEnd:
-        _isAttacking = false;
-        _currentAnimation = 'idle';
-        break;
+  void _startAttack(PlayerCharacter player) {
+    _isAttacking = true;
+    _attackTimer = 0.5; // 攻击前摇
+    _aiState = EnemyAIState.attacking;
+    
+    // 头目使用冲锋技能
+    if (enemyType == EnemyType.banditLeader) {
+      _attackCooldown = bossAttackInterval;
+    } else {
+      _attackCooldown = banditAttackInterval;
     }
   }
   
@@ -170,8 +149,20 @@ class EnemyEntity extends PositionComponent {
     if (!_isAttacking) return;
     
     _attackTimer -= dt;
+    
+    // 在0.3秒时造成伤害（命中帧）
+    if (_attackTimer > 0.2 && _attackTimer <= 0.35) {
+      final damage = enemyType == EnemyType.banditLeader ? 60 : 30;
+      final player = gameRef.player;
+      // 检查玩家无敌帧
+      if (!player.isInIFrames) {
+        player.takeDamage(damage, _facingDirection);
+      }
+    }
+    
     if (_attackTimer <= 0) {
       _isAttacking = false;
+      _aiState = EnemyAIState.idle;
     }
   }
   
@@ -185,21 +176,21 @@ class EnemyEntity extends PositionComponent {
     _facingDirection = attackDirection;
     
     // 应用伤害
-    hp = (hp - damage).clamp(0, maxHp);
+    final newHp = (combatData.currentHp - damage).clamp(0, combatData.maxHp);
+    combatData = combatData.copyWith(currentHp: newHp);
     
-    // 硬直效果
-    if (behaviorController != null) {
-      behaviorController!.applyStagger(damage ~/ 10, DateTime.now().millisecondsSinceEpoch, CombatSystem());
-    }
+    // 硬直效果（受击后短暂眩晕）
+    _aiState = EnemyAIState.stunned;
+    _attackTimer = 0.3;
+    _isAttacking = false;
     
-    if (hp <= 0) {
+    if (combatData.currentHp <= 0) {
       _die();
     }
   }
   
   void _die() {
     isDead = true;
-    _currentAnimation = 'death';
     // 延迟移除
     Future.delayed(const Duration(seconds: 2), () {
       removeFromParent();
@@ -212,18 +203,9 @@ class EnemyEntity extends PositionComponent {
     _initByType();
     isDead = false;
     _isAttacking = false;
-    _currentAnimation = 'idle';
-    behaviorController?.reset();
-  }
-  
-  // 转换为战斗实体（供AI系统使用）
-  dynamic _toCombatEntity() {
-    return _SimpleCombatEntity(
-      hp: hp,
-      maxHp: maxHp,
-      position: position,
-      isAlive: hp > 0,
-    );
+    _aiState = EnemyAIState.idle;
+    _attackTimer = 0;
+    _attackCooldown = enemyType == EnemyType.banditLeader ? bossAttackInterval : banditAttackInterval;
   }
   
   @override
@@ -246,7 +228,7 @@ class EnemyEntity extends PositionComponent {
     canvas.drawCircle(Offset.zero, size.x / 2, paint);
     
     // 绘制血条
-    final hpRatio = hp / maxHp;
+    final hpRatio = combatData.currentHp / combatData.maxHp;
     final hpBarWidth = size.x;
     final hpBarHeight = 6.0;
     
@@ -258,7 +240,12 @@ class EnemyEntity extends PositionComponent {
     );
     
     // 血条前景
-    final hpPaint = Paint()..color = const Color(0xFF44FF44);
+    final hpColor = hpRatio > 0.5 
+        ? const Color(0xFF44FF44) 
+        : hpRatio > 0.25 
+            ? const Color(0xFFFFFF44) 
+            : const Color(0xFFFF4444);
+    final hpPaint = Paint()..color = hpColor;
     canvas.drawRect(
       Rect.fromLTWH(-hpBarWidth / 2, -size.y / 2 - 15, hpBarWidth * hpRatio, hpBarHeight),
       hpPaint,
@@ -269,24 +256,14 @@ class EnemyEntity extends PositionComponent {
       ..color = const Color(0xFFFFFFFF)
       ..style = PaintingStyle.fill;
     final dirOffset = _facingDirection * (size.x / 2 - 5);
-    canvas.drawCircle(dirOffset.toOffset(), 5, dirPaint);
+    canvas.drawCircle(Offset(dirOffset.x, dirOffset.y), 5, dirPaint);
+    
+    // 眩晕状态
+    if (_aiState == EnemyAIState.stunned) {
+      final stunPaint = Paint()
+        ..color = const Color(0x88FFFF00)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset.zero, size.x / 2 + 5, stunPaint);
+    }
   }
 }
-
-// 简单战斗实体（用于AI系统）
-class _SimpleCombatEntity {
-  final int hp;
-  final int maxHp;
-  final Vector2 position;
-  final bool isAlive;
-  
-  _SimpleCombatEntity({
-    required this.hp,
-    required this.maxHp,
-    required this.position,
-    required this.isAlive,
-  });
-}
-
-import 'dart:ui';
-import 'package:flutter/material.dart';

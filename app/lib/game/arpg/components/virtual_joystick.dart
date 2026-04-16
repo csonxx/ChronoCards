@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 /// 虚拟摇杆组件
 /// 用于移动端触控操作
-class VirtualJoystickComponent extends PositionComponent {
+class VirtualJoystickComponent extends PositionComponent with DragCallbacks {
   final double radius; // 摇杆底座半径
   final Color color;   // 底座颜色
   final Color knobColor; // 摇杆球颜色
@@ -13,38 +14,19 @@ class VirtualJoystickComponent extends PositionComponent {
   Vector2 _knobPosition = Vector2.zero(); // 相对于中心的偏移
   Vector2 _delta = Vector2.zero(); // 输出方向
   
-  double _currentRadius = 0;
-  
   VirtualJoystickComponent({
-    required FlameGame gameRef,
+    required double initialY,
     this.radius = 50,
     this.color = const Color(0x44FFFFFF),
     this.knobColor = const Color(0xCCFFFFFF),
   }) : super(
-    position: Vector2(120, gameRef.size.y - 180),
+    position: Vector2(120, initialY),
     size: Vector2(radius * 2, radius * 2),
     anchor: Anchor.center,
   );
   
   bool get isPressed => _isPressed;
   Vector2 get delta => _delta;
-  
-  @override
-  void update(double dt) {
-    super.update(dt);
-    
-    // 限制摇杆球在半径内
-    if (_knobPosition.length > radius) {
-      _knobPosition = _knobPosition..normalize()..scale(radius);
-    }
-    
-    // 计算输出方向（归一化）
-    if (_knobPosition.length > 5) {
-      _delta = _knobPosition.clone()..normalize();
-    } else {
-      _delta = Vector2.zero();
-    }
-  }
   
   @override
   void onGameResize(Vector2 size) {
@@ -56,8 +38,7 @@ class VirtualJoystickComponent extends PositionComponent {
   @override
   bool onDragStart(DragStartEvent event) {
     _isPressed = true;
-    _currentRadius = radius;
-    _updateKnob(event.localStartPosition);
+    _updateKnob(event.localPosition);
     return true;
   }
   
@@ -83,6 +64,13 @@ class VirtualJoystickComponent extends PositionComponent {
     // 限制在半径内
     if (_knobPosition.length > radius) {
       _knobPosition = _knobPosition..normalize()..scale(radius);
+    }
+    
+    // 计算输出方向（归一化）
+    if (_knobPosition.length > 5) {
+      _delta = _knobPosition.clone()..normalize();
+    } else {
+      _delta = Vector2.zero();
     }
   }
   
