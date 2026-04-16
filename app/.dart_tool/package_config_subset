@@ -102,6 +102,10 @@ fixnum
 3.1
 file:///root/.pub-cache/hosted/pub.dev/fixnum-1.1.1/
 file:///root/.pub-cache/hosted/pub.dev/fixnum-1.1.1/lib/
+flame
+3.4
+file:///root/.pub-cache/hosted/pub.dev/flame-1.18.0/
+file:///root/.pub-cache/hosted/pub.dev/flame-1.18.0/lib/
 flutter_animate
 2.17
 file:///root/.pub-cache/hosted/pub.dev/flutter_animate-4.5.2/
@@ -142,6 +146,10 @@ intl
 3.0
 file:///root/.pub-cache/hosted/pub.dev/intl-0.19.0/
 file:///root/.pub-cache/hosted/pub.dev/intl-0.19.0/lib/
+joystick
+2.12
+file:///root/.pub-cache/hosted/pub.dev/joystick-1.1.0/
+file:///root/.pub-cache/hosted/pub.dev/joystick-1.1.0/lib/
 leak_tracker
 3.2
 file:///root/.pub-cache/hosted/pub.dev/leak_tracker-10.0.5/
@@ -182,6 +190,10 @@ nested
 2.12
 file:///root/.pub-cache/hosted/pub.dev/nested-1.0.0/
 file:///root/.pub-cache/hosted/pub.dev/nested-1.0.0/lib/
+ordered_set
+2.14
+file:///root/.pub-cache/hosted/pub.dev/ordered_set-5.0.3/
+file:///root/.pub-cache/hosted/pub.dev/ordered_set-5.0.3/lib/
 path
 3.0
 file:///root/.pub-cache/hosted/pub.dev/path-1.9.0/

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flame/game.dart';
 import 'core/network/network.dart';
 import 'core/network/api_config.dart';
 import 'core/theme/app_theme.dart';
@@ -16,6 +17,8 @@ import 'presentation/screens/save/save_detail_screen.dart';
 import 'presentation/screens/save/export_import_screen.dart';
 import 'presentation/screens/faction/faction_list_screen.dart';
 import 'presentation/screens/faction/faction_detail_screen.dart';
+import 'game/arpg/arpg_game.dart';
+import 'presentation/screens/arpg/arpg_battle_screen.dart';
 
 /// Player ID storage key
 const String _playerIdKey = 'player_id';
@@ -112,6 +115,8 @@ class ChronoCardsApp extends StatelessWidget {
           '/battle': (context) => const BattleScreen(),
           '/economy': (context) => const EconomyScreen(),
           '/faction_list': (context) => const FactionListScreen(),
+          // ARPG游戏路由
+          '/arpg': (context) => const ArpgGameScreen(),
           // 云存档路由
           '/saves': (context) {
             final playerId = ModalRoute.of(context)?.settings.arguments as String? ?? 'default_player';
@@ -153,3 +158,42 @@ class ChronoCardsApp extends StatelessWidget {
   }
 }
 
+/// ARPG游戏主界面
+/// Flame游戏 + UI覆盖层
+class ArpgGameScreen extends StatefulWidget {
+  const ArpgGameScreen({super.key});
+  
+  @override
+  State<ArpgGameScreen> createState() => _ArpgGameScreenState();
+}
+
+class _ArpgGameScreenState extends State<ArpgGameScreen> {
+  late ArpgGame _game;
+  
+  @override
+  void initState() {
+    super.initState();
+    _game = ArpgGame();
+  }
+  
+  @override
+  void dispose() {
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Flame游戏Canvas
+          Positioned.fill(
+            child: GameWidget(game: _game),
+          ),
+          // UI覆盖层
+          const ArpgBattleScreen(),
+        ],
+      ),
+    );
+  }
+}

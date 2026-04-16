@@ -68,18 +68,18 @@ class BlockResult extends Equatable {
   final bool isPerfectBlock;
   final int damageReduced;
   final int damageReflected; // 完美反击伤害
-  final bool brokeAttacker'sStagger; // 打破攻击方硬直
+  final bool brokeAttackerStagger; // 打破攻击方硬直
 
   const BlockResult({
     required this.success,
     this.isPerfectBlock = false,
     this.damageReduced = 0,
     this.damageReflected = 0,
-    this.brokeAttacker'sStagger = false,
+    this.brokeAttackerStagger = false,
   });
 
   @override
-  List<Object?> get props => [success, isPerfectBlock, damageReduced, damageReflected, brokeAttacker'sStagger];
+  List<Object?> get props => [success, isPerfectBlock, damageReduced, damageReflected, brokeAttackerStagger];
 }
 
 /// 战斗系统 - 整合闪避、格挡、伤害计算、硬直
@@ -180,7 +180,7 @@ class CombatSystem {
         isPerfectBlock: true,
         damageReduced: incomingDamage,
         damageReflected: perfectBlockReflectDamage + (_perfectBlockCombo * 5),
-        brokeAttacker'sStagger: attackerIsStaggered,
+        brokeAttackerStagger: attackerIsStaggered,
       );
     } else {
       // 普通格挡：减伤70%

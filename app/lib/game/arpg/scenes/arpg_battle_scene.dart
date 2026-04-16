@@ -71,8 +71,8 @@ class ArpgBattleScene extends Component {
         
         // 竹竿
         canvas.drawLine(
-          Offset(x, y),
-          Offset(x + 5, y - height),
+          Offset(x.toDouble(), y.toDouble()),
+          Offset((x + 5).toDouble(), (y - height).toDouble()),
           bambooPaint,
         );
         
@@ -99,7 +99,7 @@ class ArpgBattleScene extends Component {
       final rx = -300 + i * 80.0;
       final ry = 150 + (i % 3) * 20;
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(rx, ry), width: 30, height: 15),
+        Rect.fromCenter(center: Offset(rx.toDouble(), ry.toDouble()), width: 30, height: 15),
         rockPaint,
       );
     }

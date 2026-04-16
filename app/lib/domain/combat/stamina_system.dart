@@ -76,7 +76,6 @@ class StaminaResources extends Equatable {
     return copyWith(
       hp: newHp,
       shield: newShield,
-      isAlive: newHp > 0,
     );
   }
 

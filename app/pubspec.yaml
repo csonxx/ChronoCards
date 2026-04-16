@@ -42,7 +42,7 @@ dependencies:
   model_viewer_plus: ^1.8.1
   
   # Game Engine
-  flame: ^1.18.0
+  flame: 1.18.0
   joystick: ^1.1.0
 
 dev_dependencies:

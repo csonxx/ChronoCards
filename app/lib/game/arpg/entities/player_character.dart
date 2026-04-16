@@ -1,7 +1,10 @@
 import 'dart:ui';
+import 'enemy_entity.dart';
+import 'enemy_entity.dart';
+import '../arpg_game.dart' show ArpgGame;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import '../arpg_game.dart';
+
 import '../components/floating_damage_text.dart';
 import '../../../domain/combat/combat_system.dart';
 import '../../../domain/combat/stamina_system.dart';
@@ -267,7 +270,7 @@ class PlayerCharacter extends PositionComponent {
       if (dist < 100) { // 攻击范围2米(100游戏单位)
         // 传递击退方向，第3击有额外击退
         final knockbackForce = hasKnockback ? combo3Knockback : 0.0;
-        enemy.takeDamage(damage, _facingDirection, knockbackForce);
+        enemy.takeDamage(damage, _facingDirection, knockbackForce: knockbackForce);
         
         // 显示伤害数字
         _showDamageNumber(enemy.position, damage);
@@ -281,7 +284,8 @@ class PlayerCharacter extends PositionComponent {
   void _showDamageNumber(Vector2 pos, int damage) {
     final dmgText = FloatingDamageText(
       position: pos.clone()..add(Vector2(0, -30)),
-      damage: damage,
+      baseColor: const Color(0xFFFFCC00),
+      damage: damage.toDouble(),
     );
     gameRef.add(dmgText);
   }
@@ -349,7 +353,7 @@ class PlayerCharacter extends PositionComponent {
       final dist = (enemy.position - position).length;
       if (dist < range) {
         // 击倒效果（较大击退）
-        enemy.takeDamage(damage, _facingDirection, 80.0, isKnockdown: true);
+        enemy.takeDamage(damage, _facingDirection, knockbackForce: 80.0, isKnockdown: true);
         _showDamageNumber(enemy.position, damage);
       }
     }
@@ -368,7 +372,7 @@ class PlayerCharacter extends PositionComponent {
         for (int i = 0; i < 3; i++) {
           Future.delayed(Duration(milliseconds: 100 * i), () {
             if (!enemy.isDead) {
-              enemy.takeDamage(180, _facingDirection, 0, isStunned: true);
+              enemy.takeDamage(180, _facingDirection, knockbackForce: 0, isStunned: true);
               _showDamageNumber(enemy.position, 180);
             }
           });
@@ -387,7 +391,7 @@ class PlayerCharacter extends PositionComponent {
       if (enemy.isDead) continue;
       final dist = (enemy.position - position).length;
       if (dist < range) {
-        enemy.takeDamage(damage, _facingDirection, 0);
+        enemy.takeDamage(damage, _facingDirection, knockbackForce: 0);
         _showDamageNumber(enemy.position, damage);
       }
     }
@@ -424,7 +428,7 @@ class PlayerCharacter extends PositionComponent {
         for (int i = 0; i < 2; i++) {
           Future.delayed(Duration(milliseconds: 150 * i), () {
             if (!enemy.isDead) {
-              enemy.takeDamage(damagePerHit, _facingDirection, 0);
+              enemy.takeDamage(damagePerHit, _facingDirection, knockbackForce: 0);
               enemy.applySlow(slowAmount, slowDuration);
               _showDamageNumber(enemy.position, damagePerHit);
             }
@@ -477,7 +481,7 @@ class PlayerCharacter extends PositionComponent {
   }
   
   // ============ 受击 ============
-  void takeDamage(int damage, Vector2 attackDirection) {
+  void takeDamage(int damage, Vector2 attackDirection, {double knockbackForce = 0, bool isKnockdown = false, bool isStunned = false}) {
     if (_hasIFrames) return; // 无敌帧保护
     
     int finalDamage = damage;

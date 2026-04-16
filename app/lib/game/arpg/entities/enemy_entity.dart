@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'player_character.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../arpg_game.dart';
@@ -240,7 +241,7 @@ class EnemyEntity extends PositionComponent {
   
   // ============ 受击 ============
   /// 普通受击
-  void takeDamage(int damage, Vector2 attackDirection, [double knockbackForce = 0, bool isKnockdown = false, bool isStunned = false]) {
+  void takeDamage(int damage, Vector2 attackDirection, {double knockbackForce = 0, bool isKnockdown = false, bool isStunned = false}) {
     if (isDead || _isDying) return;
     
     // 应用防御减伤
@@ -323,7 +324,8 @@ class EnemyEntity extends PositionComponent {
   void _showDamageNumber(int damage, {bool isPiercing = false}) {
     final dmgText = FloatingDamageText(
       position: position.clone()..add(Vector2(0, -30)),
-      damage: damage,
+      damage: damage.toDouble(),
+      baseColor: const Color(0xFFFF4444),
     );
     gameRef.add(dmgText);
   }

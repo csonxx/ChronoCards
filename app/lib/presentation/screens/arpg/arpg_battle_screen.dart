@@ -54,7 +54,7 @@ class _ArpgBattleScreenState extends State<ArpgBattleScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF8b1a1a),
               borderRadius: BorderRadius.circular(3),
-              border: Border.all(const Color(0xFFc9a227), width: 1),
+              border: Border.all(color: const Color(0xFFc9a227), width: 1),
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
@@ -85,11 +85,18 @@ class _ArpgBattleScreenState extends State<ArpgBattleScreen> {
       ],
     );
   }
-  
   Widget _buildComboCounter() {
-    return Center(child: Text('$combo',
-      style: const TextStyle(fontSize: 48, color: Color(0xFFc9a227), fontWeight: FontWeight.bold,
-        shadows: [Shadow(color: Colors.black, blurRadius: 8)]));
+    return Center(
+      child: Text(
+        '$combo',
+        style: const TextStyle(
+          fontSize: 48,
+          color: Color(0xFFc9a227),
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+        ),
+      ),
+    );
   }
   
   Widget _buildSkillBar() {
@@ -111,7 +118,7 @@ class _ArpgBattleScreenState extends State<ArpgBattleScreen> {
           decoration: BoxDecoration(
             color: isReady ? color : color.withOpacity(0.4),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(const Color(0xFFc9a227), width: 2),
+            border: Border.all(color: const Color(0xFFc9a227), width: 2),
           ),
           child: Center(child: Text(key, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
         ),
@@ -139,7 +146,7 @@ class _ArpgBattleScreenState extends State<ArpgBattleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6),
-        border: Border.all(Colors.white30)),
+        border: Border.all(color: Colors.white30)),
       child: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }

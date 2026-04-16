@@ -1,7 +1,8 @@
 import 'dart:ui';
+import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/services.dart';
 import 'package:flame/events.dart';
 import 'entities/player_character.dart';
 import 'entities/enemy_entity.dart';
@@ -74,7 +75,7 @@ class ArpgGame extends FlameGame with HasKeyboardHandlerComponents {
     _spawnTestEnemies();
     
     // 添加键盘监听
-    addKeyboardListener(this);
+    // 键盘监听已通过HasKeyboardHandlerComponents自动处理
     
     print('[ArpgGame] 游戏加载完成');
   }
@@ -167,7 +168,7 @@ class ArpgGame extends FlameGame with HasKeyboardHandlerComponents {
   }
   
   @override
-  bool onKeyEvent(KeyEvent event) {
+  KeyEventResult onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     if (event is KeyDownEvent) {
       _pressedKeys.add(event.logicalKey);
       
@@ -225,7 +226,7 @@ class ArpgGame extends FlameGame with HasKeyboardHandlerComponents {
       }
     }
     
-    return false;
+    return KeyEventResult.ignored;
   }
   
   @override
