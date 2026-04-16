@@ -175,6 +175,7 @@ export function applyCardOptionEffect(
 }
 
 // 将效果实际写入存档
+// TODO(QA-P1): 抽卡后卡牌不加入deck.cards - 发现日期 2026-04-15
 function applyEffectToSave(result: CardEffectResult): void {
   saveManager.updatePlayer(p => {
     if (result.hpChange !== 0) {

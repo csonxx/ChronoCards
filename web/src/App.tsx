@@ -140,6 +140,7 @@ function App() {
   // 打开设置
   const handleSettings = useCallback(() => {
     setCurrentScene('settings');
+    // TODO(QA-P1): 势力声望UI - 打开设置时可改为打开势力面板 - 发现日期 2026-04-15
   }, []);
 
   // 返回主世界
