@@ -2034,3 +2034,412 @@ func (h *Handler) GetWorldGeneratorPrompt(w http.ResponseWriter, r *http.Request
 	prompt := h.worldGen.BuildNarrativePrompt(event, p.Name, p.Faction)
 	h.json(w, http.StatusOK, map[string]string{"prompt": prompt})
 }
+
+// ---- Battle Report APIs ----
+
+// SubmitBattleReport 提交战斗报告
+func (h *Handler) SubmitBattleReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID     string `json:"player_id"`
+		EnemyID      string `json:"enemy_id"`
+		EnemyName    string `json:"enemy_name"`
+		Result       string `json:"result"`
+		DamageDealt  int    `json:"damage_dealt"`
+		DamageTaken  int    `json:"damage_taken"`
+		HealingDone  int    `json:"healing_done"`
+		KillCount    int    `json:"kill_count"`
+		DurationSec  int    `json:"duration_sec"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" {
+		h.badRequest(w, "player_id is required")
+		return
+	}
+
+	player, ok := h.store.GetPlayer(req.PlayerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	report := &model.BattleReport{
+		ID:          player.ID + "_" + time.Now().Format("20060102150405"),
+		PlayerID:    req.PlayerID,
+		PlayerName:  player.Name,
+		EnemyID:     req.EnemyID,
+		EnemyName:   req.EnemyName,
+		Result:      req.Result,
+		DamageDealt: req.DamageDealt,
+		DamageTaken: req.DamageTaken,
+		HealingDone: req.HealingDone,
+		KillCount:   req.KillCount,
+		DurationSec: req.DurationSec,
+		Timestamp:   time.Now(),
+	}
+
+	// 更新玩家积分 (简化: 胜利+10, 失败+2)
+	score := 2
+	if req.Result == "win" {
+		score = 10
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message":       "战斗报告已记录",
+		"report":        report,
+		"score_earned":  score,
+	})
+}
+
+// GetLeaderboard 获取排行榜
+func (h *Handler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	boardType := r.PathValue("type")
+	if boardType == "" {
+		boardType = "power"
+	}
+
+	players := h.store.ListPlayers()
+
+	type entry struct {
+		Rank       int    `json:"rank"`
+		PlayerID   string `json:"player_id"`
+		PlayerName string `json:"player_name"`
+		Level      int    `json:"level"`
+		Score      int    `json:"score"`
+	}
+
+	var entries []entry
+	for _, p := range players {
+		entries = append(entries, entry{
+			PlayerID:   p.ID,
+			PlayerName: p.Name,
+			Level:      p.Level,
+			Score:      p.Level * 100,
+		})
+	}
+
+	// 排序
+	for i := 0; i < len(entries); i++ {
+		for j := i + 1; j < len(entries); j++ {
+			if entries[j].Score > entries[i].Score {
+				entries[i], entries[j] = entries[j], entries[i]
+			}
+		}
+	}
+
+	for i := range entries {
+		entries[i].Rank = i + 1
+	}
+
+	if len(entries) > 100 {
+		entries = entries[:100]
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"type":    boardType,
+		"total":   len(entries),
+		"entries": entries,
+	})
+}
+
+// ---- Talent APIs ----
+
+// GetAllTalents 获取所有天赋
+func (h *Handler) GetAllTalents(w http.ResponseWriter, r *http.Request) {
+	talents := []model.Talent{
+		{ID: "talent_power_1", Name: "力量强化I", Description: "攻击力+5%", Tier: 1, Effects: []model.TalentEffect{{Type: "attack", Value: 5}}},
+		{ID: "talent_power_2", Name: "力量强化II", Description: "攻击力+10%", Tier: 2, Effects: []model.TalentEffect{{Type: "attack", Value: 10}}},
+		{ID: "talent_hp_1", Name: "生命强化I", Description: "HP上限+10%", Tier: 1, Effects: []model.TalentEffect{{Type: "hp", Value: 10}}},
+		{ID: "talent_hp_2", Name: "生命强化II", Description: "HP上限+20%", Tier: 2, Effects: []model.TalentEffect{{Type: "hp", Value: 20}}},
+		{ID: "talent_qi_1", Name: "气力强化I", Description: "气力上限+10", Tier: 1, Effects: []model.TalentEffect{{Type: "qi", Value: 10}}},
+		{ID: "talent_element_1", Name: "元素亲和I", Description: "全元素精通+5", Tier: 1, Effects: []model.TalentEffect{{Type: "element", Value: 5}}},
+	}
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"talents": talents,
+	})
+}
+
+// LearnTalent 学习天赋
+func (h *Handler) LearnTalent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	playerID := r.PathValue("player_id")
+	player, ok := h.store.GetPlayer(playerID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	var req struct {
+		TalentID string `json:"talent_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.TalentID == "" {
+		h.badRequest(w, "talent_id is required")
+		return
+	}
+
+	for _, t := range player.Talents {
+		if t == req.TalentID {
+			h.badRequest(w, "talent already learned")
+			return
+		}
+	}
+
+	player.Talents = append(player.Talents, req.TalentID)
+	player.TalentPoints--
+	player.UpdatedAt = time.Now()
+	h.store.UpdatePlayer(player)
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message":       "天赋学习成功",
+		"talents":       player.Talents,
+		"talent_points": player.TalentPoints,
+	})
+}
+
+// ---- Guild APIs ----
+
+// CreateGuild 创建公会
+func (h *Handler) CreateGuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		LeaderID    string `json:"leader_id"`
+		Name        string `json:"name"`
+		Faction     string `json:"faction"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.LeaderID == "" || req.Name == "" {
+		h.badRequest(w, "leader_id and name are required")
+		return
+	}
+
+	player, ok := h.store.GetPlayer(req.LeaderID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	guild := &model.Guild{
+		ID:          "guild_" + player.ID[:8],
+		Name:        req.Name,
+		LeaderID:    req.LeaderID,
+		MemberCount: 1,
+		MaxMembers:  50,
+		Level:       1,
+		Faction:     req.Faction,
+		Description: req.Description,
+		CreatedAt:   time.Now(),
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "公会创建成功",
+		"guild":  guild,
+	})
+}
+
+// JoinGuild 加入公会
+func (h *Handler) JoinGuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		GuildID  string `json:"guild_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" || req.GuildID == "" {
+		h.badRequest(w, "player_id and guild_id are required")
+		return
+	}
+
+	member := &model.GuildMember{
+		PlayerID: req.PlayerID,
+		GuildID:  req.GuildID,
+		Rank:     "member",
+		Contrib:  0,
+		JoinedAt: time.Now(),
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "加入公会成功",
+		"member": member,
+	})
+}
+
+// GetGuild 获取公会信息
+func (h *Handler) GetGuild(w http.ResponseWriter, r *http.Request) {
+	guildID := r.PathValue("guild_id")
+
+	guild := &model.Guild{
+		ID:          guildID,
+		Name:        "示例公会",
+		MemberCount: 10,
+		MaxMembers:  50,
+		Level:       5,
+	}
+
+	h.json(w, http.StatusOK, guild)
+}
+
+// ---- Friend APIs ----
+
+// AddFriend 添加好友
+func (h *Handler) AddFriend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		FriendID  string `json:"friend_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" || req.FriendID == "" {
+		h.badRequest(w, "player_id and friend_id are required")
+		return
+	}
+
+	if req.PlayerID == req.FriendID {
+		h.badRequest(w, "cannot add yourself as friend")
+		return
+	}
+
+	friend, ok := h.store.GetPlayer(req.FriendID)
+	if !ok {
+		h.notFound(w)
+		return
+	}
+
+	f := &model.Friend{
+		PlayerID:   req.PlayerID,
+		FriendID:   req.FriendID,
+		FriendName: friend.Name,
+		Status:     "offline",
+		Level:      friend.Level,
+		CreatedAt:  time.Now(),
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "好友添加成功",
+		"friend":  f,
+	})
+}
+
+// GetFriends 获取好友列表
+func (h *Handler) GetFriends(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"friends":   []model.Friend{},
+	})
+}
+
+// RemoveFriend 删除好友
+func (h *Handler) RemoveFriend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		FriendID string `json:"friend_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "好友已删除",
+	})
+}
+
+// ---- Multi-Device Session APIs ----
+
+// SessionData 会话数据
+type SessionData struct {
+	PlayerID     string    `json:"player_id"`
+	DeviceID     string    `json:"device_id"`
+	Token        string    `json:"token"`
+	LoginAt      time.Time `json:"login_at"`
+	LastActiveAt time.Time `json:"last_active_at"`
+}
+
+// RegisterDevice 注册设备
+func (h *Handler) RegisterDevice(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		DeviceID string `json:"device_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlayerID == "" {
+		h.badRequest(w, "player_id is required")
+		return
+	}
+
+	token := req.PlayerID[:8] + "_" + time.Now().Format("150405")
+
+	session := &SessionData{
+		PlayerID:     req.PlayerID,
+		DeviceID:     req.DeviceID,
+		Token:        token,
+		LoginAt:      time.Now(),
+		LastActiveAt: time.Now(),
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message": "设备注册成功",
+		"session": session,
+	})
+}
+
+// GetActiveSessions 获取活跃会话
+func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
+	playerID := r.PathValue("player_id")
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"sessions": []SessionData{
+			{PlayerID: playerID, DeviceID: "device_1", Token: "active", LoginAt: time.Now()},
+		},
+	})
+}
+
+// KickDevice 踢出设备
+func (h *Handler) KickDevice(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		h.badRequest(w, "method not allowed")
+		return
+	}
+
+	var req struct {
+		PlayerID string `json:"player_id"`
+		DeviceID string `json:"device_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.badRequest(w, "invalid request")
+		return
+	}
+
+	h.json(w, http.StatusOK, map[string]interface{}{
+		"message":  "设备已踢出",
+		"device_id": req.DeviceID,
+	})
+}

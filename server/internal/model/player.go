@@ -92,15 +92,21 @@ type Player struct {
 	MaxHP            int              `json:"max_hp"`
 	MP               int              `json:"mp"`
 	MaxMP            int              `json:"max_mp"`
-	SwordIntent      int              `json:"sword_intent"` // 0-100
+	Qi               int              `json:"qi"`              // 气力值 (ARPG核心资源)
+	MaxQi            int              `json:"max_qi"`          // 最大气力值
+	SwordIntent      int              `json:"sword_intent"`    // 剑意值 0-100
 	Stamina          int              `json:"stamina"`
 	MaxStamina       int              `json:"max_stamina"`
-	Money            int              `json:"money"`         // 金币
+	Money            int              `json:"money"`           // 金币
 	ElementMastery   ElementMastery   `json:"element_mastery"`
-	Faction          string           `json:"faction"`
+	Faction          string           `json:"faction"`         // 当前阵营
+	Sect             string           `json:"sect"`            // 门派 (ARPG)
 	Reputation       Reputation       `json:"reputation"`
-	Skills           []string         `json:"skills"` // 技能ID列表
-	Decks            []string         `json:"decks"`  // 卡组ID列表
+	Skills           []string         `json:"skills"`         // 技能ID列表
+	Talents          []string         `json:"talents"`         // 天赋ID列表
+	TalentPoints     int              `json:"talent_points"`   // 可用天赋点
+	Decks            []string         `json:"decks"`          // 卡组ID列表
+	EquippedItems    map[string]string `json:"equipped_items"` // 装备槽位映射
 	CreatedAt        time.Time        `json:"created_at"`
 	UpdatedAt        time.Time        `json:"updated_at"`
 }
@@ -117,6 +123,8 @@ func NewPlayer(name, faction string) *Player {
 		MaxHP:      100,
 		MP:         100,
 		MaxMP:      100,
+		Qi:         50,
+		MaxQi:      50,
 		SwordIntent: 0,
 		Stamina:    100,
 		MaxStamina: 100,
@@ -125,13 +133,17 @@ func NewPlayer(name, faction string) *Player {
 			Wind: 0, Fire: 0, Water: 0, Thunder: 0, Ice: 0, Poison: 0,
 		},
 		Faction: faction,
+		Sect:    "",
 		Reputation: Reputation{
 			Mingjiao: 0, Zhengpai: 0, Jinyiwei: 0,
 		},
-		Skills:    []string{},
-		Decks:     []string{},
-		CreatedAt: now,
-		UpdatedAt: now,
+		Skills:       []string{},
+		Talents:      []string{},
+		TalentPoints: 0,
+		Decks:        []string{},
+		EquippedItems: make(map[string]string),
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 }
 
@@ -170,6 +182,20 @@ func (p *Player) ConsumeStamina(amount int) bool {
 	}
 	p.Stamina -= amount
 	return true
+}
+
+// ConsumeQi 消耗气力
+func (p *Player) ConsumeQi(amount int) bool {
+	if p.Qi < amount {
+		return false
+	}
+	p.Qi -= amount
+	return true
+}
+
+// RestoreQi 恢复气力
+func (p *Player) RestoreQi(amount int) {
+	p.Qi = min(p.Qi+amount, p.MaxQi)
 }
 
 // AddExp 增加经验值，返回是否升级以及升级次数
