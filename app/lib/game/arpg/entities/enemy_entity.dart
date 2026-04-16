@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../arpg_game.dart';
+import '../components/floating_damage_text.dart';
 import '../../../domain/combat/combat_system.dart';
 import '../../../game/models/combat/combat_entity.dart';
 
@@ -17,6 +18,7 @@ enum EnemyAIState {
   approaching,
   attacking,
   stunned,
+  slow, // 减速状态
 }
 
 /// 敌人实体
@@ -34,6 +36,20 @@ class EnemyEntity extends PositionComponent {
   double _attackTimer = 0;
   double _attackCooldown = 0;
   Vector2 _facingDirection = Vector2(-1, 0);
+  
+  // ============ 减速状态 ============
+  double _slowAmount = 0;
+  double _slowTimer = 0;
+  double _baseMoveSpeed = 1.5;
+  
+  // ============ 死亡动画 ============
+  double _deathTimer = 0;
+  static const double deathDuration = 1.5; // 死亡动画持续1.5秒
+  bool _isDying = false;
+  
+  // ============ 击退动画 ============
+  Vector2 _knockbackVelocity = Vector2.zero();
+  static const double knockbackFriction = 0.9;
   
   // ============ 攻击配置 ============
   static const double banditAttackInterval = 2.0; // 秒
@@ -68,6 +84,7 @@ class EnemyEntity extends PositionComponent {
           defense: 10,
         );
         _attackCooldown = banditAttackInterval;
+        _baseMoveSpeed = 1.5;
         break;
         
       case EnemyType.banditLeader:
@@ -85,6 +102,7 @@ class EnemyEntity extends PositionComponent {
           defense: 20,
         );
         _attackCooldown = bossAttackInterval;
+        _baseMoveSpeed = 2.0;
         break;
     }
   }
@@ -95,6 +113,18 @@ class EnemyEntity extends PositionComponent {
     
     if (isDead) return;
     
+    // 死亡动画中
+    if (_isDying) {
+      _updateDeathAnimation(dt);
+      return;
+    }
+    
+    // 更新减速状态
+    _updateSlow(dt);
+    
+    // 更新击退
+    _updateKnockback(dt);
+    
     // 更新AI
     _updateAI(dt);
     
@@ -102,8 +132,45 @@ class EnemyEntity extends PositionComponent {
     _updateAttackState(dt);
   }
   
+  void _updateKnockback(double dt) {
+    if (_knockbackVelocity.length < 1) return;
+    
+    position += _knockbackVelocity * dt;
+    _knockbackVelocity *= knockbackFriction;
+    
+    if (_knockbackVelocity.length < 1) {
+      _knockbackVelocity = Vector2.zero();
+    }
+  }
+  
+  void _updateSlow(double dt) {
+    if (_slowTimer > 0) {
+      _slowTimer -= dt;
+      if (_slowTimer <= 0) {
+        _slowAmount = 0;
+        _aiState = EnemyAIState.idle;
+      }
+    }
+  }
+  
+  void _updateDeathAnimation(double dt) {
+    _deathTimer += dt;
+    
+    if (_deathTimer >= deathDuration) {
+      // 动画结束，移除
+      removeFromParent();
+      gameRef.enemies.remove(this);
+    }
+  }
+  
   void _updateAI(double dt) {
     final player = gameRef.player;
+    if (player.isInIFrames) {
+      // 玩家无敌时不追击
+      _aiState = EnemyAIState.idle;
+      return;
+    }
+    
     final distToPlayer = (player.position - position).length;
     
     // 眩晕状态
@@ -126,7 +193,12 @@ class EnemyEntity extends PositionComponent {
       _aiState = EnemyAIState.approaching;
       final dirToPlayer = (player.position - position)..normalize();
       _facingDirection = dirToPlayer;
-      position += dirToPlayer * 1.5 * dt * 60;
+      
+      // 考虑减速
+      final moveSpeed = _slowAmount > 0 
+          ? _baseMoveSpeed * (1 - _slowAmount)
+          : _baseMoveSpeed;
+      position += dirToPlayer * moveSpeed * dt * 60;
     } else {
       _aiState = EnemyAIState.idle;
     }
@@ -167,19 +239,71 @@ class EnemyEntity extends PositionComponent {
   }
   
   // ============ 受击 ============
-  void takeDamage(int damage, Vector2 attackDirection) {
-    if (isDead) return;
+  /// 普通受击
+  void takeDamage(int damage, Vector2 attackDirection, [double knockbackForce = 0, bool isKnockdown = false, bool isStunned = false]) {
+    if (isDead || _isDying) return;
+    
+    // 应用防御减伤
+    int actualDamage = (damage - combatData.defense * 0.5).round().clamp(1, damage);
     
     // 击退效果
-    final knockback = attackDirection * 30;
-    position += knockback;
+    if (knockbackForce > 0) {
+      final knockDir = attackDirection.clone()..normalize();
+      _knockbackVelocity = knockDir * knockbackForce * 10;
+      
+      // 击倒效果：更大的击退
+      if (isKnockdown) {
+        _knockbackVelocity *= 1.5;
+        _aiState = EnemyAIState.stunned;
+        _attackTimer = 0.8; // 击倒眩晕时间
+      }
+    }
+    
     _facingDirection = attackDirection;
     
     // 应用伤害
+    final newHp = (combatData.currentHp - actualDamage).clamp(0, combatData.maxHp);
+    combatData = combatData.copyWith(currentHp: newHp);
+    
+    // 显示伤害数字
+    _showDamageNumber(actualDamage);
+    
+    // 硬直效果（受击后短暂眩晕）- 除非已经有更长的眩晕状态
+    if (!isKnockdown && !isStunned && _attackTimer <= 0) {
+      _aiState = EnemyAIState.stunned;
+      _attackTimer = 0.3;
+      _isAttacking = false;
+    }
+    
+    // 定身效果（太极剑AOE）
+    if (isStunned) {
+      _aiState = EnemyAIState.stunned;
+      _attackTimer = 0.6; // 定身时间
+      _isAttacking = false;
+    }
+    
+    if (combatData.currentHp <= 0) {
+      _die();
+    }
+  }
+  
+  /// 穿透伤害（无视防御）
+  void takePiercingDamage(int damage, Vector2 attackDirection) {
+    if (isDead || _isDying) return;
+    
+    // 穿透：不计算防御
     final newHp = (combatData.currentHp - damage).clamp(0, combatData.maxHp);
     combatData = combatData.copyWith(currentHp: newHp);
     
-    // 硬直效果（受击后短暂眩晕）
+    // 击退
+    final knockDir = attackDirection.clone()..normalize();
+    _knockbackVelocity = knockDir * 50;
+    _facingDirection = attackDirection;
+    
+    // 显示伤害数字
+    _showDamageNumber(damage, isPiercing: true);
+    
+    // 眩晕
     _aiState = EnemyAIState.stunned;
     _attackTimer = 0.3;
     _isAttacking = false;
@@ -189,27 +313,69 @@ class EnemyEntity extends PositionComponent {
     }
   }
   
+  /// 应用减速效果
+  void applySlow(double amount, double duration) {
+    _slowAmount = amount;
+    _slowTimer = duration;
+    _aiState = EnemyAIState.slow;
+  }
+  
+  void _showDamageNumber(int damage, {bool isPiercing = false}) {
+    final dmgText = FloatingDamageText(
+      position: position.clone()..add(Vector2(0, -30)),
+      damage: damage,
+    );
+    gameRef.add(dmgText);
+  }
+  
   void _die() {
     isDead = true;
-    // 延迟移除
-    Future.delayed(const Duration(seconds: 2), () {
-      removeFromParent();
-      gameRef.enemies.remove(this);
-    });
+    _isDying = true;
+    _deathTimer = 0;
+    _knockbackVelocity = Vector2.zero();
+    
+    // 播放死亡动画期间不处理其他逻辑
+    // Future.delayed在update结束后会被调用
   }
   
   // ============ 重置 ============
   void reset() {
     _initByType();
     isDead = false;
+    _isDying = false;
+    _deathTimer = 0;
     _isAttacking = false;
     _aiState = EnemyAIState.idle;
     _attackTimer = 0;
     _attackCooldown = enemyType == EnemyType.banditLeader ? bossAttackInterval : banditAttackInterval;
+    _slowAmount = 0;
+    _slowTimer = 0;
+    _knockbackVelocity = Vector2.zero();
   }
   
   @override
   void render(Canvas canvas) {
+    // 死亡动画：淡出效果
+    if (_isDying) {
+      final alpha = ((1 - _deathTimer / deathDuration) * 255).clamp(0, 255).toInt();
+      final deathPaint = Paint()..color = Color.fromARGB(alpha, 100, 100, 100);
+      
+      // 淡出的身体
+      canvas.drawCircle(Offset.zero, size.x / 2, deathPaint);
+      
+      // 显示"死亡"文字
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: '💀',
+          style: TextStyle(fontSize: 24, color: Color.fromARGB(alpha, 255, 255, 255)),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
+      return;
+    }
+    
     if (isDead) return;
     
     final paint = Paint();
@@ -265,5 +431,109 @@ class EnemyEntity extends PositionComponent {
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset.zero, size.x / 2 + 5, stunPaint);
     }
+    
+    // 减速状态
+    if (_slowAmount > 0 && _slowTimer > 0) {
+      final slowPaint = Paint()
+        ..color = const Color(0x664488FF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3;
+      canvas.drawCircle(Offset.zero, size.x / 2 + 8, slowPaint);
+    }
   }
+}
+
+/// ARPG技能数据
+/// 基于PRD定义的5个门派技能
+
+class SkillData {
+  final String name;
+  final String description;
+  final int damage;
+  final double cooldownSec;
+  final int qiCost;
+  final double range;
+  final bool isAoe;
+  final String animationName;
+  
+  const SkillData({
+    required this.name,
+    required this.description,
+    required this.damage,
+    required this.cooldownSec,
+    required this.qiCost,
+    required this.range,
+    this.isAoe = false,
+    required this.animationName,
+  });
+  
+  // 5个技能配置（基于PRD）
+  static const List<SkillData> skills = [
+    // K - 少林·金刚拳
+    SkillData(
+      name: '金刚拳',
+      description: '向前冲刺1.5米，施展金刚拳，造成250伤害，最后一击击倒敌人',
+      damage: 250,
+      cooldownSec: 5,
+      qiCost: 20,
+      range: 150,
+      isAoe: false,
+      animationName: 'skill_kung_fu',
+    ),
+    // L - 武当·太极剑
+    SkillData(
+      name: '太极剑',
+      description: '原地舞剑，形成太极剑气圈，半径2.5米，伤害180×3次',
+      damage: 180,
+      cooldownSec: 8,
+      qiCost: 30,
+      range: 200,
+      isAoe: true,
+      animationName: 'skill_taichi',
+    ),
+    // U - 峨眉·清风剑
+    SkillData(
+      name: '清风剑',
+      description: '发射一道剑气，直线飞行8米，伤害160，穿透后衰减60%',
+      damage: 160,
+      cooldownSec: 6,
+      qiCost: 25,
+      range: 300,
+      isAoe: false,
+      animationName: 'skill_qingfeng',
+    ),
+    // I - 华山·破剑式
+    SkillData(
+      name: '破剑式',
+      description: '跃起下刺，伤害400，无视30%防御，落地冲击波额外80伤害',
+      damage: 400,
+      cooldownSec: 10,
+      qiCost: 35,
+      range: 150,
+      isAoe: false,
+      animationName: 'skill_pojian',
+    ),
+    // O - 丐帮·打狗棒
+    SkillData(
+      name: '打狗棒',
+      description: '棒扫180°，半径2米，伤害130×2次，被击中敌人减速40%持续2秒',
+      damage: 130,
+      cooldownSec: 7,
+      qiCost: 25,
+      range: 180,
+      isAoe: true,
+      animationName: 'skill_dagou',
+    ),
+  ];
+  
+  // 普攻连击数据
+  static const List<int> comboDamages = [100, 120, 150];
+  static const List<double> comboMultipliers = [1.0, 1.2, 1.5];
+  
+  // 角色基础属性（基于PRD）
+  static const int baseHp = 1000;
+  static const int baseAttack = 100;
+  static const int baseDefense = 20;
+  static const int baseQi = 100;
+  static const double baseMoveSpeed = 3.5; // m/s
 }

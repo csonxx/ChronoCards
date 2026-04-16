@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../arpg_game.dart';
+import '../components/floating_damage_text.dart';
 import '../../../domain/combat/combat_system.dart';
 import '../../../domain/combat/stamina_system.dart';
 import '../../../game/models/combat/combat_entity.dart';
@@ -46,14 +47,19 @@ class PlayerCharacter extends PositionComponent {
   
   // ============ 技能CD ============
   final List<double> skillCooldowns = [0, 0, 0, 0, 0]; // 5个技能CD（秒）
+  // PRD指定的技能CD
   static const List<double> skillMaxCooldowns = [5, 8, 6, 10, 7];
+  // PRD指定的气力消耗
   static const List<int> skillQiCosts = [20, 30, 25, 35, 25];
   
   // ============ 闪避/格挡 ============
   bool _isDodging = false;
   double _dodgeTimer = 0;
-  static const double dodgeDuration = 0.4;
+  static const double dodgeDuration = 0.4; // 0.4秒无敌帧
   static const double dodgeCooldown = 1.2;
+  static const int dodgeQiCost = 15;
+  static const double dodgeDistance = 100.0; // 3米(游戏单位100)
+  
   double _dodgeCooldownTimer = 0;
   
   bool _isBlocking = false;
@@ -62,13 +68,18 @@ class PlayerCharacter extends PositionComponent {
   bool _hasIFrames = false;
   double _iFrameTimer = 0;
   
+  /// 无敌帧状态（供EnemyBehavior检查）
+  bool get isInIFrames => _hasIFrames;
+  
   // ============ 动画状态 ============
   String _currentAnimation = 'idle';
   double _animationTimer = 0;
   
-  // ============ 普攻伤害配置 ============
+  // ============ 普攻伤害配置（PRD: 100 → 120 → 150） ============
   static const List<int> comboDamages = [100, 120, 150];
   static const List<double> comboDamageMultipliers = [1.0, 1.2, 1.5];
+  // 第3击击退距离
+  static const double combo3Knockback = 50.0; // 0.5米
   
   PlayerCharacter({required this.gameRef}) {
     position = Vector2(100, 100);
@@ -188,11 +199,14 @@ class PlayerCharacter extends PositionComponent {
     _animationTimer += dt;
   }
   
-  // ============ 普攻 ============
+  // ============ 普攻 - J键 ============
+  /// 3段连击：100 → 120 → 150 伤害
+  /// 每次攻击后0.6秒内必须接下一击，否则重置
+  /// 第3击有0.5米击退
   void performAttack(AttackType type) {
     if (_isAttacking || _isDodging) return;
     
-    // 检查连击窗口
+    // 检查连击窗口（最多3连击）
     if (_comboTimer > 0 && _comboCount >= 3) {
       return;
     }
@@ -213,7 +227,7 @@ class PlayerCharacter extends PositionComponent {
     );
     
     // 应用伤害到目标
-    _applyDamageToEnemies(finalDamage);
+    final hitEnemies = _applyDamageToEnemies(finalDamage, comboIndex == 2); // 第3击有击退
     
     // 播放攻击动画
     _playAttackAnimation(comboIndex);
@@ -244,17 +258,41 @@ class PlayerCharacter extends PositionComponent {
     _animationTimer = 0;
   }
   
-  void _applyDamageToEnemies(int damage) {
-    // 对所有在攻击范围内的敌人造成伤害
+  List<EnemyEntity> _applyDamageToEnemies(int damage, bool hasKnockback) {
+    final hitEnemies = <EnemyEntity>[];
+    
     for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
       final dist = (enemy.position - position).length;
-      if (dist < 100) { // 攻击范围2米
-        enemy.takeDamage(damage, _facingDirection);
+      if (dist < 100) { // 攻击范围2米(100游戏单位)
+        // 传递击退方向，第3击有额外击退
+        final knockbackForce = hasKnockback ? combo3Knockback : 0.0;
+        enemy.takeDamage(damage, _facingDirection, knockbackForce);
+        
+        // 显示伤害数字
+        _showDamageNumber(enemy.position, damage);
+        
+        hitEnemies.add(enemy);
       }
     }
+    return hitEnemies;
   }
   
-  // ============ 技能 ============
+  void _showDamageNumber(Vector2 pos, int damage) {
+    final dmgText = FloatingDamageText(
+      position: pos.clone()..add(Vector2(0, -30)),
+      damage: damage,
+    );
+    gameRef.add(dmgText);
+  }
+  
+  // ============ 技能 - K/L/U/I/O键 ============
+  /// K: 金刚拳 - 伤害250, CD5秒, 气力20, 霸体+击倒
+  /// L: 太极剑 - 伤害540(180×3), CD8秒, 气力30, AOE定身
+  /// U: 清风剑 - 伤害160, CD6秒, 气力25, 穿透
+  /// I: 破剑式 - 伤害480, CD10秒, 气力35, 无视防御
+  /// O: 打狗棒 - 伤害260(130×2), CD7秒, 气力25, 减速
+  
   void useSkill(int skillIndex) {
     if (skillIndex < 0 || skillIndex >= 5) return;
     if (skillCooldowns[skillIndex] > 0) return; // 还在冷却
@@ -276,82 +314,135 @@ class PlayerCharacter extends PositionComponent {
     _currentAnimation = 'skill$skillIndex';
     _attackTimer = 0.5; // 技能持续时间
     
-    // 计算技能伤害
-    int damage;
-    double range;
-    bool isAoe = false;
-    
     switch (skillIndex) {
-      case 0: // 金刚拳
-        damage = 250;
-        range = 150;
+      case 0: // K: 金刚拳 - 伤害250, 霸体+击倒
+        _skillJingangPunch();
         break;
-      case 1: // 太极剑
-        damage = 180;
-        range = 200;
-        isAoe = true;
+      case 1: // L: 太极剑 - 伤害540(180×3), AOE定身
+        _skillTaijiSword();
         break;
-      case 2: // 清风剑
-        damage = 160;
-        range = 300;
+      case 2: // U: 清风剑 - 伤害160, 穿透
+        _skillQingfengSword();
         break;
-      case 3: // 破剑式
-        damage = 400;
-        range = 150;
+      case 3: // I: 破剑式 - 伤害480, 无视防御
+        _skillPoJian();
         break;
-      case 4: // 打狗棒
-        damage = 130;
-        range = 180;
-        isAoe = true;
+      case 4: // O: 打狗棒 - 伤害260(130×2), 减速
+        _skillDaGou();
         break;
-      default:
-        damage = 100;
-        range = 100;
-    }
-    
-    // 应用伤害
-    if (isAoe) {
-      _applyAoeDamage(damage, range);
-    } else {
-      _applySingleTargetDamage(damage, range);
     }
   }
   
-  void _applySingleTargetDamage(int damage, double range) {
-    // 找到最近的敌人
-    EnemyEntity? nearest;
-    double nearestDist = double.infinity;
+  // K: 金刚拳 - 伤害250, 霸体+击倒
+  void _skillJingangPunch() {
+    const damage = 250;
+    const range = 150.0;
+    
+    // 霸体激活（不被打断）
+    _hasIFrames = true;
+    _iFrameTimer = 0.5;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    resources = resources.activateInvincible(500, nowMs);
     
     for (final enemy in gameRef.enemies) {
-      final dist = (enemy.position - position).length;
-      if (dist < range && dist < nearestDist) {
-        nearest = enemy;
-        nearestDist = dist;
-      }
-    }
-    
-    if (nearest != null) {
-      nearest.takeDamage(damage, _facingDirection);
-    }
-  }
-  
-  void _applyAoeDamage(int damage, double range) {
-    for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
       final dist = (enemy.position - position).length;
       if (dist < range) {
-        enemy.takeDamage(damage, _facingDirection);
+        // 击倒效果（较大击退）
+        enemy.takeDamage(damage, _facingDirection, 80.0, isKnockdown: true);
+        _showDamageNumber(enemy.position, damage);
       }
     }
   }
   
-  // ============ 闪避 ============
+  // L: 太极剑 - 伤害540(180×3), CD8秒, 气力30, AOE定身
+  void _skillTaijiSword() {
+    const totalDamage = 540; // 180×3
+    const range = 200.0;
+    
+    for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
+      final dist = (enemy.position - position).length;
+      if (dist < range) {
+        // 3段伤害
+        for (int i = 0; i < 3; i++) {
+          Future.delayed(Duration(milliseconds: 100 * i), () {
+            if (!enemy.isDead) {
+              enemy.takeDamage(180, _facingDirection, 0, isStunned: true);
+              _showDamageNumber(enemy.position, 180);
+            }
+          });
+        }
+      }
+    }
+  }
+  
+  // U: 清风剑 - 伤害160, CD6秒, 气力25, 穿透
+  void _skillQingfengSword() {
+    const damage = 160;
+    const range = 300.0;
+    
+    // 穿透：可以命中多个敌人
+    for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
+      final dist = (enemy.position - position).length;
+      if (dist < range) {
+        enemy.takeDamage(damage, _facingDirection, 0);
+        _showDamageNumber(enemy.position, damage);
+      }
+    }
+  }
+  
+  // I: 破剑式 - 伤害480, CD10秒, 气力35, 无视防御
+  void _skillPoJian() {
+    const damage = 480;
+    const range = 150.0;
+    
+    for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
+      final dist = (enemy.position - position).length;
+      if (dist < range) {
+        // 无视防御：直接扣血
+        enemy.takePiercingDamage(damage, _facingDirection);
+        _showDamageNumber(enemy.position, damage);
+      }
+    }
+  }
+  
+  // O: 打狗棒 - 伤害260(130×2), CD7秒, 气力25, 减速
+  void _skillDaGou() {
+    const damagePerHit = 130;
+    const range = 180.0;
+    const slowDuration = 2.0;
+    const slowAmount = 0.4; // 40%减速
+    
+    for (final enemy in gameRef.enemies) {
+      if (enemy.isDead) continue;
+      final dist = (enemy.position - position).length;
+      if (dist < range) {
+        // 2段伤害
+        for (int i = 0; i < 2; i++) {
+          Future.delayed(Duration(milliseconds: 150 * i), () {
+            if (!enemy.isDead) {
+              enemy.takeDamage(damagePerHit, _facingDirection, 0);
+              enemy.applySlow(slowAmount, slowDuration);
+              _showDamageNumber(enemy.position, damagePerHit);
+            }
+          });
+        }
+      }
+    }
+  }
+  
+  // ============ 闪避 - 空格键 ============
+  /// 0.4秒无敌帧, 位移3米, CD1.2秒, 气力15
   void tryDodge() {
     if (_isDodging) return;
     if (_dodgeCooldownTimer > 0) return;
-    if (resources.stamina < 15) return;
+    if (resources.stamina < dodgeQiCost) return;
     
     // 消耗气力
-    resources = resources.consumeStamina(15);
+    resources = resources.consumeStamina(dodgeQiCost);
     
     // 开始闪避
     _isDodging = true;
@@ -364,14 +455,15 @@ class PlayerCharacter extends PositionComponent {
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     resources = resources.activateInvincible((dodgeDuration * 1000).round(), nowMs);
     
-    // 闪避位移
+    // 闪避位移（3米=100游戏单位）
     final dodgeDir = _facingDirection.clone()..normalize();
-    position += dodgeDir * 100; // 闪避3米
+    position += dodgeDir * dodgeDistance;
     
     _currentAnimation = 'dodge';
   }
   
-  // ============ 格挡 ============
+  // ============ 格挡 - SHIFT按住 ============
+  /// 减免70%伤害, 完美格挡(0.1秒内)完全免伤+反击
   void startBlock() {
     if (_isDodging) return;
     _isBlocking = true;
@@ -403,7 +495,8 @@ class PlayerCharacter extends PositionComponent {
         if (blockResult.isPerfectBlock) {
           // 完美格挡：完全免伤
           finalDamage = 0;
-          resources = resources.restoreStamina(15); // 反击恢复气力
+          // 反击恢复气力
+          resources = resources.restoreStamina(15);
         } else {
           // 普通格挡：70%减伤
           finalDamage = blockResult.damageReduced;
