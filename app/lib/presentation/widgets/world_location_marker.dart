@@ -45,75 +45,97 @@ class _WorldLocationMarkerState extends State<WorldLocationMarker>
   @override
   Widget build(BuildContext context) {
     final isLocked = !widget.location.isUnlocked;
+    final isCompleted = widget.location.isCompleted;
+    
+    // P0 Fix: Completed locations don't pulse, show as explored
+    // Non-interactive states don't need animation
+    final shouldAnimate = !isLocked && !isCompleted;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapDown: shouldAnimate ? (_) => setState(() => _isPressed = true) : null,
+      onTapUp: shouldAnimate ? (_) => setState(() => _isPressed = false) : null,
+      onTapCancel: shouldAnimate ? () => setState(() => _isPressed = false) : null,
       onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _isPressed ? 0.9 : _scaleAnimation.value,
-            child: child,
-          );
-        },
-        child: Container(
-          width: 60,
-          height: 70,
-          decoration: BoxDecoration(
-            color: isLocked
-                ? AppTheme.cardBackground.withOpacity(0.5)
+      child: shouldAnimate
+          ? AnimatedBuilder(
+              animation: _scaleAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _isPressed ? 0.9 : _scaleAnimation.value,
+                  child: child,
+                );
+              },
+              child: _buildMarkerContent(isLocked, isCompleted),
+            )
+          : _buildMarkerContent(isLocked, isCompleted),
+    );
+  }
+
+  Widget _buildMarkerContent(bool isLocked, bool isCompleted) {
+    return Container(
+      width: 60,
+      height: 70,
+      decoration: BoxDecoration(
+        color: isLocked
+            ? AppTheme.cardBackground.withOpacity(0.5)
+            : isCompleted
+                ? Colors.green.withOpacity(0.15)  // P0 Fix: Completed locations have green tint
                 : AppTheme.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isLocked
-                  ? AppTheme.cardBorder.withOpacity(0.5)
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLocked
+              ? AppTheme.cardBorder.withOpacity(0.5)
+              : isCompleted
+                  ? Colors.green.withOpacity(0.6)  // P0 Fix: Green border for completed
                   : _getMarkerColor(),
-              width: 2,
-            ),
-            boxShadow: isLocked
-                ? null
-                : [
-                    BoxShadow(
-                      color: _getMarkerColor().withOpacity(0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _getLocationIcon(),
-                color: isLocked
-                    ? AppTheme.textSecondary.withOpacity(0.5)
-                    : _getMarkerColor(),
-                size: 28,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.location.name.split(' ').first,
-                style: TextStyle(
-                  color: isLocked
-                      ? AppTheme.textSecondary.withOpacity(0.5)
-                      : AppTheme.textPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (widget.location.isCompleted)
-                const Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 12,
-                ),
-            ],
-          ),
+          width: 2,
         ),
+        boxShadow: isLocked || isCompleted
+            ? null  // P0 Fix: No glow for locked or completed
+            : [
+                BoxShadow(
+                  color: _getMarkerColor().withOpacity(0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // P0 Fix: Different icon for completed locations
+          Icon(
+            isCompleted 
+                ? Icons.explore  // Explored icon instead of original
+                : _getLocationIcon(),
+            color: isLocked
+                ? AppTheme.textSecondary.withOpacity(0.5)
+                : isCompleted
+                    ? Colors.green.withOpacity(0.7)
+                    : _getMarkerColor(),
+            size: 28,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.location.name.split(' ').first,
+            style: TextStyle(
+              color: isLocked
+                  ? AppTheme.textSecondary.withOpacity(0.5)
+                  : isCompleted
+                      ? Colors.green.withOpacity(0.8)
+                      : AppTheme.textPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (isCompleted)
+            const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 12,
+            ),
+        ],
       ),
     );
   }

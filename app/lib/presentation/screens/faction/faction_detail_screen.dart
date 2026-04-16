@@ -5,7 +5,131 @@ import '../../presentation/widgets/faction/reputation_bar.dart';
 import '../../presentation/widgets/faction/faction_card_widget.dart';
 import 'faction_list_screen.dart';
 
-/// 阵营详情页面
+/// 5级声望系统：友善→熟悉→信赖→亲密→莫逆
+enum FactionReputationTier {
+  friendly,    // 友善
+  familiar,    // 熟悉
+  trusted,     // 信赖
+  intimate,    // 亲密
+  inseparable, // 莫逆
+}
+
+extension FactionReputationTierExtension on FactionReputationTier {
+  String get name {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return '友善';
+      case FactionReputationTier.familiar:
+        return '熟悉';
+      case FactionReputationTier.trusted:
+        return '信赖';
+      case FactionReputationTier.intimate:
+        return '亲密';
+      case FactionReputationTier.inseparable:
+        return '莫逆';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return Colors.white;
+      case FactionReputationTier.familiar:
+        return const Color(0xFF32CD32);
+      case FactionReputationTier.trusted:
+        return const Color(0xFF4169E1);
+      case FactionReputationTier.intimate:
+        return const Color(0xFF9932CC);
+      case FactionReputationTier.inseparable:
+        return const Color(0xFFFFD700);
+    }
+  }
+
+  String get iconText {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return '友';
+      case FactionReputationTier.familiar:
+        return '熟';
+      case FactionReputationTier.trusted:
+        return '信';
+      case FactionReputationTier.intimate:
+        return '亲';
+      case FactionReputationTier.inseparable:
+        return '义';
+    }
+  }
+
+  FactionReputationTier? get nextTier {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return FactionReputationTier.familiar;
+      case FactionReputationTier.familiar:
+        return FactionReputationTier.trusted;
+      case FactionReputationTier.trusted:
+        return FactionReputationTier.intimate;
+      case FactionReputationTier.intimate:
+        return FactionReputationTier.inseparable;
+      case FactionReputationTier.inseparable:
+        return null;
+    }
+  }
+
+  String get privilege {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return '基础商店九折，购买该势力卡牌';
+      case FactionReputationTier.familiar:
+        return '商店八折，解锁进阶卡牌池';
+      case FactionReputationTier.trusted:
+        return '商店七五折，专属抽卡up机会';
+      case FactionReputationTier.intimate:
+        return '商店七折，限定称号和稀有卡牌';
+      case FactionReputationTier.inseparable:
+        return '全势力商店六折，终极称号和专属功法';
+    }
+  }
+
+  static FactionReputationTier fromValue(int reputation) {
+    if (reputation < 100) return FactionReputationTier.friendly;
+    if (reputation < 200) return FactionReputationTier.familiar;
+    if (reputation < 300) return FactionReputationTier.trusted;
+    if (reputation < 400) return FactionReputationTier.intimate;
+    return FactionReputationTier.inseparable;
+  }
+
+  int get minValue {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return 0;
+      case FactionReputationTier.familiar:
+        return 100;
+      case FactionReputationTier.trusted:
+        return 200;
+      case FactionReputationTier.intimate:
+        return 300;
+      case FactionReputationTier.inseparable:
+        return 400;
+    }
+  }
+
+  int get maxValue {
+    switch (this) {
+      case FactionReputationTier.friendly:
+        return 100;
+      case FactionReputationTier.familiar:
+        return 200;
+      case FactionReputationTier.trusted:
+        return 300;
+      case FactionReputationTier.intimate:
+        return 400;
+      case FactionReputationTier.inseparable:
+        return 500;
+    }
+  }
+}
+
+/// 势力详情页面
 class FactionDetailScreen extends StatefulWidget {
   final Faction faction;
 
@@ -22,11 +146,9 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // 玩家数据（模拟）
-  String? _playerFactionId; // 当前玩家所属阵营
-  int _playerReputation = 320; // 玩家在该阵营的声望
+  String? _playerFactionId;
+  int _playerReputation = 320;
 
-  // 阵营专属卡牌（模拟数据）
   final List<GameCard> _factionCards = [
     GameCard(
       id: '${''}_card_1',
@@ -90,15 +212,12 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
     ),
   ];
 
-  // 玩家拥有的卡牌ID列表
   List<String> _ownedCardIds = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // TODO: 从API获取玩家阵营信息和声望
-    // _loadPlayerData();
   }
 
   @override
@@ -115,11 +234,9 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
       backgroundColor: AppTheme.primaryDark,
       body: CustomScrollView(
         slivers: [
-          // 顶部阵营信息
           SliverToBoxAdapter(
             child: _buildHeader(),
           ),
-          // Tab栏
           SliverPersistentHeader(
             pinned: true,
             delegate: _TabBarDelegate(
@@ -127,7 +244,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
               factionColor: widget.faction.color,
             ),
           ),
-          // Tab内容
           SliverFillRemaining(
             child: TabBarView(
               controller: _tabController,
@@ -145,14 +261,17 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
   }
 
   Widget _buildHeader() {
+    final tier = FactionReputationTierExtension.fromValue(_playerReputation);
+    final progress = _calculateTierProgress(_playerReputation, tier);
+    final nextTier = tier.nextTier;
+
     return Container(
-      height: 200,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            widget.faction.color.withOpacity(0.4),
+            widget.faction.color.withOpacity(0.3),
             widget.faction.color.withOpacity(0.1),
             AppTheme.primaryDark,
           ],
@@ -171,9 +290,9 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Spacer(),
-                  Text(
+                  const Text(
                     '势力详情',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
@@ -181,31 +300,31 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.share, color: AppTheme.textSecondary),
-                    onPressed: () {
-                      // TODO: 分享
-                    },
+                    onPressed: () {},
                   ),
                 ],
               ),
             ),
-            // 阵营图标和名称
+
+            // 势力图标 + 名称 + 等级标签
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // 势力大图标 (64x64)
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     color: widget.faction.color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: widget.faction.color,
-                      width: 3,
+                      width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: widget.faction.color.withOpacity(0.4),
-                        blurRadius: 20,
+                        blurRadius: 16,
                         spreadRadius: 2,
                       ),
                     ],
@@ -213,7 +332,7 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
                   child: Center(
                     child: Text(
                       widget.faction.icon,
-                      style: const TextStyle(fontSize: 36),
+                      style: const TextStyle(fontSize: 32),
                     ),
                   ),
                 ),
@@ -229,40 +348,319 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people,
-                          size: 14,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${widget.faction.memberCount} 人',
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
+                    const SizedBox(height: 4),
+                    // 等级标签
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: tier.color.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: tier.color, width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: tier.color,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                tier.iconText,
+                                style: const TextStyle(
+                                  color: AppTheme.primaryDark,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            tier.name,
+                            style: TextStyle(
+                              color: tier.color,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
             // 声望进度条
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: ReputationBar(
-                currentReputation: _playerReputation,
-                showLabels: true,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  // 进度条
+                  Container(
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryDark,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: tier.color.withOpacity(0.5), width: 1),
+                    ),
+                    child: Stack(
+                      children: [
+                        // 背景渐变
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(13),
+                            gradient: LinearGradient(
+                              colors: [
+                                tier.color.withOpacity(0.1),
+                                tier.color.withOpacity(0.05),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // 进度填充
+                        FractionallySizedBox(
+                          widthFactor: progress.clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(13),
+                              gradient: LinearGradient(
+                                colors: [
+                                  tier.color.withOpacity(0.4),
+                                  tier.color,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: tier.color.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // 等级刻度
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: FactionReputationTier.values.map((t) {
+                            final isReached = _playerReputation >= t.minValue;
+                            return Container(
+                              width: 2,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: isReached
+                                    ? t.color.withOpacity(0.8)
+                                    : AppTheme.cardBorder.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        // 进度文字
+                        Center(
+                          child: Text(
+                            '${_playerReputation % 100}/100',
+                            style: TextStyle(
+                              color: progress > 0.5
+                                  ? AppTheme.primaryDark
+                                  : tier.color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 等级标签行
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: FactionReputationTier.values.map((t) {
+                      final isCurrent = t == tier;
+                      return Text(
+                        t.name,
+                        style: TextStyle(
+                          color: isCurrent ? t.color : AppTheme.textSecondary,
+                          fontSize: 10,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // 下一级奖励预览
+            if (nextTier != null)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: nextTier.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: nextTier.color.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      color: nextTier.color,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '达到 ${nextTier.name} 解锁：',
+                      style: TextStyle(
+                        color: nextTier.color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        nextTier.privilege,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // 势力特权列表
+            Container(
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.cardBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star_outline,
+                        color: widget.faction.color,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '势力特权',
+                        style: TextStyle(
+                          color: widget.faction.color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...FactionReputationTier.values.map((t) {
+                    final isUnlocked = _playerReputation >= t.minValue;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: isUnlocked
+                                  ? t.color.withOpacity(0.2)
+                                  : AppTheme.cardBorder.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isUnlocked ? t.color : AppTheme.cardBorder,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: isUnlocked
+                                  ? Icon(
+                                      Icons.check,
+                                      color: t.color,
+                                      size: 14,
+                                    )
+                                  : Icon(
+                                      Icons.lock,
+                                      color: AppTheme.textSecondary.withOpacity(0.5),
+                                      size: 12,
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            t.name,
+                            style: TextStyle(
+                              color: isUnlocked ? t.color : AppTheme.textSecondary,
+                              fontSize: 13,
+                              fontWeight: isUnlocked ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              t.privilege,
+                              style: TextStyle(
+                                color: isUnlocked
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.textSecondary.withOpacity(0.6),
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
+  }
+
+  double _calculateTierProgress(int reputation, FactionReputationTier tier) {
+    if (tier == FactionReputationTier.inseparable) {
+      return reputation >= 500 ? 1.0 : (reputation - 400) / 100;
+    }
+    final levelProgress = reputation - tier.minValue;
+    final levelRange = tier.maxValue - tier.minValue;
+    return levelProgress / levelRange;
   }
 
   Widget _buildCardsTab() {
@@ -271,7 +669,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 标题
           Row(
             children: [
               Icon(
@@ -299,7 +696,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
             ],
           ),
           const SizedBox(height: 16),
-          // 卡牌网格
           FactionCardGrid(
             cards: _factionCards,
             factionId: widget.faction.id,
@@ -319,28 +715,24 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 势力简介
           _buildInfoSection(
             '势力简介',
             Icons.info_outline,
             widget.faction.description,
           ),
           const SizedBox(height: 24),
-          // 势力特色
           _buildInfoSection(
             '势力特色',
             Icons.star_outline,
             _getFactionFeature(),
           ),
           const SizedBox(height: 24),
-          // 加入条件
           _buildInfoSection(
             '加入条件',
             Icons.check_circle_outline,
             _getJoinRequirement(),
           ),
           const SizedBox(height: 24),
-          // 等级奖励
           _buildInfoSection(
             '等级奖励',
             Icons.card_giftcard,
@@ -515,7 +907,7 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppTheme.primaryMid,
         border: Border(
           top: BorderSide(color: AppTheme.cardBorder),
@@ -533,7 +925,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
         Expanded(
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO: 离开阵营
               _showLeaveConfirm();
             },
             icon: const Icon(Icons.exit_to_app),
@@ -549,9 +940,7 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
-            onPressed: () {
-              // TODO: 捐献/提升声望
-            },
+            onPressed: () {},
             icon: const Icon(Icons.volunteer_activism),
             label: const Text('捐献提升声望'),
             style: ElevatedButton.styleFrom(
@@ -690,7 +1079,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: 调用API加入阵营
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('已成功加入 ${widget.faction.name}！'),
@@ -729,7 +1117,6 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: 调用API离开阵营
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('已离开势力'),
@@ -786,7 +1173,7 @@ class _FactionDetailScreenState extends State<FactionDetailScreen>
   }
 
   String _getLevelReward() {
-    return '友善：基础卡牌\n尊敬：进阶卡牌\n钦佩：高级卡牌\n崇敬：终极卡牌\n传说：专属称号和稀有卡牌';
+    return '友善：基础卡牌\n熟悉：进阶卡牌\n信赖：高级卡牌\n亲密：稀有卡牌\n莫逆：终极卡牌和专属称号';
   }
 }
 

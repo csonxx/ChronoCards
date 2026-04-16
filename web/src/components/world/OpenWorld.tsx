@@ -175,6 +175,34 @@ export const OpenWorld: React.FC<OpenWorldProps> = ({
     }
   }, [nearbyDealer, onCardDraw, onBattle]);
 
+  // 与指定发牌员交互（来自迷你地图点击）
+  const handleInteractWith = useCallback((dealer: Dealer) => {
+    // 移动玩家到该发牌员位置
+    setPlayerPos(dealer.position);
+    // 设置为附近状态
+    setNearbyDealer(dealer);
+    // 延迟触发交互（等移动动画完成后）
+    setTimeout(() => {
+      if (dealer.type === 'enemy') {
+        onBattle();
+      } else {
+        const mockCard: Card = {
+          id: `card-${Date.now()}`,
+          type: dealer.type === 'teahouse' ? 'side' : dealer.type === 'billboard' ? 'main' : 'growth',
+          title: dealer.type === 'teahouse' ? '江湖传闻' : dealer.type === 'billboard' ? '悬赏任务' : '奇遇发现',
+          description: dealer.dialog ? dealer.dialog[Math.floor(Math.random() * dealer.dialog.length)] : `你在${dealer.name}处听闻了一桩江湖轶事...`,
+          triggered: false,
+          options: [
+            { id: 'o1', text: '欣然接受' },
+            { id: 'o2', text: '婉言谢绝' },
+            { id: 'o3', text: '追问详情' },
+          ],
+        };
+        onCardDraw(mockCard);
+      }
+    }, 100);
+  }, [onCardDraw, onBattle]);
+
   // 键盘移动
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const step = 20;

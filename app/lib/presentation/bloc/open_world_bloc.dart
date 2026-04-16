@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/player.dart';
 import '../../../domain/entities/world_position.dart';
+import '../../../domain/entities/game_card.dart';
 import 'open_world_event.dart';
 import 'open_world_state.dart';
 
@@ -9,6 +10,8 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
     on<LoadOpenWorld>(_onLoadOpenWorld);
     on<MoveToLocation>(_onMoveToLocation);
     on<InteractWithLocation>(_onInteractWithLocation);
+    on<BattleCompleted>(_onBattleCompleted);
+    on<AddCardToCollection>(_onAddCardToCollection);
   }
 
   Future<void> _onLoadOpenWorld(
@@ -57,6 +60,75 @@ class OpenWorldBloc extends Bloc<OpenWorldEvent, OpenWorldState> {
     Emitter<OpenWorldState> emit,
   ) {
     // Handle location interaction - navigate to appropriate screen
+  }
+
+  /// P0 Fix: Handle battle completion - mark location defeated and grant rewards
+  void _onBattleCompleted(
+    BattleCompleted event,
+    Emitter<OpenWorldState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is OpenWorldLoaded) {
+      // Mark the location as completed
+      final updatedLocations = currentState.locations.map((loc) {
+        if (loc.id == event.locationId) {
+          return WorldLocation(
+            id: loc.id,
+            name: loc.name,
+            description: loc.description,
+            x: loc.x,
+            y: loc.y,
+            iconAsset: loc.iconAsset,
+            isUnlocked: true,
+            isCompleted: true, // Mark as defeated
+            recommendedLevel: loc.recommendedLevel,
+            type: loc.type,
+          );
+        }
+        return loc;
+      }).toList();
+
+      // Calculate new player stats
+      final newExp = currentState.player.level * 50 + event.experienceGained;
+      int newLevel = currentState.player.level;
+      int expForNextLevel = newLevel * 100;
+      
+      // Level up if enough exp
+      if (newExp >= expForNextLevel) {
+        newLevel++;
+      }
+
+      final updatedPlayer = Player(
+        id: currentState.player.id,
+        name: currentState.player.name,
+        level: newLevel,
+        health: currentState.player.health,
+        maxHealth: currentState.player.maxHealth + (newLevel > currentState.player.level ? 10 : 0),
+        mana: currentState.player.mana,
+        maxMana: currentState.player.maxMana,
+        energy: currentState.player.energy,
+        maxEnergy: currentState.player.maxEnergy,
+      );
+
+      emit(currentState.copyWith(
+        locations: updatedLocations,
+        player: updatedPlayer,
+        totalGold: currentState.totalGold + event.goldGained,
+        battlesWon: currentState.battlesWon + 1,
+      ));
+    }
+  }
+
+  /// P0 Fix: Add card to player collection
+  void _onAddCardToCollection(
+    AddCardToCollection event,
+    Emitter<OpenWorldState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is OpenWorldLoaded) {
+      final updatedCards = [...currentState.playerCards, event.card];
+      emit(currentState.copyWith(playerCards: updatedCards));
+    }
   }
 
   List<WorldLocation> _generateInitialLocations() {

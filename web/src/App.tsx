@@ -12,7 +12,8 @@ import { NarrativePanel, type NarrativeData } from './components/narrative/Narra
 import { narrativeWS } from './services/websocket';
 import type { Card, CardOption, GameScene } from './types';
 import { saveManager } from './services/save-system';
-import { applyCardOptionEffect } from './services/card-effects';
+import { applyCardOptionEffect, applyBattleVictoryRewards, rewardsToDisplay } from './services/card-effects';
+import type { RewardDisplay } from './services/card-effects';
 import './App.css';
 
 function App() {
@@ -23,6 +24,8 @@ function App() {
   const [cardDrawGuideType, setCardDrawGuideType] = useState<string | null>(null);
   const [cardEffectResult, setCardEffectResult] = useState<ReturnType<typeof applyCardOptionEffect> | null>(null);
   const [narrativeData, setNarrativeData] = useState<NarrativeData | null>(null);
+  const [victoryRewards, setVictoryRewards] = useState<RewardDisplay[]>([]);
+  const [showVictoryPanel, setShowVictoryPanel] = useState(false);
   const cardDrawGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
@@ -112,7 +115,20 @@ function App() {
   // 战斗胜利
   const handleVictory = useCallback(() => {
     console.log('Victory!');
-    setCurrentScene('world');
+    // 应用战斗奖励
+    const result = applyBattleVictoryRewards();
+    const rewards = rewardsToDisplay({ exp: 50 });
+    setVictoryRewards(rewards);
+    setShowVictoryPanel(true);
+    // 播放胜利音效
+    const sfx = new Audio('/assets/audio/quest_complete.mp3');
+    sfx.volume = 0.6;
+    sfx.play().catch(() => {});
+    // 3秒后自动关闭奖励面板并返回地图
+    setTimeout(() => {
+      setShowVictoryPanel(false);
+      setCurrentScene('world');
+    }, 3000);
   }, []);
 
   // 战斗失败
@@ -180,6 +196,30 @@ function App() {
           onVictory={handleVictory}
           onDefeat={handleDefeat}
         />
+      )}
+
+      {/* 战斗胜利奖励面板 */}
+      {showVictoryPanel && (
+        <div className="victory-overlay">
+          <div className="victory-panel">
+            <div className="victory-title">🎉 战斗胜利！</div>
+            <div className="victory-rewards">
+              {victoryRewards.map((r, i) => (
+                <div key={i} className="victory-reward-item">
+                  <span className="victory-reward-icon">{r.icon}</span>
+                  <span className="victory-reward-label">{r.label}</span>
+                  <span className="victory-reward-value">{r.value}</span>
+                </div>
+              ))}
+              <div className="victory-reward-item">
+                <span className="victory-reward-icon">✨</span>
+                <span className="victory-reward-label">经验</span>
+                <span className="victory-reward-value">+50</span>
+              </div>
+            </div>
+            <div className="victory-hint">3秒后返回地图...</div>
+          </div>
+        </div>
       )}
 
       {/* 设置界面（简化版） */}

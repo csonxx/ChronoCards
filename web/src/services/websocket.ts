@@ -115,7 +115,7 @@ class NarrativeWebSocket {
   }
 
   private sendAuth(): void {
-    const player = saveManager.getPlayer();
+    const player = saveManager.current?.player;
     if (!player) return;
 
     const authMsg: AuthMessage = {
